@@ -2,25 +2,48 @@
 
 @section('title', 'Login')
 
+@push('styles')
+<style>
+    body {
+        background: linear-gradient(135deg, rgba(12, 35, 64, 0.78) 0%, rgba(12, 77, 161, 0.72) 100%),
+                    url('{{ asset("images/mersifarma-facility.jpg") }}') center center / cover no-repeat fixed !important;
+        min-height: 100vh;
+    }
+    footer {
+        background: rgba(255, 255, 255, 0.92) !important;
+        backdrop-filter: blur(8px);
+    }
+</style>
+@endpush
+
 @section('content')
-<div style="max-width: 440px; margin: 2rem auto; background: white; border: 1px solid var(--border); border-top: 4px solid var(--primary); border-radius: 8px; padding: 2.25rem 2rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);">
-    <div style="text-align: center; margin-bottom: 1.75rem;">
-        <div style="margin-bottom: 0.65rem;">
-            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 64px; height: 64px; object-fit: contain; display: inline-block;">
-        </div>
-        <div style="font-family: 'Nunito', sans-serif; font-size: 2.35rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; line-height: 1; text-transform: lowercase; margin-bottom: 0.25rem;">
-            mersi
-        </div>
-        <h2 style="font-size: 0.95rem; font-weight: 800; color: var(--secondary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.15rem;">
-            PT MERSIFARMA TIRMAKU MERCUSANA
-        </h2>
-        <p style="color: var(--primary); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;">
-            Mobile Sales Force (MSF)
-        </p>
-        <p style="color: var(--text-muted); font-size: 0.75rem; font-style: italic; margin-top: 0.4rem;">
-            "Good Quality Improves Life's Quality"
-        </p>
+<div style="max-width: 440px; margin: 1.5rem auto 2.5rem; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 45px rgba(12, 35, 64, 0.28);">
+    <!-- Background foto gedung fasilitas Mersifarma di belakang logo -->
+    <div style="position: relative; height: 130px; background: url('{{ asset('images/mersifarma-facility.jpg') }}') center 32% / cover no-repeat;">
+        <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(12, 35, 64, 0.2), rgba(12, 35, 64, 0.65));"></div>
     </div>
+
+    <div style="padding: 0 2rem 2.25rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <!-- Badge logo Mersifarma mengapung di depan foto gedung -->
+            <div style="margin-top: -38px; position: relative; z-index: 2; margin-bottom: 0.65rem;">
+                <div style="display: inline-flex; width: 76px; height: 76px; background: white; border-radius: 16px; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(12, 35, 64, 0.2); border: 3px solid white;">
+                    <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 52px; height: 52px; object-fit: contain;">
+                </div>
+            </div>
+            <div style="font-family: 'Nunito', sans-serif; font-size: 2.35rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; line-height: 1; text-transform: lowercase; margin-bottom: 0.25rem;">
+                mersi
+            </div>
+            <h2 style="font-size: 0.95rem; font-weight: 800; color: var(--secondary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.15rem;">
+                PT MERSIFARMA TIRMAKU MERCUSANA
+            </h2>
+            <p style="color: var(--primary); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;">
+                Mobile Sales Force (MSF)
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.75rem; font-style: italic; margin-top: 0.35rem;">
+                "Good Quality Improves Life's Quality"
+            </p>
+        </div>
 
     <form method="POST" action="{{ route('login.post') }}" id="loginForm">
         @csrf
@@ -77,6 +100,7 @@
                 <span class="role-pill role-dm">DM</span>
             </button>
         </div>
+    </div>
     </div>
 </div>
 
