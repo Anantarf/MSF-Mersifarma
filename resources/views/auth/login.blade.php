@@ -99,21 +99,22 @@
 
 @section('content')
 <div class="login-card">
-    <!-- Mersifarma Official Branding Header -->
+    <!-- Login Card Branding Header -->
     <div style="text-align: center; margin-bottom: 1.25rem;">
-        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; margin-bottom: 0.25rem;">
-            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 42px; height: 42px; object-fit: contain;">
-            <span style="font-family: 'Nunito', sans-serif; font-size: 2.2rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; line-height: 1; text-transform: lowercase;">
-                mersi
-            </span>
+        <!-- Logo tanpa mersi (center) -->
+        <div style="margin-bottom: 0.55rem;">
+            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 48px; height: 48px; object-fit: contain; display: inline-block;">
         </div>
-        <h2 style="font-size: 0.82rem; font-weight: 800; color: var(--secondary); letter-spacing: 0.04em; text-transform: uppercase;">
+        <!-- Mobile Sales Force -->
+        <h1 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.01em; margin-bottom: 0.2rem;">
+            Mobile Sales Force
+        </h1>
+        <!-- PT MERSIFARMA TIRMAKU MERCUSANA -->
+        <h2 style="font-size: 0.8rem; font-weight: 800; color: var(--primary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.2rem;">
             PT MERSIFARMA TIRMAKU MERCUSANA
         </h2>
-        <p style="color: var(--primary); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.1rem;">
-            MOBILE SALES FORCE (MSF)
-        </p>
-        <p style="color: var(--text-muted); font-size: 0.7rem; font-style: italic; margin-top: 0.25rem;">
+        <!-- Slogan -->
+        <p style="color: var(--text-muted); font-size: 0.72rem; font-style: italic;">
             "Good Quality Improves Life's Quality"
         </p>
     </div>
