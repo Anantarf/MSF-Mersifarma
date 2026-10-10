@@ -31,30 +31,33 @@ class DatabaseSeeder extends Seeder
         // 2. Synthetic Users (Hierarchy: MR -> DM -> RSM -> MM)
         $defaultPassword = Hash::make('password');
 
-        $mm = User::firstOrCreate(
+        $mm = User::updateOrCreate(
             ['email' => 'mm@mersi.com'],
             [
                 'name' => 'Budi Santoso (MM)',
+                'username' => 'mm',
                 'password' => $defaultPassword,
                 'role' => 'mm',
                 'manager_id' => null,
             ]
         );
 
-        $rsm = User::firstOrCreate(
+        $rsm = User::updateOrCreate(
             ['email' => 'rsm@mersi.com'],
             [
                 'name' => 'Siti Rahma (RSM)',
+                'username' => 'rsm',
                 'password' => $defaultPassword,
                 'role' => 'rsm',
                 'manager_id' => $mm->id,
             ]
         );
 
-        $dm = User::firstOrCreate(
+        $dm = User::updateOrCreate(
             ['email' => 'dm@mersi.com'],
             [
                 'name' => 'Joko Widodo (DM)',
+                'username' => 'dm',
                 'password' => $defaultPassword,
                 'role' => 'dm',
                 'manager_id' => $rsm->id,
@@ -62,10 +65,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // DM 2 (other manager for negative auth test)
-        $dm2 = User::firstOrCreate(
+        $dm2 = User::updateOrCreate(
             ['email' => 'dm2@mersi.com'],
             [
                 'name' => 'Hendra Gunawan (DM 2)',
+                'username' => 'dm2',
                 'password' => $defaultPassword,
                 'role' => 'dm',
                 'manager_id' => $rsm->id,
@@ -73,10 +77,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // MR 1 (assigned to DM Joko)
-        $mr = User::firstOrCreate(
+        $mr = User::updateOrCreate(
             ['email' => 'mr@mersi.com'],
             [
                 'name' => 'Rudi Hartono (MR)',
+                'username' => 'mr',
                 'password' => $defaultPassword,
                 'role' => 'mr',
                 'manager_id' => $dm->id,
@@ -84,10 +89,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // MR 2 (peer MR for negative cross-MR test)
-        $mr2 = User::firstOrCreate(
+        $mr2 = User::updateOrCreate(
             ['email' => 'mr2@mersi.com'],
             [
                 'name' => 'Ahmad Dahlan (MR 2)',
+                'username' => 'mr2',
                 'password' => $defaultPassword,
                 'role' => 'mr',
                 'manager_id' => $dm->id,

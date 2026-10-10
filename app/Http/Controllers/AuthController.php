@@ -37,13 +37,10 @@ class AuthController extends Controller
 
         $resolvedEmail = $loginInput;
         if (!str_contains($loginInput, '@')) {
-            if (strtolower($loginInput) === 'superadmin') {
-                $user = User::where('role', 'mm')->first();
-            } else {
-                $user = User::where('email', $loginInput.'@mersi.com')
-                    ->orWhere('name', 'LIKE', $loginInput.'%')
-                    ->first();
-            }
+            $user = User::where('username', $loginInput)
+                ->orWhere('email', $loginInput.'@mersi.com')
+                ->orWhere('name', 'LIKE', $loginInput.'%')
+                ->first();
 
             if ($user) {
                 $resolvedEmail = $user->email;

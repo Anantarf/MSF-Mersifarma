@@ -425,7 +425,7 @@
     <form method="POST" action="{{ route('login.post') }}" id="loginForm" onsubmit="handleLoginSubmit(event)">
         @csrf
         <div class="form-group">
-            <label for="username" class="form-label">Username</label>
+            <label for="username" class="form-label">Username atau Email</label>
             <input id="username" type="text" name="username" value="{{ old('username', old('email')) }}" required autofocus autocomplete="username"
                    class="input-control {{ $errors->has('email') || $errors->has('login') || $errors->has('username') ? 'is-invalid' : '' }}"
                    placeholder="Contoh: mr atau mr@mersi.com">
