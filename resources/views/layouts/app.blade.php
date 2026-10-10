@@ -387,14 +387,14 @@
             </a>
 
             <nav class="nav-links">
-                <a href="{{ route('call-lists.index') }}" class="nav-link {{ request()->routeIs('call-lists.*') ? 'active' : '' }}">
-                    Call List
+                <a href="{{ route('call-lists.index') }}" class="nav-link {{ request()->routeIs('call-lists.*') ? 'active' : '' }}" title="Call List Bulanan">
+                    Target Dokter
                 </a>
-                <a href="{{ route('call-plans.index') }}" class="nav-link {{ request()->routeIs('call-plans.*') ? 'active' : '' }}">
-                    Call Plan
+                <a href="{{ route('call-plans.index') }}" class="nav-link {{ request()->routeIs('call-plans.*') ? 'active' : '' }}" title="Call Plan">
+                    Jadwal Kunjungan
                 </a>
-                <a href="{{ route('call-actuals.index') }}" class="nav-link {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}">
-                    Call Actual
+                <a href="{{ route('call-actuals.index') }}" class="nav-link {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}" title="Call Actual">
+                    Pelaksanaan Kunjungan
                 </a>
             </nav>
 
@@ -412,17 +412,17 @@
     </header>
 
     <nav class="mobile-bottom-nav">
-        <a href="{{ route('call-lists.index') }}" class="mobile-nav-item {{ request()->routeIs('call-lists.*') ? 'active' : '' }}">
+        <a href="{{ route('call-lists.index') }}" class="mobile-nav-item {{ request()->routeIs('call-lists.*') ? 'active' : '' }}" title="Target Dokter (Call List Bulanan)">
             <i class="bi bi-clipboard-check" style="font-size: 1.25rem;"></i>
-            <span>Call List</span>
+            <span>Target</span>
         </a>
-        <a href="{{ route('call-plans.index') }}" class="mobile-nav-item {{ request()->routeIs('call-plans.*') ? 'active' : '' }}">
+        <a href="{{ route('call-plans.index') }}" class="mobile-nav-item {{ request()->routeIs('call-plans.*') ? 'active' : '' }}" title="Jadwal Kunjungan (Call Plan)">
             <i class="bi bi-calendar-event" style="font-size: 1.25rem;"></i>
-            <span>Call Plan</span>
+            <span>Jadwal</span>
         </a>
-        <a href="{{ route('call-actuals.index') }}" class="mobile-nav-item {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}">
+        <a href="{{ route('call-actuals.index') }}" class="mobile-nav-item {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}" title="Pelaksanaan Kunjungan (Call Actual)">
             <i class="bi bi-check2-circle" style="font-size: 1.25rem;"></i>
-            <span>Call Actual</span>
+            <span>Kunjungan</span>
         </a>
     </nav>
     @endauth

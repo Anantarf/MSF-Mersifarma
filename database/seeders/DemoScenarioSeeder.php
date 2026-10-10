@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Carbon\Carbon;
-use App\Models\User;
 use App\Models\CallList;
 use App\Models\CallListApprovalLog;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class DemoScenarioSeeder extends Seeder
 {
@@ -15,13 +15,15 @@ class DemoScenarioSeeder extends Seeder
      */
     public function run(): void
     {
-        // Pastikan master data sudah ada
-        $this->call(DatabaseSeeder::class);
+        // Pastikan master data sudah ada jika seeder dijalankan mandiri
+        if (! User::where('email', 'mr@mersi.com')->exists()) {
+            $this->call(DatabaseSeeder::class);
+        }
 
         $mr = User::where('email', 'mr@mersi.com')->first();
         $dm = User::where('email', 'dm@mersi.com')->first();
 
-        if (!$mr || !$dm) {
+        if (! $mr || ! $dm) {
             return;
         }
 

@@ -1,6 +1,6 @@
 # Test Plan & Acceptance Matrix — MSF
 
-> **Versi:** 1.5. **Status pengujian:** BELUM DIJALANKAN.  
+> **Versi:** Baseline test v1.5 + terminology v1.6 + UX operational audit v1.7. **Status pengujian:** BELUM DIJALANKAN.  
 > **Tujuan:** acceptance tests PDF, negative cases, authorization, persistence, UX mobile, dan concurrency.  
 > **Environment minimum:** MySQL 8.0.16+, Laravel, synthetic seed users MR-A, MR-B, DM-A, DM-B, RSM, MM; dokter MCL, products.
 
@@ -101,7 +101,7 @@ Contoh catatan saat belum ada implementasi:
 
 | ID | Skenario | Expected |
 |---|---|---|
-| UX-01 | Buka Call Actual dari mobile | Jadwal Hari Ini terlihat; tombol Mulai jelas |
+| UX-01 | Buka Call Actual dari mobile | Jadwal Hari Ini terlihat; P0 tombol **Isi Laporan Kunjungan**, bukan Check-in server palsu; P1 boleh **Mulai Kunjungan** setelah Session tersedia |
 | UX-02 | Ada Active Session (P1) | Panel Lanjutkan Kunjungan paling atas |
 | UX-03 | MR buka Without Plan | Satu entry point; dokter MCL; alasan UI |
 | UX-04 | Planned dari Jadwal Hari Ini | Plan/doctor terisi otomatis tanpa input ID |
@@ -111,6 +111,14 @@ Contoh catatan saat belum ada implementasi:
 | UX-08 | POST retry duplikat own | 409 own id memungkinkan lihat laporan |
 | UX-09 | POST retry duplikat MR lain | Tidak ada actual ID/evidence lain |
 | UX-10 | DM reject | List UI Perlu Revisi dengan alasan |
+| UX-11 | Lihat menu tiga modul desktop/mobile dan heading masing-masing halaman | Desktop menu berlabel Indonesia; mobile boleh ringkas `Target/Jadwal/Kunjungan` dengan nama accessible lengkap; **heading halaman** selalu nama Indonesia lengkap + subtitle PDF |
+| UX-12 | Kirim Call List / buat Plan dari UI baru | Request tetap menuju `/api/call-lists` dan `/api/call-plans`; respons tetap sesuai kontrak |
+| UX-13 | P1: Akhiri Kunjungan (Check-out) tetapi belum Simpan Laporan | Session checkout timestamp tersimpan; Actual/Plan belum Completed |
+| UX-14 | P0: mode input waktu manual | CTA Isi Laporan Kunjungan; field Waktu Mulai/Selesai; tidak ada tombol Mulai/Akhiri Kunjungan yang berpura-pura menyimpan waktu server; Simpan Laporan finalisasi Actual |
+| UX-15 | List baru Draft tanpa histori penolakan | Label Draft |
+| UX-16 | Draft setelah DM Reject | Label Perlu Revisi + alasan penolakan terbaru |
+| UX-17 | MR resubmit List setelah Reject | Label Menunggu Persetujuan; rejection lama tidak ditampilkan sebagai state aktif |
+| UX-18 | Manager Approved setelah histori Reject lama | Label Disetujui; rejection lama tetap di histori tetapi tidak mengubah current label |
 
 ## 8. Concurrency & MySQL proofs
 

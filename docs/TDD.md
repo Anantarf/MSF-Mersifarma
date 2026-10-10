@@ -1,6 +1,6 @@
 # TDD — Mobile Sales Force (MSF)
 
-> **Versi:** 1.5 consolidated technical baseline.  
+> **Versi:** 1.6 (technical baseline v1.5 + label UI v1.6).  
 > **Status:** Approved design / unimplemented, unverified.  
 > **Autoritas:** `DESIGN.md` (induk), `PRD.md` (perilaku), `API_CONTRACT.md` (HTTP), `DATABASE_SCHEMA.md` (persistensi), `TEST_PLAN.md` (acceptance).
 
@@ -163,6 +163,34 @@ Lock dokter diperlukan untuk create Plan, cancel Plan, check-in, save/checkout/c
 
 ## 8. UI structure
 
+### 8.1 UI terminology & responsive navigation (v1.7 — presentation layer only)
+
+`PRD.md` §4.0 adalah sumber kebenaran untuk label yang terlihat pengguna. Implementasi Blade menampilkan:
+
+| Label menu / heading | Subtitle **di heading halaman** | Internal resource yang **tetap** dipakai |
+|---|---|---|
+| **Target Dokter** | Call List Bulanan | `call_lists`, `CallListController`, `/api/call-lists` |
+| **Jadwal Kunjungan** | Call Plan | `call_plans`, `CallPlanController`, `/api/call-plans` |
+| **Pelaksanaan Kunjungan** | Call Actual | `call_actuals`, `CallActualController`, `/api/call-actuals` |
+
+**Responsive display rules:**
+
+- **Desktop navigation:** pakai nama lengkap bahasa Indonesia; tidak wajib menampilkan subtitle pada item menu.
+- **Narrow mobile navigation:** boleh menampilkan **Target**, **Jadwal**, **Kunjungan** jika dibutuhkan, dengan accessible name yang menjelaskan nama lengkap.
+- **Page heading di semua viewport:** nama lengkap Indonesia + subtitle istilah PDF. Judul halaman tetap penuh walaupun navigasi diringkas.
+
+Gunakan satu mapping label (Blade component/helper sederhana) agar konsisten. Jangan membuat infrastructure translation/i18n kompleks hanya untuk tiga menu.
+
+**Technical safeguards:**
+
+1. Perubahan hanya pada teks presentasi; path API, nama kelas/model, tabel, status DB, dan request JSON tidak diubah.
+2. View tetap terdiri atas tepat tiga halaman utama; tab approval tetap dalam halaman **Target Dokter**.
+3. **Derived Call List label precedence (evaluasi status aktif terlebih dahulu):** `approved` → **Disetujui**; `pending_approval` → **Menunggu Persetujuan**; `draft` + rejection event yang belum diikuti resubmit → **Perlu Revisi**, dengan reason penolakan terbaru; `draft` lainnya → **Draft**. Event rejection lama **tidak** boleh menimpa status setelah resubmit/approval. Jangan menambahkan persisted `rejected` state baru.
+4. **P0 Direct Actual:** dari Jadwal Hari Ini gunakan **Isi Laporan Kunjungan**; input **Waktu Mulai/Waktu Selesai** manual, foto, TTD, dan produk; **Simpan Laporan** melakukan POST Direct Actual. State `in_progress` pada UI P0 bersifat lokal. Tidak ada server Check-in/Check-out action palsu.
+5. **P1 Session:** **Mulai Kunjungan** melakukan POST Visit Session dan merekam Check-in server; **Akhiri Kunjungan** menyimpan Check-out server; **Simpan Laporan** baru melakukan finalisasi Actual. Checkout tidak mengubah Plan/Actual menjadi Completed tanpa finalisasi.
+6. Semua alert, loading/error states, konfirmasi, validasi form, tombol, dan empty states menggunakan bahasa Indonesia yang operasional; kode `error_code` tetap internal untuk logika UI dan test automation.
+7. Pengujian UI memastikan subtitle muncul pada **heading ketiga halaman**, navigasi desktop/mobile dapat beradaptasi, P0 tidak berpura-pura mempunyai Check-in/Check-out server, `Perlu Revisi` tidak tertinggal setelah resubmit, route/API tetap identik, dan P1 Check-out tidak menandai Actual Completed sebelum finalisasi.
+
 ```text
 resources/
   views/
@@ -178,7 +206,7 @@ resources/
 
 - Call List: Draft/Submitted-Pending/Approved + manager approval tab dan rejection reason.
 - Call Plan: form Approved List → doctor → date/time; list dengan simple status + derived conflict.
-- Call Actual: **Active Session** (P1) → **Jadwal Hari Ini** → **Kunjungan di Luar Rencana** → **Riwayat Selesai**. Satu guided panel untuk foto, TTD, products, checkin/out; Planned jadi default; Non Target/Unplanned classified server.
+- Call Actual: **Active Session** (P1) → **Jadwal Hari Ini** → **Kunjungan di Luar Rencana** → **Riwayat Selesai**. Satu guided panel untuk foto, TTD, products. **P0** menyediakan input waktu manual; **P1** memakai Check-in/Check-out server. Planned jadi default; Non Target/Unplanned diklasifikasikan backend.
 - Fetch API menampilkan loading, error per-panel, duplicate response, action disable sementara request pending, serta 401 session expiry.
 - Mobile responsive, label human-readable (hindari istilah `plan_id`, `deviation_reason` dalam UI).
 

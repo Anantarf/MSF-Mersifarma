@@ -1,6 +1,6 @@
 # Implementation Plan — MSF Laravel
 
-> **Versi:** 1.5; **status:** rencana kerja, belum ada kode implementasi.  
+> **Versi:** 1.5 implementation sequence + UI label v1.6 + operational clarity v1.7; **status:** rencana kerja, belum ada kode implementasi.  
 > **Tujuan:** menghasilkan deliverable sesuai PDF secepat mungkin tanpa menjadikan enhancement P1 sebagai dependency P0.
 
 ## 1. Workflow IDE yang diharapkan
@@ -10,6 +10,9 @@
 3. Implementasi per fase P0; **setelah tiap fase** tulis ringkasan file yang diubah, tes yang dijalankan, dan kegagalan yang ditemukan.
 4. Jangan mengklaim PASS tanpa mengeksekusi tes dan melihat hasilnya.
 5. Tulis asumsi yang diperlukan jika spesifikasi belum menentukan suatu detail. Hindari menambah fitur.
+6. Pada **heading tiga halaman** tampilkan nama Indonesia lengkap **Target Dokter**, **Jadwal Kunjungan**, **Pelaksanaan Kunjungan**, disertai subtitle **Call List Bulanan**, **Call Plan**, **Call Actual**. Desktop navigation gunakan nama lengkap, mobile sempit boleh ringkas menjadi Target/Jadwal/Kunjungan dengan accessible name lengkap.
+7. **P0 Call Actual:** tombol **Isi Laporan Kunjungan**, waktu manual, **Simpan Laporan**. Tombol **Mulai/Akhiri Kunjungan** dengan timestamp server **hanya** saat P1 Session benar-benar dibangun.
+8. Jika status Call List Draft pernah direject, UI **Perlu Revisi**; tetapi sesudah submit ulang wajib **Menunggu Persetujuan** dan setelah approved **Disetujui**. Histori reject tetap ada sebagai audit, bukan state saat ini.
 
 ## 2. Roadmap P0
 
@@ -111,7 +114,7 @@ Nama class/folder boleh disesuaikan konvensi Laravel proyek, selama kontrak peri
 
 - [ ] Jadwal Hari Ini sebagai fokus Call Actual.
 - [ ] Dua pilihan saja: Terjadwal dan Di Luar Rencana.
-- [ ] Form Input Check-in/Check-out terlihat pada P0.
+- [ ] Form P0 menampilkan input **Waktu Mulai/Waktu Selesai** dan tombol **Isi Laporan Kunjungan → Simpan Laporan**; tidak mengklaim Check-in/Check-out server terjadi.
 - [ ] Tidak ada asumsi Session P1 diperlukan untuk submit P0.
 - [ ] Validasi pesan error/loading dan layar mobile.
 

@@ -1,6 +1,6 @@
 # MSF — Documentation Index / IDE Handoff
 
-> **Package:** MSF Design Baseline **v1.5** (10 Oktober 2026).  
+> **Package:** MSF Design Baseline **v1.5 + Terminologi UI v1.6 + Operational UX v1.7** (10 Oktober 2026).  
 > **Project:** Mobile Sales Force — PT Mersifarma.  
 > **Status:** **DESIGN READY; CODE NOT STARTED; TESTS NOT RUN.**  
 > Semua dokumen `.md` ini adalah spesifikasi untuk IDE, bukan kode aplikasi.
@@ -43,9 +43,11 @@ Jika terdapat ketidakcocokan, **jangan diam-diam memilih**. Gunakan ketentuan PD
 3. Global doctor/date uniqueness untuk final Actual.
 4. Actual photo URL, signature URL, product list minimal 1.
 5. `plan_id` nullable: Without Plan tetap bisa mencatat dokter MCL.
-6. UI Call Actual Planned-first, satu tombol sekunder Di Luar Rencana.
-7. Session-based flows P1 **tidak boleh menjadi syarat** untuk 8 endpoint mandatory P0.
-8. Jangan mengklaim fitur dibangun atau dites sebelum benar-benar dilakukan.
+6. UI Planned-first dengan satu opsi Di Luar Rencana. Heading tiga halaman menampilkan **Target Dokter** (Call List Bulanan), **Jadwal Kunjungan** (Call Plan), dan **Pelaksanaan Kunjungan** (Call Actual); subtitle di heading, tidak wajib dalam mobile menu.
+7. **P0**: Isi Laporan Kunjungan + Waktu Mulai/Selesai manual + Simpan Laporan. **P1**: Mulai/Akhiri Kunjungan dengan server timestamps; tidak boleh memalsukan Check-in server pada P0.
+8. Label Call List **Perlu Revisi** hanya untuk Draft setelah reject; pending/approved mengikuti status terkini, bukan histori reject lama.
+9. Session-based flows P1 **tidak boleh menjadi syarat** untuk 8 endpoint mandatory P0.
+10. Jangan mengklaim fitur dibangun atau dites sebelum benar-benar dilakukan.
 
 ## 4. Letak dokumen dalam repo
 
@@ -55,7 +57,7 @@ Dokumen dapat disimpan dalam `/docs` jika IDE/agent diperintahkan membaca `/docs
 
 ## 5. Checklist penyerahan dan kejujuran status
 
-- [x] Business/technical baseline v1.5 tersusun.
+- [x] Business/technical baseline v1.5 + terminology v1.6 + operational UX v1.7 tersusun.
 - [x] HTTP contract, DB, dan test plan tersusun.
 - [ ] Laravel project dibuat.
 - [ ] MySQL migration dijalankan.
@@ -64,4 +66,4 @@ Dokumen dapat disimpan dalam `/docs` jika IDE/agent diperintahkan membaca `/docs
 - [ ] 5 manual test PDF dijalankan, PASS/FAIL dan evidence dicatat.
 - [ ] README aplikasi final + demo disiapkan.
 
-**Catatan:** Ini adalah paket dokumentasi final **untuk mulai coding**, bukan klaim aplikasi selesai.
+**Catatan:** Perubahan v1.6–v1.7 hanya pemetaan label dan perilaku presentasi UI, tanpa perubahan database atau kontrak API. Ini adalah paket dokumentasi final **untuk mulai coding**, bukan klaim aplikasi selesai.

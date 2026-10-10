@@ -2,20 +2,22 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\User;
-use App\Models\CallList;
-use App\Models\CallListApprovalLog;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 
 class CallListTest extends TestCase
 {
     use DatabaseTransactions;
 
     protected User $mr;
+
     protected User $mr2;
+
     protected User $dm;
+
     protected User $dm2;
+
     protected User $rsm;
 
     protected function setUp(): void
@@ -92,12 +94,12 @@ class CallListTest extends TestCase
         ])->json('data');
 
         // MR 2 (bukan pemilik) mencoba mengubah -> 403 Forbidden
-        $this->actingAs($this->mr2)->putJson("/api/call-lists/{$callList['id']}", [
+        $this->actingAs($this->mr2)->patchJson("/api/call-lists/{$callList['id']}", [
             'doctor_ids' => [3, 4],
         ])->assertStatus(403);
 
-        // MR pemilik mengubah draft -> 200 OK
-        $response = $this->actingAs($this->mr)->putJson("/api/call-lists/{$callList['id']}", [
+        // MR pemilik mengubah draft via PATCH -> 200 OK
+        $response = $this->actingAs($this->mr)->patchJson("/api/call-lists/{$callList['id']}", [
             'doctor_ids' => [2, 3, 5],
         ]);
 

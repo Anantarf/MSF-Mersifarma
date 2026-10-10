@@ -29,6 +29,10 @@ class CallPlanService
      */
     public function createPlan(User $mr, array $data): CallPlan
     {
+        if ($mr->role !== 'mr') {
+            throw new AccessDeniedHttpException('Hanya MR yang dapat membuat Call Plan.');
+        }
+
         $callListId = (int) $data['call_list_id'];
         $doctorId = (int) $data['doctor_id'];
         $planDate = $data['plan_date'];
@@ -53,7 +57,7 @@ class CallPlanService
 
         // 3. Cek apakah dokter terdaftar di Call List
         $isDoctorInList = $callList->doctors()->where('master_customers.id', $doctorId)->exists();
-        if (!$isDoctorInList) {
+        if (! $isDoctorInList) {
             throw new HttpException(
                 422,
                 'Dokter tidak terdaftar dalam Call List sasaran.',
@@ -137,5 +141,85 @@ class CallPlanService
         return $query->orderBy('plan_date', 'asc')
             ->orderBy('planned_time', 'asc')
             ->get();
+    }
+
+    /**
+     * Membatalkan rencana kunjungan (Call Plan).
+     *
+     * Invariants:
+     * 1. Hanya MR pemilik yang dapat membatalkan.
+     * 2. Hanya Plan dengan status 'scheduled' yang dapat dibatalkan.
+     * 3. Wajib menyertakan alasan pembatalan.
+     * 4. Plan yang sudah memiliki Actual final tidak dapat dibatalkan.
+     */
+    public function cancelPlan(User $mr, int $planId, string $reason): CallPlan
+    {
+        $plan = CallPlan::findOrFail($planId);
+
+        if ($plan->mr_id !== $mr->id) {
+            throw new AccessDeniedHttpException('Anda tidak memiliki hak untuk membatalkan jadwal kunjungan ini.');
+        }
+
+        if ($plan->status === 'completed') {
+            throw new HttpException(422, 'Rencana kunjungan yang sudah selesai tidak dapat dibatalkan.', null, ['X-Error-Code' => 'PLAN_ALREADY_COMPLETED']);
+        }
+
+        if ($plan->status === 'cancelled') {
+            throw new HttpException(422, 'Rencana kunjungan sudah dalam status dibatalkan.', null, ['X-Error-Code' => 'PLAN_ALREADY_CANCELLED']);
+        }
+
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 3) {
+            throw new HttpException(422, 'Alasan pembatalan rencana kunjungan wajib diisi minimal 3 karakter.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+        }
+
+        // Cek apakah ada Actual terkait
+        if ($plan->callActual()->exists()) {
+            throw new HttpException(422, 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.', null, ['X-Error-Code' => 'PLAN_HAS_ACTUAL']);
+        }
+
+        return DB::transaction(function () use ($plan, $reason) {
+            $plan->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => $reason,
+                'cancelled_at' => now(),
+            ]);
+
+            return $plan->fresh(['doctor', 'callList']);
+        });
+    }
+
+    /**
+     * Mengambil daftar tanggal bentrok/terisi untuk dokter pada bulan tertentu.
+     * Tidak membocorkan identitas MR lain demi privasi (privacy-safe).
+     */
+    public function getDoctorAvailability(int $doctorId, string $month): array
+    {
+        $targetMonth = Carbon::parse($month)->format('Y-m');
+
+        // 1. Ambil tanggal dari Call Plan yang aktif (scheduled atau completed)
+        $planDates = CallPlan::where('doctor_id', $doctorId)
+            ->whereIn('status', ['scheduled', 'completed'])
+            ->whereRaw("DATE_FORMAT(plan_date, '%Y-%m') = ?", [$targetMonth])
+            ->pluck('plan_date')
+            ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
+            ->toArray();
+
+        // 2. Ambil tanggal dari Call Actual final
+        $actualDates = CallActual::where('doctor_id', $doctorId)
+            ->whereRaw("DATE_FORMAT(visit_date, '%Y-%m') = ?", [$targetMonth])
+            ->pluck('visit_date')
+            ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
+            ->toArray();
+
+        // Gabungkan dan hilangkan duplikasi
+        $busyDates = array_values(array_unique(array_merge($planDates, $actualDates)));
+        sort($busyDates);
+
+        return [
+            'doctor_id' => $doctorId,
+            'month' => $targetMonth,
+            'busy_dates' => $busyDates,
+        ];
     }
 }

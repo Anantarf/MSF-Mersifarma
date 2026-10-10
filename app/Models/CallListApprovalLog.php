@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CallListApprovalLog extends Model
 {
     public $timestamps = false;
+
     protected $table = 'call_list_approval_logs';
 
     protected $fillable = [

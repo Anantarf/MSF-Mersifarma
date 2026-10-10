@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\Role;
-use App\Models\User;
 use App\Models\MasterCustomer;
 use App\Models\Product;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -162,5 +162,8 @@ class DatabaseSeeder extends Seeder
         foreach ($products as $prod) {
             Product::firstOrCreate(['id' => $prod['id']], $prod);
         }
+
+        // 5. Demo Scenarios (Call List Approved, Audit Logs, Call Plans)
+        $this->call(DemoScenarioSeeder::class);
     }
 }

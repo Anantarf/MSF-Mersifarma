@@ -15,12 +15,19 @@ class CallPlanTest extends TestCase
     use DatabaseTransactions;
 
     protected User $mr;
+
     protected User $otherMr;
+
     protected User $dm;
+
     protected MasterCustomer $doctor1;
+
     protected MasterCustomer $doctor2;
+
     protected MasterCustomer $unlistedDoctor;
+
     protected CallList $approvedCallList;
+
     protected CallList $draftCallList;
 
     protected function setUp(): void
@@ -256,6 +263,7 @@ class CallPlanTest extends TestCase
         $responseOther->assertStatus(200)
             ->assertJsonCount(0, 'data');
     }
+
     public function test_non_mr_cannot_create_call_plan_even_with_owned_approved_list(): void
     {
         $managerList = CallList::firstOrCreate(
@@ -291,5 +299,170 @@ class CallPlanTest extends TestCase
             'doctor_id' => $this->doctor1->id,
             'plan_date' => '2027-08-12',
         ]);
+    }
+
+    public function test_mr_can_cancel_scheduled_call_plan_with_valid_reason(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-20',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/cancel", [
+                'reason' => 'Dokter ada jadwal simposium mendadak di luar kota',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Rencana kunjungan berhasil dibatalkan',
+                'data' => [
+                    'id' => $plan->id,
+                    'status' => 'cancelled',
+                    'cancellation_reason' => 'Dokter ada jadwal simposium mendadak di luar kota',
+                ],
+            ]);
+
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'cancelled',
+            'cancellation_reason' => 'Dokter ada jadwal simposium mendadak di luar kota',
+        ]);
+    }
+
+    public function test_cannot_cancel_call_plan_belonging_to_another_mr(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-21',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->otherMr)
+            ->patchJson("/api/call-plans/{$plan->id}/cancel", [
+                'reason' => 'Mencoba membatalkan jadwal rekan sales lain',
+            ]);
+
+        $response->assertStatus(403);
+
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'scheduled',
+        ]);
+    }
+
+    public function test_cannot_cancel_call_plan_with_invalid_reason(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-22',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/cancel", [
+                'reason' => 'no', // kurang dari 3 karakter
+            ]);
+
+        $response->assertStatus(422);
+
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'scheduled',
+        ]);
+    }
+
+    public function test_cannot_cancel_completed_call_plan(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-23',
+            'planned_time' => '10:00:00',
+            'status' => 'completed',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/cancel", [
+                'reason' => 'Membatalkan rencana yang sudah completed',
+            ]);
+
+        $response->assertStatus(422);
+
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_cancelling_call_plan_frees_up_slot_for_another_plan(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-24',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        // Batalkan jadwal pertama
+        $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/cancel", [
+                'reason' => 'Revisi tanggal kunjungan dokter',
+            ])
+            ->assertStatus(200);
+
+        // Buat jadwal baru di tanggal yang sama setelah dibatalkan (slot sudah bebas)
+        $newResponse = $this->actingAs($this->mr)
+            ->postJson('/api/call-plans', [
+                'call_list_id' => $this->approvedCallList->id,
+                'doctor_id' => $this->doctor1->id,
+                'plan_date' => '2026-11-24',
+                'planned_time' => '14:00:00',
+            ]);
+
+        $newResponse->assertStatus(201);
+    }
+
+    public function test_doctor_availability_endpoint_returns_busy_dates_and_respects_privacy(): void
+    {
+        CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-25',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->getJson("/api/doctors/{$this->doctor1->id}/availability?month=2026-11");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'doctor_id' => $this->doctor1->id,
+                    'month' => '2026-11',
+                    'busy_dates' => ['2026-11-25'],
+                ],
+            ]);
+
+        // Verifikasi tidak ada nama MR lain, produk, atau data sensitif yang bocor
+        $response->assertJsonMissing(['mr_id' => $this->mr->id]);
+        $response->assertJsonMissing(['mr_name' => $this->mr->name]);
     }
 }

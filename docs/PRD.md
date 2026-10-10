@@ -1,6 +1,6 @@
 # PRD — Mobile Sales Force (MSF)
 
-> **Versi:** 1.5 (consolidated business baseline)  
+> **Versi:** 1.6 (baseline bisnis v1.5 + pemetaan terminologi UI v1.6)  
 > **Status:** Spesifikasi final untuk mulai implementasi; aplikasi belum dibuat atau diuji.  
 > **Sumber utama:** dokumen studi kasus MSF PT Mersifarma.  
 > **Revisi yang digabung:** PRD v1.2/v1.3, Logic Flow v1.4, Operational UX v1.5.
@@ -9,7 +9,7 @@
 
 MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat target dokter bulanan, merencanakan kunjungan, dan menyampaikan realisasi kunjungan dengan bukti foto, tanda tangan, serta produk yang didetailkan. Manager melakukan approval terhadap **Call List** bawahannya dalam satu tingkat hierarki.
 
-**Tiga fitur inti:** Call List, Call Plan, Call Actual. **Tiga halaman utama:** Call List, Call Plan, Call Actual. Tidak perlu membuat dashboard, modul reporting/insentif, atau halaman Unplanned terpisah untuk memenuhi studi kasus.
+**Tiga fitur/domain inti:** Call List, Call Plan, Call Actual. **Tiga halaman utama di UI:** Target Dokter (Call List Bulanan), Jadwal Kunjungan (Call Plan), Pelaksanaan Kunjungan (Call Actual). Tidak perlu membuat dashboard, modul reporting/insentif, atau halaman Unplanned terpisah untuk memenuhi studi kasus.
 
 ## 2. Aktor dan wewenang
 
@@ -66,7 +66,60 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 
 **Asumsi tambahan yang harus dicantumkan README:** Planned Actual dapat bergeser tanggal hanya di dalam bulan Call List dan memerlukan `deviation_reason`; timestamp tidak boleh berada di masa depan. Jika MR mempunyai Plan Scheduled lain untuk dokter yang sama tepat di tanggal aktual, frontend/Planned flow mengarahkan ke Plan yang benar. Ini **tidak** menghapus jalur `plan_id = null`.
 
-## 4. UX yang disetujui (v1.5)
+## 4. UX yang disetujui (v1.5; label v1.6, operational correction v1.7)
+
+### 4.0 Terminologi antarmuka dan keterlacakan ke PDF (v1.7)
+
+**Keputusan:** label menu dan judul halaman menggunakan bahasa Indonesia yang mudah dimengerti MR. **Istilah asli PDF tampil sebagai subtitle pada heading halaman**, bukan wajib di setiap item navigasi. Nama domain/API/database tidak diubah.
+
+| Modul pada PDF / backend | Label menu / heading utama UI | Subtitle pada heading halaman | Tujuan pengguna |
+|---|---|---|---|
+| Call List | **Target Dokter** | **Call List Bulanan** | Menentukan dan mengajukan target bulanan |
+| Call Plan | **Jadwal Kunjungan** | **Call Plan** | Menyusun jadwal kunjungan dokter |
+| Call Actual | **Pelaksanaan Kunjungan** | **Call Actual** | Memulai, mengakhiri, dan mencatat hasil kunjungan |
+
+**Konsistensi label aksi:**
+
+| Tindakan domain | Teks tombol/menu UI |
+|---|---|
+| Save Draft Call List | Simpan Draft |
+| Submit / Resubmit Call List | Ajukan Target / Ajukan Ulang |
+| Approve / Reject | Setujui / Tolak |
+| Create Call Plan | Buat Jadwal |
+| Start Visit / Check-in (**P1 Session saja**) | Mulai Kunjungan |
+| Check-out (**P1 Session saja**) | Akhiri Kunjungan |
+| Open Direct/Manual Actual form (**P0**) | **Isi Laporan Kunjungan** |
+| Manual time inputs (**P0**) | **Waktu Mulai** dan **Waktu Selesai** |
+| Finalize Call Actual (**P0/P1**) | **Simpan Laporan** |
+| Without Plan entry | Kunjungan di Luar Rencana |
+| Resume Session (P1) | Lanjutkan Kunjungan |
+| Manual Actual | Catat Kunjungan Manual |
+
+**Konsistensi status:**
+
+| State/event internal | Label UI |
+|---|---|
+| `draft` | Draft |
+| `pending_approval` | Menunggu Persetujuan |
+| `approved` | Disetujui |
+| `draft` dengan histori rejection dan belum submit ulang | Perlu Revisi (tampilkan alasan penolakan terbaru) |
+| `scheduled` | Terjadwal |
+| `in_progress` | Sedang Berlangsung |
+| `completed` | Selesai |
+| `cancelled` | Dibatalkan |
+
+**Aturan tampilan:**
+
+- **Navigasi desktop:** pakai nama Indonesia lengkap (Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan); subtitle di menu tidak wajib.
+- **Navigasi mobile sempit:** boleh ringkas menjadi Target, Jadwal, Kunjungan bila ruang terbatas; sediakan accessible label / tooltip dengan nama lengkap. Jangan mengganti nama halaman.
+- **Heading masing-masing halaman:** tampilkan nama Indonesia lengkap dengan subtitle kecil terminologi PDF (Call List Bulanan, Call Plan, Call Actual). Di mobile, subtitle tetap tersedia pada heading halaman, **tidak perlu pada setiap item navigasi**.
+- Gunakan istilah aksi, form, alert, empty state, dan notifikasi secara konsisten. Status teknis tetap disimpan dengan nilai aslinya.
+- Jangan tampilkan nama kolom (`plan_id`, `visit_session_id`, `mr_id`) atau kode error mentah kepada MR; backend/API dan dokumentasi teknis tetap menggunakan nama asli.
+- **P0 (tanpa Session persisten):** CTA dari Jadwal Hari Ini adalah **Isi Laporan Kunjungan**. MR memasukkan **Waktu Mulai** dan **Waktu Selesai**, foto, TTD, produk, lalu menekan **Simpan Laporan**. Tidak ada tombol Mulai/Akhiri Kunjungan yang berpura-pura merekam timestamp ke server; formulir In Progress adalah **state lokal UI**, bukan status Session database.
+- **P1 (dengan Session persisten):** CTA **Mulai Kunjungan** benar-benar melakukan Check-in server; **Akhiri Kunjungan** benar-benar menyimpan Check-out server; **Simpan Laporan** membuat Actual final secara terpisah. Check-out saja **belum** membuat Call Actual final atau menandai Plan Completed.
+- **Call List derived status:** jika status aktif `approved`, tampilkan **Disetujui**; jika `pending_approval`, tampilkan **Menunggu Persetujuan** meskipun ada rejection lama; jika `draft`, tampilkan **Perlu Revisi** hanya bila pernah direject dan belum disubmit ulang, selain itu **Draft**. Alasan diambil dari keputusan penolakan terbaru yang relevan. Jangan menampilkan Perlu Revisi berdasarkan histori lama saat sudah pending/approved.
+- Klasifikasi Planned/Unplanned/Non Target tetap ditentukan sistem, tidak perlu menjadi pilihan kategori untuk MR.
+- Penamaan modul ini adalah **keputusan UX**, bukan perubahan requirement PDF atau API contract.
 
 ### Call List
 Pilih bulan → pilih dokter → Draft → Submit → direct manager Approve/Reject → jika rejected, revisi dan resubmit.
@@ -77,9 +130,9 @@ Pilih Approved List → dokter yang termasuk List → tanggal/jam → simpan. Pe
 ### Call Actual: satu halaman, dua opsi
 
 1. Tampilkan **Kunjungan Sedang Berlangsung** jika ada (P1).
-2. Tampilkan **Jadwal Hari Ini** dengan tombol utama **Mulai Kunjungan**.
+2. Tampilkan **Jadwal Hari Ini** dengan tombol **Isi Laporan Kunjungan** untuk P0, atau **Mulai Kunjungan** untuk P1 saat Check-in server benar-benar diimplementasikan.
 3. Tampilkan opsi sekunder **Kunjungan di Luar Rencana**; pilih dokter MCL, sistem merekomendasikan Plan jika relevan, dan minta alasan melalui UI.
-4. Jalankan alur **Mulai → Check-in → Foto + TTD + Produk → Check-out → Selesaikan**.
+4. **P0:** Isi Laporan Kunjungan → Waktu Mulai/Selesai manual → Foto + TTD + Produk → Simpan Laporan. **P1:** Mulai (server Check-in) → Foto + TTD + Produk → Akhiri (server Check-out) → Simpan Laporan.
 5. Tampilkan **Riwayat Selesai**.
 
 Sistem menentukan Planned/Unplanned/Non Target; MR tidak memilih nama klasifikasi. Field ID dan istilah `visit_session_id` tidak tampak kepada pengguna. **P0:** In Progress → Completed dapat berupa state form lokal dengan input waktu; **P1:** Session persisten memakai timestamp server dan dapat dilanjutkan.
@@ -118,7 +171,9 @@ Sistem menentukan Planned/Unplanned/Non Target; MR tidak memilih nama klasifikas
 4. Actual tanpa foto → error.
 5. RSM/MM mencoba approve List milik MR → ditolak.
 6. Direct API dengan `plan_id=null`, dokter MCL, bukti lengkap → diterima.
-7. Frontend 3 halaman terintegrasi dengan API, loading/error dan responsif.
+7. Frontend 3 halaman terintegrasi dengan API, loading/error dan responsif; label navigasi Indonesia dan subtitle terminologi PDF pada judul masing-masing halaman. P0 memakai waktu manual dan tidak menampilkan aksi Check-in/Check-out server palsu.
 8. Bukti tes manual berupa screenshot/screen recording dan hasil expected-vs-actual.
+
+9. Label `Perlu Revisi` hanya muncul untuk Draft yang telah direject dan belum disubmit ulang; setelah resubmit status Menunggu Persetujuan, setelah approval Disetujui.
 
 **Catatan:** Hasil uji di atas adalah skenario rencana, bukan klaim PASS. `DESIGN.md` menjadi spesifikasi teknis induk; `TEST_PLAN.md` menjadi sumber matriks uji; README aplikasi baru dapat dinyatakan final setelah implementasi.

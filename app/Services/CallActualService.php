@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\VisitSession;
 use Carbon\Carbon;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -19,6 +20,10 @@ class CallActualService
 {
     public function recordDirect(User $mr, array $data): CallActual
     {
+        if ($mr->role !== 'mr') {
+            throw new AccessDeniedHttpException('Hanya MR yang dapat mencatat Call Actual.');
+        }
+
         $this->ensureRequiredEvidence($data);
 
         $visitDate = Carbon::createFromFormat('Y-m-d', $data['visit_date'])->toDateString();
@@ -29,7 +34,7 @@ class CallActualService
             throw new HttpException(422, 'Check-out harus setelah check-in.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
         }
 
-        if (!app()->environment('testing') && !config('app.allow_future_visit_dates', true)) {
+        if (! app()->environment('testing') && ! config('app.allow_future_visit_dates', false)) {
             if ($checkIn->isFuture() || $checkOut->isFuture()) {
                 throw new HttpException(422, 'Waktu kunjungan tidak boleh di masa depan.', null, ['X-Error-Code' => 'VISIT_TIME_IN_FUTURE']);
             }
@@ -42,13 +47,32 @@ class CallActualService
             $doctorId = (int) $data['doctor_id'];
             MasterCustomer::whereKey($doctorId)->lockForUpdate()->firstOrFail();
 
-            $this->ensureNoActiveSession($doctorId, $visitDate);
+            $sessionId = ! empty($data['visit_session_id']) ? (int) $data['visit_session_id'] : null;
+            $session = null;
+
+            if ($sessionId) {
+                $session = VisitSession::whereKey($sessionId)->lockForUpdate()->first();
+                if (! $session || $session->mr_id !== $mr->id) {
+                    throw new AccessDeniedHttpException('Anda tidak memiliki akses ke sesi kunjungan ini.');
+                }
+                if ($session->status !== 'in_progress') {
+                    throw new HttpException(422, 'Sesi kunjungan tidak dalam status in_progress.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
+                }
+                if ($session->doctor_id !== $doctorId) {
+                    throw new HttpException(422, 'Dokter payload tidak sesuai dengan sesi kunjungan.', null, ['X-Error-Code' => 'DOCTOR_PLAN_MISMATCH']);
+                }
+                if ($session->plan_id && empty($data['plan_id'])) {
+                    $data['plan_id'] = $session->plan_id;
+                }
+            }
+
+            $this->ensureNoActiveSession($doctorId, $visitDate, $sessionId);
             $this->ensureNoExistingActual($mr, $doctorId, $visitDate);
 
             $plan = null;
             $visitType = 'non_target';
 
-            if (!empty($data['plan_id'])) {
+            if (! empty($data['plan_id'])) {
                 $plan = $this->validatePlannedActual($mr, (int) $data['plan_id'], $doctorId, $visitDate, $data['deviation_reason'] ?? null);
                 $visitType = 'planned';
             } else {
@@ -58,11 +82,11 @@ class CallActualService
             $actual = CallActual::create([
                 'mr_id' => $mr->id,
                 'plan_id' => $plan?->id,
-                'visit_session_id' => null,
+                'visit_session_id' => $session?->id,
                 'doctor_id' => $doctorId,
                 'visit_date' => $visitDate,
-                'check_in_at' => $checkIn,
-                'check_out_at' => $checkOut,
+                'check_in_at' => $session?->check_in_at ?? $checkIn,
+                'check_out_at' => $session?->check_out_at ?? $checkOut,
                 'visit_type' => $visitType,
                 'photo_url' => trim($data['photo_url']),
                 'signature_url' => trim($data['signature_url']),
@@ -71,6 +95,14 @@ class CallActualService
             ]);
 
             $actual->products()->sync($productIds->all());
+
+            if ($session) {
+                $session->update([
+                    'status' => 'completed',
+                    'completed_at' => Carbon::now(),
+                    'check_out_at' => $session->check_out_at ?? $checkOut,
+                ]);
+            }
 
             if ($plan) {
                 $plan->update(['status' => 'completed']);
@@ -108,7 +140,7 @@ class CallActualService
             throw new HttpException(422, 'Tanda tangan dokter wajib diisi.', null, ['X-Error-Code' => 'SIGNATURE_REQUIRED']);
         }
 
-        if (empty($data['products']) || !is_array($data['products'])) {
+        if (empty($data['products']) || ! is_array($data['products'])) {
             throw new HttpException(422, 'Minimal satu produk detailing wajib dipilih.', null, ['X-Error-Code' => 'PRODUCT_REQUIRED']);
         }
     }
@@ -132,14 +164,17 @@ class CallActualService
         }
     }
 
-    private function ensureNoActiveSession(int $doctorId, string $visitDate): void
+    private function ensureNoActiveSession(int $doctorId, string $visitDate, ?int $allowedSessionId = null): void
     {
-        $hasActiveSession = VisitSession::where('doctor_id', $doctorId)
+        $query = VisitSession::where('doctor_id', $doctorId)
             ->where('visit_date', $visitDate)
-            ->where('status', 'in_progress')
-            ->exists();
+            ->where('status', 'in_progress');
 
-        if ($hasActiveSession) {
+        if ($allowedSessionId) {
+            $query->whereKeyNot($allowedSessionId);
+        }
+
+        if ($query->exists()) {
             throw new HttpException(409, 'Masih ada sesi kunjungan aktif untuk dokter dan tanggal ini.', null, ['X-Error-Code' => 'ACTIVE_SESSION_CONFLICT']);
         }
     }
@@ -150,7 +185,7 @@ class CallActualService
             ->where('visit_date', $visitDate)
             ->first();
 
-        if (!$existing) {
+        if (! $existing) {
             return;
         }
 
@@ -172,7 +207,7 @@ class CallActualService
             'data' => $detailData,
         ], 409);
 
-        throw new \Illuminate\Http\Exceptions\HttpResponseException($response);
+        throw new HttpResponseException($response);
     }
 
     private function validatePlannedActual(User $mr, int $planId, int $doctorId, string $visitDate, ?string $deviationReason): CallPlan
@@ -194,7 +229,7 @@ class CallActualService
             throw new HttpException(409, 'Call Plan tidak dalam status scheduled.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
         }
 
-        if (!$plan->callList || $plan->callList->status !== 'approved') {
+        if (! $plan->callList || $plan->callList->status !== 'approved') {
             throw new HttpException(422, 'Call Plan harus berasal dari Call List yang telah disetujui.', null, ['X-Error-Code' => 'CALL_LIST_NOT_APPROVED']);
         }
 

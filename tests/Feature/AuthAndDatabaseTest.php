@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Role;
+use App\Models\CallList;
 use App\Models\MasterCustomer;
 use App\Models\Product;
+use App\Models\Role;
+use App\Models\User;
+use Tests\TestCase;
 
 class AuthAndDatabaseTest extends TestCase
 {
@@ -150,7 +151,7 @@ class AuthAndDatabaseTest extends TestCase
         $mr = User::where('email', 'mr@mersi.com')->first();
         $this->assertNotNull($mr);
 
-        $approvedList = \App\Models\CallList::where('owner_id', $mr->id)
+        $approvedList = CallList::where('owner_id', $mr->id)
             ->where('status', 'approved')
             ->first();
 

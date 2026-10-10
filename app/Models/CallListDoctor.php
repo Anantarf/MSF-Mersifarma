@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CallListDoctor extends Model
 {
     public $timestamps = false;
+
     protected $table = 'call_list_doctors';
 
     protected $fillable = [

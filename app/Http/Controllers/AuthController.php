@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -36,7 +36,7 @@ class AuthController extends Controller
         ]);
 
         $resolvedEmail = $loginInput;
-        if (!str_contains($loginInput, '@')) {
+        if (! str_contains($loginInput, '@')) {
             $user = User::where('username', $loginInput)
                 ->orWhere('email', $loginInput.'@mersi.com')
                 ->orWhere('name', 'LIKE', $loginInput.'%')
@@ -139,7 +139,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',

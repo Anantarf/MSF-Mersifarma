@@ -15,6 +15,7 @@ class StoreCallActualRequest extends FormRequest
     {
         return [
             'plan_id' => ['nullable', 'integer', 'exists:call_plans,id'],
+            'visit_session_id' => ['nullable', 'integer', 'exists:visit_sessions,id'],
             'doctor_id' => ['required', 'integer', 'exists:master_customers,id'],
             'visit_date' => ['required', 'date_format:Y-m-d'],
             'check_in' => ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],

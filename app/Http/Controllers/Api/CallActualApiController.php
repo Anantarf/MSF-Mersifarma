@@ -12,9 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CallActualApiController extends Controller
 {
-    public function __construct(private readonly CallActualService $callActualService)
-    {
-    }
+    public function __construct(private readonly CallActualService $callActualService) {}
 
     public function store(StoreCallActualRequest $request): JsonResponse
     {

@@ -7,7 +7,7 @@
     <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Realisasi Kunjungan (Call Actual)</h1>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Pelaksanaan Kunjungan <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call Actual)</small></h1>
             <p style="color: var(--text-muted); font-size: 0.875rem;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
         </div>
         <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 600;" onclick="openActualModal(null)">
@@ -16,6 +16,37 @@
     </div>
 
     <div id="actualStatusAlert" style="display: none;" class="alert"></div>
+
+    <!-- Section 0: Kunjungan Sedang Berlangsung (Active Session P1) -->
+    <section id="activeSessionSection" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 1.25rem 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                    Kunjungan Sedang Berlangsung (Server Check-in)
+                </div>
+                <h3 id="activeSessionDoctorName" style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin: 0 0 0.25rem 0;">-</h3>
+                <p id="activeSessionDoctorDetail" style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">-</p>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #166534; font-weight: 600;">
+                    Waktu Check-in: <span id="activeSessionCheckInTime">-</span>
+                    <span id="activeSessionCheckOutWrap" style="display: none; margin-left: 0.75rem; color: #0284c7;">
+                        | Check-out: <span id="activeSessionCheckOutTime">-</span>
+                    </span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="btnSessionCheckout" class="btn btn-primary" onclick="handleSessionCheckout()">
+                    Akhiri Kunjungan (Check-out)
+                </button>
+                <button type="button" id="btnSessionContinue" class="btn btn-primary" style="display: none;" onclick="openActualModalFromSession()">
+                    Lanjutkan Pengisian Laporan
+                </button>
+                <button type="button" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5;" onclick="openCancelSessionModal()">
+                    Batalkan Kunjungan
+                </button>
+            </div>
+        </div>
+    </section>
 
     <!-- Section 1: Today Plans (Planned First UX) -->
     <section style="display: flex; flex-direction: column; gap: 0.85rem;">
@@ -91,6 +122,7 @@
 
         <form id="actualForm" onsubmit="submitActual(event)">
             <input type="hidden" id="actualPlanId">
+            <input type="hidden" id="actualSessionId">
 
             <!-- 1. Pilihan Dokter -->
             <div style="margin-bottom: 1rem;">
@@ -177,7 +209,42 @@
 
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
                 <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
-                <button type="submit" id="actualSubmitButton" class="btn btn-primary">Selesaikan Kunjungan</button>
+                <button type="submit" id="actualSubmitButton" class="btn btn-primary">Simpan Laporan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Batalkan Sesi Kunjungan (P1 Feature) -->
+<div id="cancelSessionModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--danger); margin: 0;">Batalkan Sesi Kunjungan</h3>
+            <button type="button" class="close-btn" onclick="closeCancelSessionModal()">&times;</button>
+        </div>
+
+        <div id="cancelSessionModalError" style="display: none;" class="alert alert-danger"></div>
+
+        <p style="font-size: 0.875rem; color: var(--secondary); margin-bottom: 1rem; line-height: 1.5;">
+            Apakah Anda yakin ingin membatalkan sesi kunjungan ke <strong id="cancelSessionDoctorName">-</strong>? Jadwal terkait akan tetap tersimpan agar dapat dikunjungi kembali nanti.
+        </p>
+
+        <form id="cancelSessionForm" onsubmit="handleCancelSessionSubmit(event)">
+            <input type="hidden" id="cancelSessionId">
+            <div style="margin-bottom: 1.25rem;">
+                <label for="cancelSessionReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                    Alasan Pembatalan Kunjungan (Wajib diisi):
+                </label>
+                <textarea id="cancelSessionReasonInput" required minlength="3" rows="3"
+                          style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;"
+                          placeholder="Contoh: Dokter dipanggil operasi darurat sebelum detailing obat"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeCancelSessionModal()">Kembali</button>
+                <button type="submit" id="btnConfirmCancelSession" class="btn btn-danger" style="background: var(--danger); color: white; border: none; font-weight: 600;">
+                    Konfirmasi Batalkan Kunjungan
+                </button>
             </div>
         </form>
     </div>
@@ -189,6 +256,7 @@
     let actuals = [];
     let doctors = [];
     let products = [];
+    let activeSession = null;
     let isDrawing = false;
     let sigCanvas, sigCtx;
 
@@ -205,19 +273,23 @@
     document.addEventListener('DOMContentLoaded', async () => {
         initSignaturePad();
         await Promise.all([loadDoctors(), loadProducts()]);
+        await loadActiveSession();
         await loadTodayPlans();
         loadActuals();
 
         const urlParams = new URLSearchParams(window.location.search);
         const autoPlanId = urlParams.get('plan_id');
         const autoDocId = urlParams.get('doctor_id');
-        if (autoPlanId) {
+        if (autoPlanId && !activeSession) {
             openActualModal(parseInt(autoPlanId), autoDocId ? parseInt(autoDocId) : null);
         }
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeActualModal();
+        if (e.key === 'Escape') {
+            closeActualModal();
+            closeCancelSessionModal();
+        }
     });
 
     function initSignaturePad() {
@@ -428,26 +500,55 @@
         }
         empty.style.display = 'none';
         if (tableWrap) tableWrap.style.display = 'block';
-        tbody.innerHTML = todayPlans.map((plan) => `
-            <tr>
-                <td>
-                    <strong style="color: var(--primary); font-size: 0.95rem;">${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Hari Ini</div>
-                </td>
-                <td>
-                    <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name)}</strong>
-                </td>
-                <td>
-                    <div>${escapeHtml(plan.doctor_specialization || 'Umum')}</div>
-                    <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
-                </td>
-                <td style="text-align: right;">
-                    <button type="button" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="openActualModal(${plan.id})">
+        tbody.innerHTML = todayPlans.map((plan) => {
+            const isThisPlanActive = activeSession && activeSession.plan_id === plan.id;
+            const hasOtherSession = activeSession && !isThisPlanActive;
+
+            let actionHtml = '';
+            if (isThisPlanActive) {
+                actionHtml = `
+                    <span class="status-badge status-scheduled" style="padding: 0.35rem 0.65rem;">
+                        ● Sedang Dikunjungi
+                    </span>
+                `;
+            } else if (hasOtherSession) {
+                actionHtml = `
+                    <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; opacity: 0.6; cursor: not-allowed;" disabled title="Selesaikan sesi kunjungan aktif terlebih dahulu">
                         Mulai Kunjungan
                     </button>
-                </td>
-            </tr>
-        `).join('');
+                `;
+            } else {
+                actionHtml = `
+                    <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="startVisitSession(${plan.id}, ${plan.doctor_id})">
+                            Mulai Kunjungan
+                        </button>
+                        <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.6rem; color: var(--text-muted);" onclick="openActualModal(${plan.id})" title="Atau isi laporan langsung secara manual">
+                            Manual
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <tr>
+                    <td>
+                        <strong style="color: var(--primary); font-size: 0.95rem;">${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Hari Ini</div>
+                    </td>
+                    <td>
+                        <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name)}</strong>
+                    </td>
+                    <td>
+                        <div>${escapeHtml(plan.doctor_specialization || 'Umum')}</div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
+                    </td>
+                    <td style="text-align: right;">
+                        ${actionHtml}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     function renderActuals() {
@@ -564,14 +665,16 @@
         }
 
         button.disabled = true;
-        button.innerText = 'Menyimpan Kunjungan...';
+        button.innerText = 'Menyimpan Laporan...';
 
         try {
             const planId = document.getElementById('actualPlanId').value;
+            const sessionId = document.getElementById('actualSessionId').value;
             const res = await window.apiFetch('/api/call-actuals', {
                 method: 'POST',
                 body: JSON.stringify({
                     plan_id: planId ? parseInt(planId) : null,
+                    visit_session_id: sessionId ? parseInt(sessionId) : null,
                     doctor_id: parseInt(document.getElementById('actualDoctorSelect').value),
                     visit_date: document.getElementById('actualDateInput').value,
                     check_in: document.getElementById('checkInInput').value,
@@ -585,7 +688,8 @@
             const result = await res.json();
             if (result.success) {
                 closeActualModal();
-                showActualAlert('Kunjungan dokter berhasil diselesaikan dan dicatat.');
+                showActualAlert('Laporan kunjungan dokter berhasil disimpan dan dicatat.');
+                await loadActiveSession();
                 loadTodayPlans();
                 loadActuals();
             } else {
@@ -597,7 +701,181 @@
             errorEl.style.display = 'block';
         } finally {
             button.disabled = false;
-            button.innerText = 'Selesaikan Kunjungan';
+            button.innerText = 'Simpan Laporan';
+        }
+    }
+
+    async function loadActiveSession() {
+        try {
+            const res = await window.apiFetch('/api/visit-sessions/active');
+            const result = await res.json();
+            activeSession = result.success ? result.data : null;
+            renderActiveSession();
+        } catch (err) {
+            activeSession = null;
+            renderActiveSession();
+        }
+    }
+
+    function renderActiveSession() {
+        const section = document.getElementById('activeSessionSection');
+        if (!activeSession) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        document.getElementById('activeSessionDoctorName').innerText = activeSession.doctor_name || 'Dokter Sasaran';
+        document.getElementById('activeSessionDoctorDetail').innerText = `${activeSession.doctor_specialization || 'Spesialis Umum'} - ${activeSession.doctor_address || '-'}`;
+
+        const checkInDate = new Date(activeSession.check_in_at);
+        document.getElementById('activeSessionCheckInTime').innerText = checkInDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+        const checkoutWrap = document.getElementById('activeSessionCheckOutWrap');
+        const btnCheckout = document.getElementById('btnSessionCheckout');
+        const btnContinue = document.getElementById('btnSessionContinue');
+
+        if (activeSession.check_out_at) {
+            const checkOutDate = new Date(activeSession.check_out_at);
+            document.getElementById('activeSessionCheckOutTime').innerText = checkOutDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+            checkoutWrap.style.display = 'inline';
+            btnCheckout.style.display = 'none';
+            btnContinue.style.display = 'inline-block';
+        } else {
+            checkoutWrap.style.display = 'none';
+            btnCheckout.style.display = 'inline-block';
+            btnContinue.style.display = 'none';
+        }
+    }
+
+    async function startVisitSession(planId, doctorId) {
+        try {
+            const res = await window.apiFetch('/api/visit-sessions/start', {
+                method: 'POST',
+                body: JSON.stringify({
+                    plan_id: planId ? parseInt(planId) : null,
+                    doctor_id: doctorId ? parseInt(doctorId) : null
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showActualAlert('Sesi kunjungan berhasil dimulai. Check-in tercatat otomatis oleh server.');
+                await loadActiveSession();
+                renderTodayPlans();
+            } else {
+                showActualAlert(result.message || 'Gagal memulai sesi kunjungan.', 'danger');
+            }
+        } catch (err) {
+            showActualAlert('Terjadi kesalahan jaringan saat memulai kunjungan.', 'danger');
+        }
+    }
+
+    async function handleSessionCheckout() {
+        if (!activeSession) return;
+        const btn = document.getElementById('btnSessionCheckout');
+        btn.disabled = true;
+        btn.innerText = 'Mencatat Check-out...';
+
+        try {
+            const res = await window.apiFetch(`/api/visit-sessions/${activeSession.id}/checkout`, {
+                method: 'POST'
+            });
+            const result = await res.json();
+            btn.disabled = false;
+            btn.innerText = 'Akhiri Kunjungan (Check-out)';
+
+            if (result.success) {
+                showActualAlert('Waktu check-out berhasil dicatat server. Silakan lengkapi bukti foto dan tanda tangan.');
+                await loadActiveSession();
+                openActualModalFromSession();
+            } else {
+                showActualAlert(result.message || 'Gagal mencatat check-out.', 'danger');
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerText = 'Akhiri Kunjungan (Check-out)';
+            showActualAlert('Terjadi kesalahan jaringan saat check-out.', 'danger');
+        }
+    }
+
+    function openActualModalFromSession() {
+        if (!activeSession) return;
+
+        openActualModal(activeSession.plan_id, activeSession.doctor_id);
+        document.getElementById('actualSessionId').value = activeSession.id;
+        document.getElementById('actualModalTitle').innerText = 'Lengkapi Laporan Kunjungan Sesi Ini';
+
+        if (activeSession.check_in_at) {
+            const cin = new Date(activeSession.check_in_at);
+            const hh = String(cin.getHours()).padStart(2, '0');
+            const mm = String(cin.getMinutes()).padStart(2, '0');
+            document.getElementById('checkInInput').value = `${hh}:${mm}`;
+        }
+
+        if (activeSession.check_out_at) {
+            const cout = new Date(activeSession.check_out_at);
+            const hh = String(cout.getHours()).padStart(2, '0');
+            const mm = String(cout.getMinutes()).padStart(2, '0');
+            document.getElementById('checkOutInput').value = `${hh}:${mm}`;
+        }
+    }
+
+    function openCancelSessionModal() {
+        if (!activeSession) return;
+        document.getElementById('cancelSessionId').value = activeSession.id;
+        document.getElementById('cancelSessionDoctorName').innerText = activeSession.doctor_name || 'Dokter Sasaran';
+        document.getElementById('cancelSessionReasonInput').value = '';
+        const errEl = document.getElementById('cancelSessionModalError');
+        errEl.style.display = 'none';
+        errEl.innerText = '';
+        document.getElementById('cancelSessionModal').style.display = 'flex';
+    }
+
+    function closeCancelSessionModal() {
+        document.getElementById('cancelSessionModal').style.display = 'none';
+    }
+
+    async function handleCancelSessionSubmit(e) {
+        e.preventDefault();
+        const sessionId = document.getElementById('cancelSessionId').value;
+        const reason = document.getElementById('cancelSessionReasonInput').value.trim();
+        const errEl = document.getElementById('cancelSessionModalError');
+        const btn = document.getElementById('btnConfirmCancelSession');
+
+        errEl.style.display = 'none';
+
+        if (reason.length < 3) {
+            errEl.innerText = 'Alasan pembatalan kunjungan wajib diisi minimal 3 karakter.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Membatalkan...';
+
+        try {
+            const res = await window.apiFetch(`/api/visit-sessions/${sessionId}/cancel`, {
+                method: 'POST',
+                body: JSON.stringify({ reason: reason })
+            });
+            const result = await res.json();
+            btn.disabled = false;
+            btn.innerText = 'Konfirmasi Batalkan Kunjungan';
+
+            if (result.success) {
+                closeCancelSessionModal();
+                showActualAlert('Sesi kunjungan berhasil dibatalkan. Jadwal terkait tetap tersedia untuk dikunjungi kembali.');
+                await loadActiveSession();
+                renderTodayPlans();
+            } else {
+                errEl.innerText = result.message || 'Gagal membatalkan sesi kunjungan.';
+                errEl.style.display = 'block';
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerText = 'Konfirmasi Batalkan Kunjungan';
+            errEl.innerText = 'Terjadi kesalahan jaringan atau server saat membatalkan sesi.';
+            errEl.style.display = 'block';
         }
     }
 </script>

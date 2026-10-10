@@ -8,8 +8,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class CallListService
 {
@@ -73,6 +73,7 @@ class CallListService
 
         return DB::transaction(function () use ($callList, $doctorIds) {
             $callList->doctors()->sync($doctorIds);
+
             return $callList->fresh(['doctors', 'approvalLogs']);
         });
     }
@@ -96,7 +97,7 @@ class CallListService
             ]);
         }
 
-        if (!$user->manager_id) {
+        if (! $user->manager_id) {
             throw ValidationException::withMessages([
                 'manager_id' => ['Pengguna tidak memiliki atasan langsung (direct manager) untuk persetujuan.'],
             ]);

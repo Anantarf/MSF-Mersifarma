@@ -7,7 +7,7 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Target Dokter (Call List)</h1>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Target Dokter <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call List)</small></h1>
             <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan target sasaran dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
@@ -398,7 +398,7 @@
         tbody.innerHTML = myCallLists.map(cl => {
             let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
             let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
-            if (cl.is_rejected_revision) {
+            if (cl.status === 'draft' && cl.is_rejected_revision) {
                 statusClass = 'status-rejected';
                 statusLabel = 'Perlu Revisi (Ditolak)';
             }
@@ -412,7 +412,7 @@
                     </td>
                     <td>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-                        ${cl.is_rejected_revision && cl.latest_rejection_reason ? `
+                        ${cl.status === 'draft' && cl.is_rejected_revision && cl.latest_rejection_reason ? `
                             <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
                                 Catatan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
                             </div>

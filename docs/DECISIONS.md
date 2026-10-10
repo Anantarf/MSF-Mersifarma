@@ -1,6 +1,6 @@
 # Architecture Decision Records — MSF
 
-> **Design baseline:** v1.5. **Status:** keputusan desain diterima, belum diuji pada runtime.  
+> **Design baseline:** v1.5 + UX label v1.6 + operational clarity v1.7. **Status:** keputusan desain diterima, belum diuji pada runtime.  
 > **Perubahan setelah baseline:** tambahkan ADR baru dengan tanggal, alasan, trade-off, dampak API/schema/testing. Jangan diam-diam mengubah aturan PDF.
 
 | ADR | Decision | Rationale | Type |
@@ -30,6 +30,9 @@
 | ADR-023 | DB doctor row lock + unique global constraints | Menjaga cross-table concurrency | Design |
 | ADR-024 | Tidak ada GPS, verified media, auto-escalation, offline dalam P0 | Fokus deliverable / jangan overengineering | Scope |
 | ADR-025 | Timestamps future ditolak dan Direct Actual hari sama | Kesederhanaan integritas waktu | Assumption |
+| ADR-026 | Label utama UI: **Target Dokter**, **Jadwal Kunjungan**, **Pelaksanaan Kunjungan**; subtitle PDF wajib pada **heading halaman**, bukan semua item menu; menu mobile boleh diringkas | Mempermudah MR dan menjaga keterlacakan PDF tanpa mengubah API/domain | UX |
+| ADR-027 | **P0** memakai **Isi Laporan Kunjungan** + input waktu manual + **Simpan Laporan**; **P1** baru memakai Mulai/Akhiri Kunjungan dengan timestamp server | Cegah status Check-in/Check-out palsu | UX/Priority |
+| ADR-028 | Label **Perlu Revisi** hanya ketika current status Draft setelah reject dan belum resubmit; pending/approved mengalahkan histori reject lama | Hindari tampilan status usang | UX/State |
 
 ## Dokumentasi yang wajib menjelaskan asumsi
 
@@ -43,6 +46,8 @@
 8. Manual historic time tidak membuktikan attendance; GPS/time verification di luar scope.
 9. Session dan recovery adalah P1, bukan dependency P0.
 10. 409 duplicate after retry bukan bukti gagal simpan; reconcile via GET own Actual.
+11. UI heading berbahasa Indonesia dengan subtitle terminologi PDF; mobile navigation boleh ringkas. P0 menginput waktu manual; hanya P1 memakai tombol Check-in/Check-out server, dan Check-out tetap berbeda dari Complete Actual (Simpan Laporan).
+12. Prioritas label status aktif Call List harus mengabaikan histori reject usang setelah resubmit/approval.
 
 ## Keterbatasan yang diterima
 
@@ -55,7 +60,7 @@
 ## Format ADR baru
 
 ```md
-### ADR-0xx — [Decision title]
+### ADR-026 — [Decision title]
 - Date:
 - Status: Proposed / Accepted / Rejected
 - Problem:
@@ -65,23 +70,3 @@
 - Risks/trade-offs:
 - Tests to update:
 ```
-
-### ADR-026 — MariaDB 10.4 Collation & Stored Generated Columns Compatibility
-- Date: 2026-10-10
-- Status: Accepted
-- Problem: Lingkungan database lokal menggunakan MariaDB 10.4.32 (XAMPP) yang tidak mengenali collation bawaan MySQL 8.0 `utf8mb4_0900_ai_ci`.
-- Decision: Konfigurasi database di `.env` dan `.env.example` menggunakan `DB_COLLATION=utf8mb4_unicode_ci`. Fitur `STORED GENERATED` untuk kolom unik `active_doctor_id` dan composite foreign keys diuji langsung pada MariaDB 10.4 InnoDB dan terbukti bekerja 100%.
-- Source of requirement: Engineering necessity (local environment compatibility).
-- API/DB/UX impact: Tidak mengubah struktur tabel atau kontrak API, menjaga portabilitas skema database.
-- Risks/trade-offs: Perintah CLI Laravel `db:show` memerlukan `performance_schema.session_status` yang tidak ada di MariaDB 10.4, namun tidak mempengaruhi eksekusi aplikasi atau migrasi.
-- Tests to update: `AuthAndDatabaseTest`.
-
-### ADR-027 — API CSRF Token Helper Endpoint (`GET /api/csrf-token`)
-- Date: 2026-10-10
-- Status: Accepted
-- Problem: Endpoint API menggunakan session auth same-origin dengan proteksi CSRF. Pengujian via HTTP client eksternal (Postman, cURL, Thunder Client) memerlukan akses token CSRF yang mudah tanpa harus mem-parse form HTML login.
-- Decision: Menyediakan endpoint `GET /api/csrf-token` yang mengembalikan `{ "success": true, "data": { "csrf_token": "..." } }`.
-- Source of requirement: Engineering necessity / developer ergonomics.
-- API/DB/UX impact: Menambahkan satu helper endpoint non-destruktif di `routes/api.php`.
-- Risks/trade-offs: Tidak ada risiko keamanan karena token tetap terikat pada session cookie yang sama.
-- Tests to update: `test_api_csrf_token_endpoint_returns_token`.

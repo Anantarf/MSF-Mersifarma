@@ -1,7 +1,7 @@
 # DESIGN.md — Mobile Sales Force (MSF)
 
-> **Status:** Design baseline v1.5 · **Implementasi:** belum dimulai · **Bahasa:** Indonesia  
-> **Acuan:** studi kasus Software Engineer MSF, PRD v1.3 + amendment v1.4–v1.5, TDD v1.3 + amendment v1.4–v1.5, API Contract v1.0, Database Constraint Specification v1.0.  
+> **Status:** Design baseline v1.5 + UI label amendment v1.6 · **Implementasi:** belum dimulai · **Bahasa:** Indonesia  
+> **Acuan:** studi kasus Software Engineer MSF; baseline bisnis/teknis v1.5 dan penegasan label UI v1.6 pada PRD, TDD, dan AGENTS; API Contract v1.0; Database Constraint Specification v1.0.  
 > **Kegunaan dokumen:** spesifikasi teknis induk untuk implementasi, code review, testing, dan demo. `README.md` tetap digunakan untuk instruksi instalasi dan laporan hasil pengujian.
 
 ## 1. Ringkasan desain
@@ -163,7 +163,7 @@ stateDiagram-v2
     Approved --> [*]
 ```
 
-**Status aktif database:** `draft`, `pending_approval`, `approved`. Event `submitted`, `rejected`, `returned_to_draft`, `resubmitted` **tetap dicatat eksplisit**, karena alur PDF menyebutnya sebagai status/transisi. Approval log menyimpan `actor_id` pelaku dan `event_origin` agar transisi sistem tidak tampak seperti persetujuan manajer. Saat Reject, `current_status = draft` namun UI menampilkan **“Perlu Revisi — Ditolak”** beserta alasan. Setelah submit ulang, approver tetap sama. Approved tidak dapat diedit ataupun direject kembali pada MVP; ini mencegah Plan berlandaskan List yang kemudian dibatalkan.
+**Status aktif database:** `draft`, `pending_approval`, `approved`. Event `submitted`, `rejected`, `returned_to_draft`, `resubmitted` **tetap dicatat eksplisit**, karena alur PDF menyebutnya sebagai status/transisi. Approval log menyimpan `actor_id` pelaku dan `event_origin` agar transisi sistem tidak tampak seperti persetujuan manajer. Saat Reject, `current_status = draft` namun UI menampilkan **“Perlu Revisi — Ditolak”** beserta alasan terbaru. **Prioritas rendering: approved → Disetujui; pending_approval → Menunggu Persetujuan; draft yang pernah direject dan belum resubmit → Perlu Revisi; draft baru → Draft.** Histori reject lama tidak boleh menimpa state pending/approved setelah resubmit. Setelah submit ulang, approver tetap sama. Approved tidak dapat diedit ataupun direject kembali pada MVP; ini mencegah Plan berlandaskan List yang kemudian dibatalkan.
 
 **Penting:** representasi 3 status aktif + full transition log adalah **asumsi desain**, bukan representasi literal lima status persisten. Jelaskan di README dan buktikan history pada demo.
 
@@ -193,6 +193,18 @@ Direct Actual tanpa Session **tetap diperbolehkan**. Jika sebuah Session aktif d
 
 ## 6. Alur operasional UX — tiga halaman
 
+### 6.0 Nama menu untuk pengguna non-IT (penyempurnaan UX v1.7)
+
+| Nama modul di PDF / backend | Nama menu dan heading UI | Subtitle pada **heading halaman** |
+|---|---|---|
+| Call List | **Target Dokter** | Call List Bulanan |
+| Call Plan | **Jadwal Kunjungan** | Call Plan |
+| Call Actual | **Pelaksanaan Kunjungan** | Call Actual |
+
+Tiga halaman wajib **tetap sama secara fungsi**. Navigasi desktop menampilkan nama Indonesia lengkap; navigasi mobile sempit boleh memakai **Target / Jadwal / Kunjungan** dengan accessible label yang lengkap. **Heading ketiga halaman** selalu memakai nama Indonesia lengkap dengan subtitle istilah PDF. Subtitle tidak wajib di setiap item menu mobile. Semua model, route, service, state internal, dan tabel database tetap memakai terminologi PDF. Seluruh copy frontend mengikuti `PRD.md` §4.0.
+
+**P0 vs P1:** Pada **P0**, CTA **Isi Laporan Kunjungan** membuka form **Waktu Mulai/Waktu Selesai** manual, bukti foto, TTD, dan produk; **Simpan Laporan** memfinalisasi Actual. P0 tidak boleh menampilkan Check-in/Check-out server palsu. Pada **P1**, **Mulai Kunjungan** benar-benar menyimpan Check-in server dan **Akhiri Kunjungan** menyimpan Check-out server. **Simpan Laporan** tetap aksi final terpisah; Check-out tidak otomatis menandai Actual/Plan Completed.
+
 ### 6.1 Call List
 
 MR memilih bulan → multi-select dokter → Save Draft → Submit → DM menerima pengajuan → Approve atau Reject dengan alasan. Jika Reject, form Draft dapat direvisi dan di-Submit kembali. DM/RSM/MM menggunakan tab **“Pengajuan untuk Disetujui”** pada konteks Call List, bukan halaman keempat.
@@ -206,11 +218,11 @@ MR memilih Call List Approved → dokter anggota List → tanggal dan jam → Sa
 Urutan tampilan landing:
 
 1. **Kunjungan Sedang Berlangsung** → Lanjutkan Kunjungan (jika P1 Session aktif).
-2. **Jadwal Hari Ini** → kartu dokter + jam + tombol **Mulai Kunjungan**.
+2. **Jadwal Hari Ini** → kartu dokter + jam + tombol **Isi Laporan Kunjungan** untuk P0, atau **Mulai Kunjungan** jika fitur Session server P1 telah nyata diimplementasikan.
 3. **Kunjungan di Luar Rencana** → satu entry point sekunder; dokter dari MCL dan alasan; klasifikasi otomatis.
 4. **Riwayat Selesai** → Actual milik MR.
 
-Di dalam satu halaman/panel: **Mulai → Check-in → Bukti foto + TTD + produk → Check-out → Selesaikan**. Pada P0, In Progress → Completed dapat berupa state form di UI dan waktu diinput; untuk P1 waktu session tercatat server serta progress dapat di-Resume. User tidak harus melihat `plan_id`, `visit_session_id`, atau istilah internal lain.
+Di dalam satu halaman/panel: **P0:** Isi Laporan Kunjungan → Waktu Mulai/Selesai manual → Foto + TTD + Produk → Simpan Laporan. **P1:** Mulai Kunjungan (server Check-in) → Foto + TTD + Produk → Akhiri Kunjungan (server Check-out) → Simpan Laporan. Pada P0, In Progress → Completed hanya state form lokal; pada P1 Session persisten dapat di-Resume. User tidak harus melihat `plan_id`, `visit_session_id`, atau istilah internal lain.
 
 **Jika dokter ada dalam Plan sendiri:** UI menyarankan Planned (termasuk Schedule Deviation untuk tanggal bergeser); pilihan `plan_id=null` tetap legal sesuai PDF—warning dan alasan pada UI, bukan hard block seluruh API. **Jika Plan dokter MR lain ada:** dapat memberi warning; aturan hard block berlaku untuk Actual duplikat atau active Session, bukan semata keberadaan Plan MR lain.
 

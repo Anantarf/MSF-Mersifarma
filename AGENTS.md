@@ -1,7 +1,7 @@
 # AGENTS.md — MSF Engineering Instructions
 
 > **Project:** Mobile Sales Force (MSF) — Junior Software Engineer case study  
-> **Design baseline:** v1.5  
+> **Design baseline:** v1.5 core behavior + v1.6 terminology + v1.7 operational UX clarity  
 > **Role:** AI coding assistant acting as a disciplined, pragmatic Junior Software Engineer  
 > **Status at handoff:** Design documents exist. Do **not** assume the Laravel application, migrations, endpoints, pages, tests, or evidence have been implemented.
 
@@ -23,18 +23,18 @@ Act like a responsible Junior Software Engineer:
 
 Read these documents before implementation and revisit the relevant sections for each feature:
 
-1. `docs/DOCS_INDEX.md` — scope and document precedence.
-2. `docs/DESIGN.md` — architecture, system overview, and operational flow.
-3. `docs/PRD.md` — business rules, actors, and user experience.
-4. `docs/API_CONTRACT.md` — HTTP request/response contracts.
-5. `docs/DATABASE_SCHEMA.md` — entities, relations, keys, constraints, locking.
-6. `docs/TDD.md` — service responsibilities and state transitions.
-7. `docs/TEST_PLAN.md` — required test scenarios and acceptance criteria.
-8. `docs/IMPLEMENTATION_PLAN.md` — P0/P1 sequence and delivery gates.
-9. `docs/DECISIONS.md` — accepted assumptions, trade-offs, and limitations.
-10. `docs/README_REQUIREMENTS.md` — required final README and evidence.
+1. `DOCS_INDEX.md` — scope and document precedence.
+2. `DESIGN.md` — architecture, system overview, and operational flow.
+3. `PRD.md` — business rules, actors, and user experience.
+4. `API_CONTRACT.md` — HTTP request/response contracts.
+5. `DATABASE_SCHEMA.md` — entities, relations, keys, constraints, locking.
+6. `TDD.md` — service responsibilities and state transitions.
+7. `TEST_PLAN.md` — required test scenarios and acceptance criteria.
+8. `IMPLEMENTATION_PLAN.md` — P0/P1 sequence and delivery gates.
+9. `DECISIONS.md` — accepted assumptions, trade-offs, and limitations.
+10. `README_REQUIREMENTS.md` — required final README and evidence.
 
-**Priority when specifications disagree:** Mandatory rules of the original case-study PDF take precedence. Within the design package, use `docs/API_CONTRACT.md` for HTTP, `docs/DATABASE_SCHEMA.md` for persistence, `docs/PRD.md` for business/UX behavior, `docs/TDD.md` for implementation, and `docs/DESIGN.md` for the integrated overview. `docs/DECISIONS.md` records authorized assumptions. **Do not silently resolve a material conflict**: identify the conflicting passages, propose the smallest PDF-compatible solution, and request a decision when a business invariant or API requirement would change.
+**Priority when specifications disagree:** Mandatory rules of the original case-study PDF take precedence. Within the design package, use `API_CONTRACT.md` for HTTP, `DATABASE_SCHEMA.md` for persistence, `PRD.md` for business/UX behavior, `TDD.md` for implementation, and `DESIGN.md` for the integrated overview. `DECISIONS.md` records authorized assumptions. **Do not silently resolve a material conflict**: identify the conflicting passages, propose the smallest PDF-compatible solution, and request a decision when a business invariant or API requirement would change.
 
 The original PDF contains confidential-case-study instructions: do not commit the PDF, proprietary material, personal information, or secrets to a repository. Use synthetic demo data.
 
@@ -143,8 +143,28 @@ Prefer one well-named service per substantive domain workflow over many tiny ser
 
 ## 10. Frontend and operational UX quality
 
-- Deliver **three API-integrated, responsive pages**: Call List, Call Plan, Call Actual. Prefer reusable Blade components and simple JS over an unnecessary SPA.
-- On Call Actual, **show today's Plans first**; the primary action is **Mulai Kunjungan**. Show a secondary **Kunjungan di Luar Rencana** action. Backend, not MR, determines Unplanned/Non Target.
+### UI terminology contract — mandatory for generated Blade pages
+
+Use **friendly Indonesian titles**. Preserve the PDF term **as a subtitle in each page heading**, not necessarily in every navigation item, as specified in `PRD.md` §4.0:
+
+| Page heading / full navigation label | Subtitle at **page heading** | Internal domain term |
+|---|---|---|
+| **Target Dokter** | Call List Bulanan | Call List |
+| **Jadwal Kunjungan** | Call Plan | Call Plan |
+| **Pelaksanaan Kunjungan** | Call Actual | Call Actual |
+
+- **Desktop menu:** display full Indonesian names; PDF subtitles in the menu are optional. **Narrow mobile menu:** compact labels `Target`, `Jadwal`, `Kunjungan` are allowed when needed, but expose the full name via accessible text/tooltip. **Every page heading**, desktop or mobile, keeps the full Indonesian title and small PDF term subtitle.
+- Reuse centralized display mapping; keep form, alerts, empty states, and confirmation terminology consistent. Do not force full title/subtitle pairs into every mobile navigation item.
+- Do **not** rename `/api/call-lists`, `/api/call-plans`, `/api/call-actuals`, Eloquent models, controller classes, migrations, database tables, JSON keys, or business rules to translated UI labels.
+- Use operational actions: **Ajukan Target**, **Buat Jadwal**, **Mulai Kunjungan**, **Akhiri Kunjungan**, **Simpan Laporan**, **Kunjungan di Luar Rencana**. Use **Perlu Revisi**, **Menunggu Persetujuan**, **Terjadwal**, **Sedang Berlangsung**, **Selesai** for their corresponding statuses/events. See `PRD.md` for full mapping.
+- **P0 (no persistent Session):** use CTA **Isi Laporan Kunjungan**, inputs **Waktu Mulai** and **Waktu Selesai** (explicitly manually entered), and **Simpan Laporan** to POST Direct Call Actual. Do **not** render functional-looking `Mulai Kunjungan`/`Akhiri Kunjungan` buttons that only change local state while suggesting a server Check-in/Check-out was saved. P0 local In Progress is a form state, not a database Session.
+- **P1 (real persisted Session only):** `Mulai Kunjungan` invokes server Check-in, `Akhiri Kunjungan` persists server Check-out, `Simpan Laporan` finalizes the Actual. Do not merge Checkout and final submission.
+- **Derived approval labels:** resolve current Call List status first. `approved`→**Disetujui**, `pending_approval`→**Menunggu Persetujuan**, `draft` + latest rejection not yet resubmitted→**Perlu Revisi** with reason, otherwise `draft`→**Draft**. A stale rejection event must not override later resubmission/approval.
+- Backend, tests, logs, and technical documentation retain PDF terminology. Explain this as deliberate UX simplification, not a change to the case study requirements.
+- Before marking frontend work done, verify **three page heading/subtitle pairs**, reasonable mobile menu behavior, P0 manual time disclosure, rejection/resubmission label precedence, and unchanged mandatory API paths.
+
+- Deliver **three API-integrated, responsive pages** for Call List, Call Plan, and Call Actual domains. The **page headings** are **Target Dokter**, **Jadwal Kunjungan**, and **Pelaksanaan Kunjungan**, with the corresponding PDF subtitle **at each page heading**. Prefer reusable Blade components and simple JS over an unnecessary SPA.
+- On Call Actual, **show today's Plans first**. The P0 primary action is **Isi Laporan Kunjungan**; use **Mulai Kunjungan** only once P1 persists a real server Check-in. Show **Kunjungan di Luar Rencana** as a secondary action. Backend, not MR, determines Unplanned/Non Target.
 - Do not expose raw `plan_id`, `visit_session_id`, database states, or stack traces as user-facing tasks.
 - Every async action needs meaningful **loading, success, empty, and error states**. Disable duplicate-submit actions while in flight; restore usability on failures.
 - Display validation near relevant fields and preserve entered form values after an error.

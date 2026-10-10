@@ -70,8 +70,54 @@ class CallPlanApiController extends Controller
                     'plan_date' => Carbon::parse($plan->plan_date)->format('Y-m-d'),
                     'planned_time' => (string) $plan->planned_time,
                     'status' => $plan->status,
+                    'cancellation_reason' => $plan->cancellation_reason,
+                    'cancelled_at' => $plan->cancelled_at ? $plan->cancelled_at->toIso8601String() : null,
                 ];
             }),
+        ]);
+    }
+
+    /**
+     * PATCH /api/call-plans/{id}/cancel
+     * Membatalkan jadwal kunjungan (Call Plan).
+     */
+    public function cancel(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|min:3|max:500',
+        ], [
+            'reason.required' => 'Alasan pembatalan rencana kunjungan wajib diisi.',
+            'reason.min' => 'Alasan pembatalan minimal 3 karakter.',
+        ]);
+
+        $user = Auth::user();
+        $plan = $this->callPlanService->cancelPlan($user, $id, $request->input('reason'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rencana kunjungan berhasil dibatalkan',
+            'data' => [
+                'id' => $plan->id,
+                'status' => $plan->status,
+                'cancellation_reason' => $plan->cancellation_reason,
+                'cancelled_at' => $plan->cancelled_at ? $plan->cancelled_at->toIso8601String() : null,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/doctors/{id}/availability?month=YYYY-MM
+     * Mengecek tanggal-tanggal yang sudah terisi untuk dokter tertentu di bulan bersangkutan.
+     */
+    public function availability(Request $request, int $id): JsonResponse
+    {
+        $month = $request->query('month', now()->format('Y-m'));
+        $data = $this->callPlanService->getDoctorAvailability($id, $month);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Doctor availability retrieved',
+            'data' => $data,
         ]);
     }
 }

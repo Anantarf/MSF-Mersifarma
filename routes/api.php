@@ -1,12 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\CallActualApiController;
 use App\Http\Controllers\Api\CallListApiController;
 use App\Http\Controllers\Api\CallPlanApiController;
 use App\Http\Controllers\Api\DoctorApiController;
 use App\Http\Controllers\Api\ProductApiController;
+use App\Http\Controllers\Api\VisitSessionApiController;
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/csrf-token', [AuthController::class, 'csrfToken']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -23,11 +24,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/call-lists/{id}', [CallListApiController::class, 'show']);
     Route::patch('/call-lists/{id}/approve', [CallListApiController::class, 'approve']);
 
-    Route::put('/call-lists/{id}', [CallListApiController::class, 'update']);
+    Route::match(['patch', 'put'], '/call-lists/{id}', [CallListApiController::class, 'update']);
     Route::post('/call-lists/{id}/submit', [CallListApiController::class, 'submit']);
 
     Route::post('/call-plans', [CallPlanApiController::class, 'store']);
     Route::get('/call-plans', [CallPlanApiController::class, 'index']);
+    Route::patch('/call-plans/{id}/cancel', [CallPlanApiController::class, 'cancel']);
+    Route::get('/doctors/{id}/availability', [CallPlanApiController::class, 'availability']);
+
+    Route::post('/visit-sessions/start', [VisitSessionApiController::class, 'start']);
+    Route::get('/visit-sessions/active', [VisitSessionApiController::class, 'active']);
+    Route::post('/visit-sessions/{id}/checkout', [VisitSessionApiController::class, 'checkout']);
+    Route::post('/visit-sessions/{id}/cancel', [VisitSessionApiController::class, 'cancel']);
 
     Route::post('/call-actuals', [CallActualApiController::class, 'store']);
     Route::get('/call-actuals', [CallActualApiController::class, 'index']);

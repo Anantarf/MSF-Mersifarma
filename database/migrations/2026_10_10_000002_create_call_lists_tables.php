@@ -28,14 +28,14 @@ return new class extends Migration
         });
 
         Schema::create('call_list_doctors', function (Blueprint $table) {
-            $table->foreignId('call_list_id')->constrained('call_lists')->cascadeOnDelete();
+            $table->foreignId('call_list_id')->constrained('call_lists')->restrictOnDelete();
             $table->foreignId('doctor_id')->constrained('master_customers')->restrictOnDelete();
             $table->primary(['call_list_id', 'doctor_id'], 'pk_call_list_doctors');
         });
 
         Schema::create('call_list_approval_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('call_list_id')->constrained('call_lists')->cascadeOnDelete();
+            $table->foreignId('call_list_id')->constrained('call_lists')->restrictOnDelete();
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->string('event', 32);
             $table->string('event_origin', 24)->default('user_action');

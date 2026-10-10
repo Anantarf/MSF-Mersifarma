@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\CallActual;
 use App\Models\CallList;
 use App\Models\CallPlan;
 use App\Models\MasterCustomer;
-use App\Models\Product;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -17,10 +15,15 @@ class CallActualTest extends TestCase
     use DatabaseTransactions;
 
     protected User $mr;
+
     protected User $otherMr;
+
     protected User $dm;
+
     protected MasterCustomer $doctor1;
+
     protected MasterCustomer $doctor2;
+
     protected CallList $approvedCallList;
 
     protected function setUp(): void
@@ -285,5 +288,26 @@ class CallActualTest extends TestCase
         $responseOther = $this->actingAs($this->otherMr)->getJson('/api/call-actuals?date=2026-11-19');
         $responseOther->assertStatus(200)
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_non_mr_cannot_record_direct_actual(): void
+    {
+        $response = $this->actingAs($this->dm)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-20',
+            'check_in' => '08:00',
+            'check_out' => '08:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(403);
+
+        $this->assertDatabaseMissing('call_actuals', [
+            'mr_id' => $this->dm->id,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-20',
+        ]);
     }
 }

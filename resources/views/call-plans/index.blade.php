@@ -7,7 +7,7 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan (Call Plan)</h1>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call Plan)</small></h1>
             <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
         </div>
         <div>
@@ -109,7 +109,7 @@
                 <label for="doctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
                     Pilih Dokter Sasaran:
                 </label>
-                <select id="doctorSelect" required disabled
+                <select id="doctorSelect" required disabled onchange="onDoctorChange()"
                         style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     <option value="">-- Pilih Call List terlebih dahulu --</option>
                 </select>
@@ -120,11 +120,13 @@
                 <label for="planDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
                     Tanggal Rencana Kunjungan:
                 </label>
-                <input type="date" id="planDateInput" required
+                <input type="date" id="planDateInput" required onchange="onPlanDateChange()"
                        style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
-                <small id="dateRangeHelp" style="color: var(--text-muted); font-size: 0.75rem;">
+                <small id="dateRangeHelp" style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
                     Tanggal harus berada dalam bulan periode Call List yang dipilih.
                 </small>
+                <!-- Live Availability Feedback Box (P1 Feature) -->
+                <div id="availabilityNotice" style="display: none; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.6rem 0.85rem; border-radius: 0.375rem; line-height: 1.4;"></div>
             </div>
 
             <!-- 4. Jam Rencana Kunjungan -->
@@ -139,6 +141,41 @@
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                 <button type="button" class="btn btn-outline" onclick="closeCreatePlanModal()">Batal</button>
                 <button type="submit" id="btnSubmitPlan" class="btn btn-primary">Simpan Jadwal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Batalkan Rencana Kunjungan (P1 Feature) -->
+<div id="cancelPlanModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--danger); margin: 0;">Batalkan Rencana Kunjungan</h3>
+            <button type="button" class="close-btn" onclick="closeCancelPlanModal()">&times;</button>
+        </div>
+
+        <div id="cancelPlanModalError" style="display: none;" class="alert alert-danger"></div>
+
+        <p style="font-size: 0.875rem; color: var(--secondary); margin-bottom: 1rem; line-height: 1.5;">
+            Apakah Anda yakin ingin membatalkan rencana kunjungan ke <strong id="cancelPlanDoctorName">-</strong> pada tanggal <strong id="cancelPlanDate">-</strong>?
+        </p>
+
+        <form id="cancelPlanForm" onsubmit="handleCancelPlanSubmit(event)">
+            <input type="hidden" id="cancelPlanId">
+            <div style="margin-bottom: 1.25rem;">
+                <label for="cancelPlanReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                    Alasan Pembatalan (Wajib diisi):
+                </label>
+                <textarea id="cancelPlanReasonInput" required minlength="3" rows="3"
+                          style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;"
+                          placeholder="Contoh: Dokter ada simposium / operasi darurat di luar kota"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeCancelPlanModal()">Kembali</button>
+                <button type="submit" id="btnConfirmCancelPlan" class="btn btn-danger" style="background: var(--danger); color: white; border: none; font-weight: 600;">
+                    Konfirmasi Pembatalan
+                </button>
             </div>
         </form>
     </div>
@@ -234,9 +271,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         loadPlans();
         loadApprovedCallLists();
-    });    document.addEventListener('keydown', (e) => {
+    });
+
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeCreatePlanModal();
+            closeCancelPlanModal();
         }
     });
 
@@ -310,7 +350,11 @@
         if (tableWrap) tableWrap.style.display = 'block';
         tbody.innerHTML = currentPlans.map(plan => {
             const isCompleted = plan.status === 'completed';
-            const statusLabel = isCompleted ? 'Selesai Dikunjungi' : 'Dijadwalkan';
+            const isCancelled = plan.status === 'cancelled';
+            let statusLabel = 'Dijadwalkan';
+            if (isCompleted) statusLabel = 'Selesai Dikunjungi';
+            if (isCancelled) statusLabel = 'Dibatalkan';
+
             const safeStatus = ['scheduled', 'completed', 'cancelled'].includes(plan.status) ? plan.status : 'scheduled';
             const statusClass = `status-${safeStatus}`;
 
@@ -333,17 +377,31 @@
                     </td>
                     <td>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                        ${isCancelled && plan.cancellation_reason ? `
+                            <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+                                Alasan: <em>"${escapeHtml(plan.cancellation_reason)}"</em>
+                            </div>
+                        ` : ''}
                     </td>
                     <td style="text-align: right;">
-                        ${!isCompleted ? `
-                            <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; text-decoration: none;">
-                                Mulai Kunjungan
-                            </a>
-                        ` : `
+                        ${plan.status === 'scheduled' ? `
+                            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                                <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; text-decoration: none;">
+                                    Isi Laporan
+                                </a>
+                                <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; color: var(--danger); border-color: #fca5a5;" onclick="openCancelPlanModal(${plan.id}, '${escapeHtml(plan.doctor_name)}', '${escapeHtml(plan.plan_date)}')">
+                                    Batalkan
+                                </button>
+                            </div>
+                        ` : (isCompleted ? `
                             <span style="font-size: 0.8rem; color: var(--success); font-weight: 600;">
                                 Selesai
                             </span>
-                        `}
+                        ` : `
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">
+                                Dibatalkan
+                            </span>
+                        `)}
                     </td>
                 </tr>
             `;
@@ -448,12 +506,100 @@
         }
     }
 
+    let currentDoctorBusyDates = [];
+
+    async function onDoctorChange() {
+        const doctorSelect = document.getElementById('doctorSelect');
+        const doctorId = doctorSelect.value;
+        const callListSelect = document.getElementById('callListSelect');
+        const selectedOption = callListSelect.options[callListSelect.selectedIndex];
+        const periodMonth = selectedOption ? selectedOption.getAttribute('data-period') : '';
+        const noticeEl = document.getElementById('availabilityNotice');
+
+        currentDoctorBusyDates = [];
+        if (!doctorId || !periodMonth) {
+            noticeEl.style.display = 'none';
+            return;
+        }
+
+        noticeEl.style.display = 'block';
+        noticeEl.style.background = '#f1f5f9';
+        noticeEl.style.borderColor = '#cbd5e1';
+        noticeEl.style.color = 'var(--text-muted)';
+        noticeEl.innerHTML = 'Memeriksa ketersediaan jadwal dokter...';
+
+        try {
+            const res = await window.apiFetch(`/api/doctors/${doctorId}/availability?month=${periodMonth}`);
+            const result = await res.json();
+            if (result.success && result.data) {
+                currentDoctorBusyDates = result.data.busy_dates || [];
+                renderAvailabilityNotice();
+                onPlanDateChange();
+            } else {
+                noticeEl.style.display = 'none';
+            }
+        } catch (err) {
+            noticeEl.style.display = 'none';
+        }
+    }
+
+    function renderAvailabilityNotice() {
+        const noticeEl = document.getElementById('availabilityNotice');
+        if (!currentDoctorBusyDates.length) {
+            noticeEl.style.display = 'block';
+            noticeEl.style.background = '#f0fdf4';
+            noticeEl.style.borderColor = '#bbf7d0';
+            noticeEl.style.color = '#166534';
+            noticeEl.innerHTML = '✓ Seluruh tanggal pada bulan ini masih tersedia untuk dokter sasaran ini.';
+            return;
+        }
+
+        const formattedDays = currentDoctorBusyDates.map(d => parseInt(d.split('-')[2])).join(', ');
+        noticeEl.style.display = 'block';
+        noticeEl.style.background = '#fffbeb';
+        noticeEl.style.borderColor = '#fde68a';
+        noticeEl.style.color = '#92400e';
+        noticeEl.innerHTML = `⚠️ <strong>Tanggal terisi:</strong> Tanggal ${formattedDays} sudah ada jadwal/kunjungan dokter ini. Pilih tanggal lain agar tidak bentrok.`;
+    }
+
+    function onPlanDateChange() {
+        const planDateInput = document.getElementById('planDateInput');
+        const errEl = document.getElementById('createPlanModalError');
+        const btn = document.getElementById('btnSubmitPlan');
+        const selectedDate = planDateInput.value;
+
+        if (!selectedDate || !currentDoctorBusyDates.length) {
+            if (errEl.innerText.includes('sudah memiliki jadwal')) {
+                errEl.style.display = 'none';
+            }
+            btn.disabled = false;
+            return;
+        }
+
+        if (currentDoctorBusyDates.includes(selectedDate)) {
+            errEl.innerText = `Dokter sudah memiliki jadwal/kunjungan pada tanggal ${selectedDate}. Silakan pilih tanggal lain.`;
+            errEl.style.display = 'block';
+            btn.disabled = true;
+        } else {
+            if (errEl.innerText.includes('sudah memiliki jadwal')) {
+                errEl.style.display = 'none';
+            }
+            btn.disabled = false;
+        }
+    }
+
     function openCreatePlanModal() {
         const errEl = document.getElementById('createPlanModalError');
         if (errEl) {
             errEl.style.display = 'none';
             errEl.innerText = '';
         }
+        const noticeEl = document.getElementById('availabilityNotice');
+        if (noticeEl) {
+            noticeEl.style.display = 'none';
+            noticeEl.innerHTML = '';
+        }
+        currentDoctorBusyDates = [];
         document.getElementById('createPlanModal').style.display = 'flex';
         loadApprovedCallLists();
     }
@@ -520,6 +666,64 @@
             btn.disabled = false;
             btn.innerText = 'Simpan Jadwal';
             errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    function openCancelPlanModal(planId, doctorName, planDate) {
+        document.getElementById('cancelPlanId').value = planId;
+        document.getElementById('cancelPlanDoctorName').innerText = doctorName;
+        document.getElementById('cancelPlanDate').innerText = planDate;
+        document.getElementById('cancelPlanReasonInput').value = '';
+        const errEl = document.getElementById('cancelPlanModalError');
+        errEl.style.display = 'none';
+        errEl.innerText = '';
+        document.getElementById('cancelPlanModal').style.display = 'flex';
+    }
+
+    function closeCancelPlanModal() {
+        document.getElementById('cancelPlanModal').style.display = 'none';
+    }
+
+    async function handleCancelPlanSubmit(e) {
+        e.preventDefault();
+        const planId = document.getElementById('cancelPlanId').value;
+        const reason = document.getElementById('cancelPlanReasonInput').value.trim();
+        const errEl = document.getElementById('cancelPlanModalError');
+        const btn = document.getElementById('btnConfirmCancelPlan');
+
+        errEl.style.display = 'none';
+
+        if (reason.length < 3) {
+            errEl.innerText = 'Alasan pembatalan wajib diisi minimal 3 karakter.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Membatalkan...';
+
+        try {
+            const res = await window.apiFetch(`/api/call-plans/${planId}/cancel`, {
+                method: 'PATCH',
+                body: JSON.stringify({ reason: reason })
+            });
+            const result = await res.json();
+            btn.disabled = false;
+            btn.innerText = 'Konfirmasi Pembatalan';
+
+            if (result.success) {
+                closeCancelPlanModal();
+                showAlert('Rencana kunjungan berhasil dibatalkan.');
+                loadPlans();
+            } else {
+                errEl.innerText = result.message || 'Gagal membatalkan rencana kunjungan.';
+                errEl.style.display = 'block';
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerText = 'Konfirmasi Pembatalan';
+            errEl.innerText = 'Terjadi kesalahan jaringan atau server saat membatalkan.';
             errEl.style.display = 'block';
         }
     }
