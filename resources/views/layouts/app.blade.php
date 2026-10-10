@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'MSF') : Mobile Sales Force PT Mersifarma</title>
+    <!-- Favicon: Logo Resmi PT Mersifarma TM -->
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-mersifarma.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-mersifarma.png') }}">
     <!-- Fonts: Nunito for Mersi wordmark + Plus Jakarta Sans for UI/data + Outfit for headings -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
