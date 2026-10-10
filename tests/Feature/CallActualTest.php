@@ -1,1 +1,289 @@
-<?phpnamespace Tests\Feature;use App\Models\CallActual;use App\Models\CallList;use App\Models\CallPlan;use App\Models\MasterCustomer;use App\Models\Product;use App\Models\User;use Carbon\Carbon;use Illuminate\Foundation\Testing\DatabaseTransactions;use Tests\TestCase;class CallActualTest extends TestCase{    use DatabaseTransactions;    protected User $mr;    protected User $otherMr;    protected User $dm;    protected MasterCustomer $doctor1;    protected MasterCustomer $doctor2;    protected MasterCustomer $doctor3;    protected Product $product1;    protected Product $product2;    protected CallList $approvedCallList;    protected CallPlan $scheduledPlan;    protected function setUp(): void    {        parent::setUp();        $this->mr = User::where('email', 'mr@mersi.com')->firstOrFail();        $this->otherMr = User::where('email', 'mr2@mersi.com')->firstOrFail();        $this->dm = User::where('email', 'dm@mersi.com')->firstOrFail();        $doctors = MasterCustomer::take(3)->get();        $this->doctor1 = $doctors[0];        $this->doctor2 = $doctors[1];        $this->doctor3 = $doctors[2];        $products = Product::take(2)->get();        $this->product1 = $products[0];        $this->product2 = $products[1];        // Call List yang Approved untuk November 2026        $this->approvedCallList = CallList::firstOrCreate(            [                'owner_id' => $this->mr->id,                'period_month' => '2026-11-01',            ],            [                'status' => 'approved',                'assigned_approver_id' => $this->dm->id,                'approved_at' => Carbon::now(),            ]        );        $this->approvedCallList->status = 'approved';        $this->approvedCallList->approved_at = Carbon::now();        $this->approvedCallList->save();        $this->approvedCallList->doctors()->sync([$this->doctor1->id, $this->doctor2->id]);        // Call Plan terencana untuk Doctor 1 pada 2026-11-12        $this->scheduledPlan = CallPlan::firstOrCreate(            [                'call_list_id' => $this->approvedCallList->id,                'mr_id' => $this->mr->id,                'doctor_id' => $this->doctor1->id,                'plan_date' => '2026-11-12',            ],            [                'planned_time' => '09:00:00',                'status' => 'scheduled',            ]        );        $this->scheduledPlan->status = 'scheduled';        $this->scheduledPlan->save();    }    /**     * Skenario PDF-01: Alur lengkap Planned Actual berhasil (photo, signature, products),     * Plan berubah menjadi completed dan Actual berstatus completed.     */    public function test_pdf_01_planned_call_actual_completion(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => 'https://example.test/uploads/photo_visit.jpg',                'signature_url' => 'https://example.test/uploads/sig_doc.png',                'products' => [$this->product1->id, $this->product2->id],            ]);        $response->assertStatus(201)            ->assertJson([                'success' => true,                'message' => 'Call Actual completed',                'data' => [                    'doctor_id' => $this->doctor1->id,                    'plan_id' => $this->scheduledPlan->id,                    'visit_date' => '2026-11-12',                    'visit_type' => 'planned',                    'status' => 'completed',                ],            ]);        // Verifikasi Plan berubah menjadi 'completed'        $this->assertDatabaseHas('call_plans', [            'id' => $this->scheduledPlan->id,            'status' => 'completed',        ]);        // Verifikasi Call Actual tersimpan di DB        $this->assertDatabaseHas('call_actuals', [            'doctor_id' => $this->doctor1->id,            'visit_date' => '2026-11-12',            'visit_type' => 'planned',        ]);        // Verifikasi pivot produk tersimpan        $actualId = $response->json('data.id');        $this->assertDatabaseHas('call_actual_products', [            'call_actual_id' => $actualId,            'product_id' => $this->product1->id,        ]);        $this->assertDatabaseHas('call_actual_products', [            'call_actual_id' => $actualId,            'product_id' => $this->product2->id,        ]);    }    /**     * Skenario PDF-03: Pencatatan Actual kedua untuk dokter dan tanggal yang sama DITOLAK     * lintas MR dan lintas mode (Planned / Without Plan).     */    public function test_pdf_03_duplicate_actual_for_same_doctor_and_date_is_rejected(): void    {        // 1. Catat Actual pertama oleh MR-A        $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => 'https://example.test/photo1.jpg',                'signature_url' => 'https://example.test/sig1.png',                'products' => [$this->product1->id],            ])            ->assertStatus(201);        $initialActualCount = CallActual::where('doctor_id', $this->doctor1->id)            ->where('visit_date', '2026-11-12')            ->count();        $this->assertEquals(1, $initialActualCount);        // 2. Percobaan kedua oleh MR yang sama (MR-A) -> DITOLAK 409        $responseSameMr = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => null, // Without Plan                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '13:00:00',                'check_out' => '13:30:00',                'photo_url' => 'https://example.test/photo_dup.jpg',                'signature_url' => 'https://example.test/sig_dup.png',                'products' => [$this->product1->id],            ]);        $responseSameMr->assertStatus(409)            ->assertJson([                'success' => false,                'error_code' => 'VISIT_ALREADY_EXISTS',                'data' => [                    'owned_by_me' => true,                ],            ]);        // 3. Percobaan ketiga oleh MR lain (MR-B) -> DITOLAK 409 & Privacy terjaga (tanpa membocorkan detail MR-A)        $responseOtherMr = $this->actingAs($this->otherMr)            ->postJson('/api/call-actuals', [                'plan_id' => null,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '14:00:00',                'check_out' => '14:30:00',                'photo_url' => 'https://example.test/photo_other.jpg',                'signature_url' => 'https://example.test/sig_other.png',                'products' => [$this->product1->id],            ]);        $responseOtherMr->assertStatus(409)            ->assertJson([                'success' => false,                'error_code' => 'VISIT_ALREADY_EXISTS',                'data' => [                    'owned_by_me' => false,                ],            ]);        // Pastikan tidak ada data sensitif MR-A yang bocor ke MR-B        $this->assertArrayNotHasKey('existing_actual_id', $responseOtherMr->json('data'));        // Jumlah Actual untuk Dokter 1 di tanggal tersebut tetap persis 1        $finalActualCount = CallActual::where('doctor_id', $this->doctor1->id)            ->where('visit_date', '2026-11-12')            ->count();        $this->assertEquals(1, $finalActualCount);    }    /**     * Skenario PDF-04: Actual tanpa photo_url ditolak (PHOTO_REQUIRED) dan tidak meninggalkan partial data.     */    public function test_pdf_04_actual_without_photo_is_rejected_without_partial_writes(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => '', // Kosong / hilang                'signature_url' => 'https://example.test/sig.png',                'products' => [$this->product1->id],            ]);        $response->assertStatus(422)            ->assertJson([                'success' => false,                'error_code' => 'PHOTO_REQUIRED',            ]);        // Verifikasi tidak ada Call Actual yang tersimpan        $this->assertDatabaseMissing('call_actuals', [            'doctor_id' => $this->doctor1->id,            'visit_date' => '2026-11-12',        ]);        // Verifikasi Plan tidak berubah (tetap scheduled)        $this->assertDatabaseHas('call_plans', [            'id' => $this->scheduledPlan->id,            'status' => 'scheduled',        ]);    }    /**     * Actual tanpa signature_url ditolak.     */    public function test_actual_without_signature_is_rejected(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => 'https://example.test/photo.jpg',                'signature_url' => '',                'products' => [$this->product1->id],            ]);        $response->assertStatus(422)            ->assertJson([                'success' => false,                'error_code' => 'SIGNATURE_REQUIRED',            ]);    }    /**     * Actual tanpa minimal 1 produk ditolak (PRODUCT_REQUIRED).     */    public function test_actual_without_products_is_rejected(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => 'https://example.test/photo.jpg',                'signature_url' => 'https://example.test/sig.png',                'products' => [], // Kosong            ]);        $response->assertStatus(422);    }    /**     * Waktu checkout yang lebih awal dari atau sama dengan checkin ditolak.     */    public function test_checkout_before_or_equal_checkin_is_rejected(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id,                'doctor_id' => $this->doctor1->id,                'visit_date' => '2026-11-12',                'check_in' => '09:30:00',                'check_out' => '09:00:00', // Lebih awal dari checkin                'photo_url' => 'https://example.test/photo.jpg',                'signature_url' => 'https://example.test/sig.png',                'products' => [$this->product1->id],            ]);        $response->assertStatus(422);    }    /**     * Dokter yang dikunjungi tidak sesuai dengan Plan ditolak (DOCTOR_PLAN_MISMATCH).     */    public function test_doctor_plan_mismatch_is_rejected(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => $this->scheduledPlan->id, // Plan untuk Doctor 1                'doctor_id' => $this->doctor2->id,      // Dikirim Doctor 2                'visit_date' => '2026-11-12',                'check_in' => '09:00:00',                'check_out' => '09:30:00',                'photo_url' => 'https://example.test/photo.jpg',                'signature_url' => 'https://example.test/sig.png',                'products' => [$this->product1->id],            ]);        $response->assertStatus(422)            ->assertJson([                'success' => false,                'error_code' => 'DOCTOR_PLAN_MISMATCH',            ]);    }    /**     * Jalur Without Plan (plan_id = null):     * Dokter anggota Approved List diklasifikasikan sebagai 'unplanned'.     * visit_reason bersifat opsional pada Direct API.     */    public function test_without_plan_approved_doctor_is_classified_as_unplanned(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => null,                'doctor_id' => $this->doctor2->id, // Doctor 2 anggota Approved List                'visit_date' => '2026-11-20',                'check_in' => '10:00:00',                'check_out' => '10:45:00',                'photo_url' => 'https://example.test/photo_unplanned.jpg',                'signature_url' => 'https://example.test/sig_unplanned.png',                'products' => [$this->product1->id],                // visit_reason null (opsional di Direct API)            ]);        $response->assertStatus(201)            ->assertJson([                'success' => true,                'data' => [                    'doctor_id' => $this->doctor2->id,                    'plan_id' => null,                    'visit_type' => 'unplanned',                    'status' => 'completed',                ],            ]);        $this->assertDatabaseHas('call_actuals', [            'doctor_id' => $this->doctor2->id,            'visit_date' => '2026-11-20',            'visit_type' => 'unplanned',        ]);    }    /**     * Jalur Without Plan (plan_id = null):     * Dokter yang BUKAN anggota Approved List diklasifikasikan sebagai 'non_target'.     */    public function test_without_plan_non_target_doctor_is_classified_as_non_target(): void    {        $response = $this->actingAs($this->mr)            ->postJson('/api/call-actuals', [                'plan_id' => null,                'doctor_id' => $this->doctor3->id, // Doctor 3 BUKAN anggota List                'visit_date' => '2026-11-22',                'check_in' => '11:00:00',                'check_out' => '11:30:00',                'photo_url' => 'https://example.test/photo_non_target.jpg',                'signature_url' => 'https://example.test/sig_non_target.png',                'products' => [$this->product1->id],            ]);        $response->assertStatus(201)            ->assertJson([                'success' => true,                'data' => [                    'doctor_id' => $this->doctor3->id,                    'plan_id' => null,                    'visit_type' => 'non_target',                    'status' => 'completed',                ],            ]);        $this->assertDatabaseHas('call_actuals', [            'doctor_id' => $this->doctor3->id,            'visit_date' => '2026-11-22',            'visit_type' => 'non_target',        ]);    }    /**     * GET /api/call-actuals mengembalikan daftar Actual milik MR login dan mendukung filter.     */    public function test_get_call_actuals_is_scoped_to_owner(): void    {        // Buat Actual milik MR        CallActual::create([            'mr_id' => $this->mr->id,            'doctor_id' => $this->doctor1->id,            'visit_date' => '2026-11-05',            'check_in_at' => '2026-11-05 08:00:00',            'check_out_at' => '2026-11-05 08:30:00',            'visit_type' => 'unplanned',            'photo_url' => 'https://example.test/p.jpg',            'signature_url' => 'https://example.test/s.png',        ]);        // Buat Actual milik other MR        CallActual::create([            'mr_id' => $this->otherMr->id,            'doctor_id' => $this->doctor2->id,            'visit_date' => '2026-11-05',            'check_in_at' => '2026-11-05 09:00:00',            'check_out_at' => '2026-11-05 09:30:00',            'visit_type' => 'non_target',            'photo_url' => 'https://example.test/p2.jpg',            'signature_url' => 'https://example.test/s2.png',        ]);        // MR hanya melihat 1 record miliknya        $response = $this->actingAs($this->mr)->getJson('/api/call-actuals');        $response->assertStatus(200)            ->assertJsonCount(1, 'data')            ->assertJsonPath('data.0.doctor_id', $this->doctor1->id);        // other MR hanya melihat 1 record miliknya        $responseOther = $this->actingAs($this->otherMr)->getJson('/api/call-actuals');        $responseOther->assertStatus(200)            ->assertJsonCount(1, 'data')            ->assertJsonPath('data.0.doctor_id', $this->doctor2->id);    }}
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\CallActual;
+use App\Models\CallList;
+use App\Models\CallPlan;
+use App\Models\MasterCustomer;
+use App\Models\Product;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
+
+class CallActualTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    protected User $mr;
+    protected User $otherMr;
+    protected User $dm;
+    protected MasterCustomer $doctor1;
+    protected MasterCustomer $doctor2;
+    protected CallList $approvedCallList;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse('2026-11-20 12:00:00'));
+
+        $this->mr = User::where('email', 'mr@mersi.com')->firstOrFail();
+        $this->otherMr = User::where('email', 'mr2@mersi.com')->firstOrFail();
+        $this->dm = User::where('email', 'dm@mersi.com')->firstOrFail();
+        $this->doctor1 = MasterCustomer::findOrFail(1);
+        $this->doctor2 = MasterCustomer::findOrFail(2);
+
+        $this->approvedCallList = CallList::firstOrCreate(
+            ['owner_id' => $this->mr->id, 'period_month' => '2026-11-01'],
+            ['assigned_approver_id' => $this->dm->id]
+        );
+        $this->approvedCallList->update([
+            'status' => 'approved',
+            'assigned_approver_id' => $this->dm->id,
+            'approved_at' => Carbon::parse('2026-11-01 09:00:00'),
+        ]);
+        $this->approvedCallList->doctors()->sync([$this->doctor1->id, $this->doctor2->id]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    public function test_mr_can_record_planned_actual_and_complete_only_referenced_plan(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-12',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => $plan->id,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-12',
+            'check_in' => '08:30:00',
+            'check_out' => '09:00:00',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1, 3],
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Call Actual completed',
+                'data' => [
+                    'doctor_id' => $this->doctor1->id,
+                    'plan_id' => $plan->id,
+                    'visit_date' => '2026-11-12',
+                    'visit_type' => 'planned',
+                    'status' => 'completed',
+                    'products' => [1, 3],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_direct_actual_without_plan_is_accepted_without_visit_reason(): void
+    {
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => null,
+            'doctor_id' => $this->doctor2->id,
+            'visit_date' => '2026-11-13',
+            'check_in' => '10:00',
+            'check_out' => '10:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [2],
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.visit_type', 'unplanned')
+            ->assertJsonPath('data.plan_id', null);
+    }
+
+    public function test_pdf_03_duplicate_actual_for_same_doctor_and_date_is_rejected_across_mrs(): void
+    {
+        $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-14',
+            'check_in' => '08:00',
+            'check_out' => '08:20',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ])->assertStatus(201);
+
+        $response = $this->actingAs($this->otherMr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-14',
+            'check_in' => '09:00',
+            'check_out' => '09:20',
+            'photo_url' => 'https://example.test/other-photo.jpg',
+            'signature_url' => 'https://example.test/other-signature.png',
+            'products' => [2],
+        ]);
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'VISIT_ALREADY_EXISTS',
+            ]);
+    }
+
+    public function test_pdf_04_actual_without_photo_is_rejected_and_creates_no_partial_record(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-15',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => $plan->id,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-15',
+            'check_in' => '08:30:00',
+            'check_out' => '09:00:00',
+            'photo_url' => '',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'PHOTO_REQUIRED',
+            ]);
+
+        $this->assertDatabaseMissing('call_actuals', [
+            'plan_id' => $plan->id,
+        ]);
+        $this->assertDatabaseHas('call_plans', [
+            'id' => $plan->id,
+            'status' => 'scheduled',
+        ]);
+    }
+
+    public function test_actual_without_signature_is_rejected(): void
+    {
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-16',
+            'check_in' => '08:00',
+            'check_out' => '08:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => '',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'SIGNATURE_REQUIRED',
+            ]);
+    }
+
+    public function test_actual_without_products_is_rejected(): void
+    {
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-16',
+            'check_in' => '08:00',
+            'check_out' => '08:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/sig.png',
+            'products' => [],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'PRODUCT_REQUIRED',
+            ]);
+    }
+
+    public function test_without_plan_non_target_doctor_is_classified_as_non_target(): void
+    {
+        $doctor3 = MasterCustomer::findOrFail(3);
+
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => null,
+            'doctor_id' => $doctor3->id,
+            'visit_date' => '2026-11-17',
+            'check_in' => '11:00',
+            'check_out' => '11:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/sig.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.visit_type', 'non_target');
+    }
+
+    public function test_doctor_plan_mismatch_is_rejected(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-18',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => $plan->id,
+            'doctor_id' => $this->doctor2->id,
+            'visit_date' => '2026-11-18',
+            'check_in' => '09:00',
+            'check_out' => '09:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/sig.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'DOCTOR_PLAN_MISMATCH',
+            ]);
+    }
+
+    public function test_get_call_actuals_is_scoped_to_owner(): void
+    {
+        $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-19',
+            'check_in' => '08:00',
+            'check_out' => '08:30',
+            'photo_url' => 'https://example.test/p1.jpg',
+            'signature_url' => 'https://example.test/s1.png',
+            'products' => [1],
+        ])->assertStatus(201);
+
+        $responseMr = $this->actingAs($this->mr)->getJson('/api/call-actuals?date=2026-11-19');
+        $responseMr->assertStatus(200)
+            ->assertJsonCount(1, 'data');
+
+        $responseOther = $this->actingAs($this->otherMr)->getJson('/api/call-actuals?date=2026-11-19');
+        $responseOther->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+}
