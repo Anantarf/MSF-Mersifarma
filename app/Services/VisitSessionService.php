@@ -27,6 +27,10 @@ class VisitSessionService
             throw new HttpException(422, 'Pilih jadwal kunjungan atau dokter sasaran.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
         }
 
+        if (! empty($planId) && ! empty($doctorId)) {
+            throw new HttpException(422, 'Kirim salah satu: jadwal kunjungan atau dokter sasaran.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+        }
+
         $today = Carbon::now()->toDateString();
 
         return DB::transaction(function () use ($mr, $planId, $doctorId, $today) {
@@ -44,6 +48,10 @@ class VisitSessionService
 
                 if ($plan->status !== 'scheduled') {
                     throw new HttpException(409, 'Jadwal kunjungan tidak dalam status aktif/scheduled.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
+                }
+
+                if (Carbon::parse($plan->plan_date)->toDateString() !== $today) {
+                    throw new HttpException(422, 'Sesi kunjungan hanya dapat dimulai pada tanggal rencana.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
                 }
 
                 $resolvedDoctorId = $plan->doctor_id;

@@ -229,6 +229,8 @@ class CallPlanTest extends TestCase
      */
     public function test_get_call_plans_is_scoped_to_owner(): void
     {
+        $initialCount = CallPlan::where('mr_id', $this->mr->id)->count();
+
         CallPlan::create([
             'call_list_id' => $this->approvedCallList->id,
             'mr_id' => $this->mr->id,
@@ -250,7 +252,7 @@ class CallPlanTest extends TestCase
         // Cek tanpa filter
         $responseAll = $this->actingAs($this->mr)->getJson('/api/call-plans');
         $responseAll->assertStatus(200)
-            ->assertJsonCount(2, 'data');
+            ->assertJsonCount($initialCount + 2, 'data');
 
         // Cek dengan filter tanggal
         $responseDate = $this->actingAs($this->mr)->getJson('/api/call-plans?date=2026-11-12');

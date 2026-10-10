@@ -32,9 +32,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/call-plans/{id}/cancel', [CallPlanApiController::class, 'cancel']);
     Route::get('/doctors/{id}/availability', [CallPlanApiController::class, 'availability']);
 
+    Route::post('/visit-sessions', [VisitSessionApiController::class, 'start']);
     Route::post('/visit-sessions/start', [VisitSessionApiController::class, 'start']);
     Route::get('/visit-sessions/active', [VisitSessionApiController::class, 'active']);
+    Route::post('/visit-sessions/{id}/check-out', [VisitSessionApiController::class, 'checkout']);
     Route::post('/visit-sessions/{id}/checkout', [VisitSessionApiController::class, 'checkout']);
+    Route::patch('/visit-sessions/{id}/cancel', [VisitSessionApiController::class, 'cancel']);
     Route::post('/visit-sessions/{id}/cancel', [VisitSessionApiController::class, 'cancel']);
 
     Route::post('/call-actuals', [CallActualApiController::class, 'store']);
