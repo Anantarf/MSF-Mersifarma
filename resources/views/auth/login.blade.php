@@ -5,13 +5,15 @@
 @section('content')
 <div style="max-width: 440px; margin: 2rem auto; background: white; border: 1px solid var(--border); border-top: 4px solid var(--primary); border-radius: 8px; padding: 2.25rem 2rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);">
     <div style="text-align: center; margin-bottom: 1.75rem;">
-        <div style="display: inline-flex; width: 48px; height: 48px; background: var(--primary); border-radius: 8px; align-items: center; justify-content: center; color: white; margin-bottom: 0.75rem;">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-                <path d="m8.5 8.5 7 7"/>
+        <div style="display: inline-flex; width: 56px; height: 56px; background: var(--primary); border-radius: 10px; align-items: center; justify-content: center; color: white; margin-bottom: 0.85rem; box-shadow: 0 4px 12px rgba(0, 102, 178, 0.25);">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <path d="M4 11C4 6.5 6.5 4 11 4V11H4Z" fill="white"/>
+                <path d="M13 4C17.5 4 20 6.5 20 11H13V4Z" fill="white"/>
+                <path d="M4 13H11V20C6.5 20 4 17.5 4 13Z" fill="white"/>
+                <path d="M13 13H20C20 17.5 17.5 20 13 20V13Z" fill="white"/>
             </svg>
         </div>
-        <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--secondary);">PT MERSIFARMA TM</h2>
+        <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--secondary); letter-spacing: 0.02em;">PT MERSIFARMA TM</h2>
         <p style="color: var(--primary); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.15rem;">Mobile Sales Force System</p>
         <p style="color: var(--text-muted); font-size: 0.75rem; font-style: italic; margin-top: 0.35rem;">"Good Quality Improves Life's Quality"</p>
     </div>

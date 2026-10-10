@@ -11,12 +11,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #008289;          /* PT Mersifarma TM Corporate Teal */
-            --primary-hover: #00686e;    /* Deep teal hover */
-            --primary-light: #f0fdfa;    /* Teal light tint */
-            --primary-border: #99f6e4;   /* Teal border */
-            --secondary: #1e293b;        /* Charcoal slate navy */
-            --secondary-hover: #0f172a;
+            --primary: #0066b2;          /* PT Mersifarma TM Official Corporate Blue */
+            --primary-hover: #00508c;    /* Deep Mersi Blue hover */
+            --primary-light: #eff6fc;    /* Mersi Blue subtle background tint */
+            --primary-border: #b9ddf8;   /* Mersi Blue crisp border */
+            --secondary: #0c2340;        /* Mersifarma Deep Corporate Navy */
+            --secondary-hover: #08182d;
             --success: #059669;          /* Emerald */
             --danger: #dc2626;           /* Red */
             --warning: #d97706;          /* Amber */
@@ -176,7 +176,7 @@
             text-transform: uppercase;
         }
 
-        .role-mr { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+        .role-mr { background: #eff6fc; color: #005a9c; border: 1px solid #b9ddf8; }
         .role-dm { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .role-rsm { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .role-mm { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
@@ -227,7 +227,7 @@
         input:focus, select:focus, textarea:focus {
             border-color: var(--primary) !important;
             outline: none !important;
-            box-shadow: 0 0 0 2px rgba(0, 130, 137, 0.2) !important;
+            box-shadow: 0 0 0 2px rgba(0, 102, 178, 0.25) !important;
         }
 
         button:focus-visible, a:focus-visible {
@@ -374,9 +374,11 @@
         <div class="nav-container">
             <a href="{{ route('call-lists.index') }}" class="brand">
                 <div class="brand-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-                        <path d="m8.5 8.5 7 7"/>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 11C4 6.5 6.5 4 11 4V11H4Z" fill="white"/>
+                        <path d="M13 4C17.5 4 20 6.5 20 11H13V4Z" fill="white"/>
+                        <path d="M4 13H11V20C6.5 20 4 17.5 4 13Z" fill="white"/>
+                        <path d="M13 13H20C20 17.5 17.5 20 13 20V13Z" fill="white"/>
                     </svg>
                 </div>
                 <div class="brand-titles">
