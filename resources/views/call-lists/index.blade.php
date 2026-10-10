@@ -7,12 +7,17 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--secondary);">Target Dokter (Call List)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Kelola perencanaan target dokter bulanan dan proses persetujuan atasan.</p>
+            <span class="eyebrow">Medical Representative Operations</span>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Target Dokter (Call List)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Kelola perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-                + Buat Call List Baru
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Buat Call List Baru
             </button>
         </div>
     </div>
@@ -20,11 +25,11 @@
     <!-- Tabs Navigation -->
     <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border);">
         <button id="tabMyLists" class="tab-btn active" onclick="switchTab('myLists')">
-            Target Saya (<span id="myListCount">0</span>)
+            Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
         </button>
         @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
         <button id="tabReview" class="tab-btn" onclick="switchTab('review')">
-            Persetujuan Masuk (<span id="reviewCount">0</span>)
+            Persetujuan Masuk (<span id="reviewCount" class="tabular-nums">0</span>)
         </button>
         @endif
     </div>
@@ -34,24 +39,44 @@
 
     <!-- Container Tab 1: My Call Lists -->
     <div id="myListsContainer" style="display: flex; flex-direction: column; gap: 1rem;">
-        <div id="loadingMyLists" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <div id="loadingMyLists" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
             Memuat daftar Call List...
         </div>
         <div id="myListsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="emptyMyLists" style="display: none; text-align: center; padding: 3rem; background: white; border: 1px dashed var(--border); border-radius: 0.5rem;">
-            <p style="color: var(--text-muted); font-size: 0.95rem;">Belum ada Call List yang dibuat. Klik tombol <strong>+ Buat Call List Baru</strong> di atas untuk memulai.</p>
+        <div id="emptyMyLists" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
+            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Call List</h4>
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto 1.25rem; text-wrap: balance;">
+                Mulai dengan menyusun target dokter bulanan dan ajukan ke atasan langsung Anda untuk diverifikasi.
+            </p>
+            <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Pertama</button>
         </div>
     </div>
 
     <!-- Container Tab 2: Manager Review Queue -->
     @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
     <div id="reviewContainer" style="display: none; flex-direction: column; gap: 1rem;">
-        <div id="loadingReview" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <div id="loadingReview" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
             Memuat antrean pengajuan...
         </div>
         <div id="reviewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="emptyReview" style="display: none; text-align: center; padding: 3rem; background: white; border: 1px dashed var(--border); border-radius: 0.5rem;">
-            <p style="color: var(--text-muted); font-size: 0.95rem;">Tidak ada pengajuan bawahan yang sedang menunggu persetujuan Anda.</p>
+        <div id="emptyReview" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
+            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; color: var(--success);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Semua Pengajuan Telah Ditinjau</h4>
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto; text-wrap: balance;">
+                Tidak ada pengajuan bawahan yang sedang menunggu persetujuan Anda saat ini.
+            </p>
         </div>
     </div>
     @endif
@@ -154,31 +179,37 @@
     .call-card {
         background: white;
         border: 1px solid var(--border);
-        border-radius: 0.5rem;
+        border-radius: 0.75rem;
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        gap: 0.75rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        gap: 0.85rem;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), border-color 0.2s ease;
     }
     .call-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
     }
     .status-badge {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
-        padding: 0.2rem 0.6rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 9999px;
         text-transform: uppercase;
-        display: inline-block;
+        letter-spacing: 0.04em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-variant-numeric: tabular-nums;
+        border: 1px solid transparent;
     }
-    .status-draft { background: #f1f5f9; color: #475569; }
-    .status-pending { background: #fef3c7; color: #92400e; }
-    .status-approved { background: #dcfce7; color: #166534; }
-    .status-rejected { background: #fee2e2; color: #991b1b; }
+    .status-draft { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .status-pending { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .status-approved { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .status-rejected { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
 
     .modal-backdrop {
         position: fixed;
@@ -186,22 +217,27 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 50;
         padding: 1rem;
+        animation: modalFadeIn 0.2s ease;
     }
     .modal-card {
         background: white;
-        border-radius: 0.75rem;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 0.875rem;
         width: 100%;
         max-width: 500px;
         padding: 1.5rem;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        animation: modalSlideUp 0.25s var(--ease-spring);
     }
     .close-btn {
         background: transparent;

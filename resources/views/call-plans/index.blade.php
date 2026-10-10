@@ -7,12 +7,17 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan (Call Plan)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
+            <span class="eyebrow">Medical Representative Operations</span>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Jadwal Kunjungan (Call Plan)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">
-                + Buat Jadwal Baru
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Buat Jadwal Baru
             </button>
         </div>
     </div>
@@ -21,7 +26,7 @@
     <div id="planStatusAlert" style="display: none;" class="alert"></div>
 
     <!-- Filter Bar -->
-    <div style="background: white; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+    <div style="background: white; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; box-shadow: var(--shadow-subtle);">
         <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
             <label for="filterDateInput" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
                 Filter Tanggal:
@@ -29,9 +34,9 @@
             <input type="date" id="filterDateInput" onchange="applyFilters()"
                    style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;">
             <div style="display: flex; gap: 0.35rem;">
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="setQuickDate('all')">Semua</button>
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="setQuickDate('today')">Hari Ini</button>
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="setQuickDate('tomorrow')">Besok</button>
+                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('all')">Semua</button>
+                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('today')">Hari Ini</button>
+                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('tomorrow')">Besok</button>
             </div>
         </div>
 
@@ -56,13 +61,20 @@
 
         <div id="plansGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
 
-        <div id="emptyPlans" style="display: none; text-align: center; padding: 3rem; background: white; border: 1px dashed var(--border); border-radius: 0.5rem;">
-            <p style="color: var(--text-muted); font-size: 0.95rem;">
-                Belum ada jadwal kunjungan untuk kriteria filter ini.
+        <div id="emptyPlans" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
+            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Jadwal Kunjungan</h4>
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto 1.25rem; text-wrap: balance;">
+                Pastikan Anda telah memiliki <strong>Call List yang Disetujui (Approved)</strong> dan klik tombol di bawah untuk membuat jadwal harian.
             </p>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
-                Pastikan Anda memiliki <strong>Call List yang Disetujui (Approved)</strong> dan klik tombol <strong>+ Buat Jadwal Baru</strong> di atas.
-            </p>
+            <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">+ Buat Jadwal Kunjungan</button>
         </div>
     </div>
 </div>
@@ -137,30 +149,36 @@
     .plan-card {
         background: white;
         border: 1px solid var(--border);
-        border-radius: 0.5rem;
+        border-radius: 0.75rem;
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        gap: 0.75rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        gap: 0.85rem;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), border-color 0.2s ease;
     }
     .plan-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
     }
     .status-badge {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
-        padding: 0.2rem 0.6rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 9999px;
         text-transform: uppercase;
-        display: inline-block;
+        letter-spacing: 0.04em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-variant-numeric: tabular-nums;
+        border: 1px solid transparent;
     }
-    .status-scheduled { background: #e0f2fe; color: #0369a1; }
-    .status-completed { background: #dcfce7; color: #166534; }
-    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .status-scheduled { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+    .status-completed { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
 
     .modal-backdrop {
         position: fixed;
@@ -168,22 +186,27 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 50;
         padding: 1rem;
+        animation: modalFadeIn 0.2s ease;
     }
     .modal-card {
         background: white;
-        border-radius: 0.75rem;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 0.875rem;
         width: 100%;
         max-width: 500px;
         padding: 1.5rem;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        animation: modalSlideUp 0.25s var(--ease-spring);
     }
     .close-btn {
         background: transparent;

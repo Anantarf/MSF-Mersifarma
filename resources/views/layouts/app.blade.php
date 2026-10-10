@@ -27,6 +27,9 @@
             --border: #e2e8f0;
             --text-main: #0f172a;
             --text-muted: #64748b;
+            --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+            --shadow-elevated: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
         }
 
         * {
@@ -34,11 +37,28 @@
             margin: 0;
             padding: 0;
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         h1, h2, h3, .brand-text {
             font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-            letter-spacing: -0.015em;
+            letter-spacing: -0.025em;
+            text-wrap: balance;
+        }
+
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .eyebrow {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary);
+            display: inline-block;
+            margin-bottom: 0.25rem;
         }
 
         body {
@@ -56,7 +76,7 @@
             position: sticky;
             top: 0;
             z-index: 40;
-            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
         }
 
         .nav-container {
@@ -185,36 +205,61 @@
             justify-content: center;
             min-height: 44px;
             padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
             font-weight: 600;
             border: 1px solid transparent;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s var(--ease-spring);
             text-decoration: none;
+            letter-spacing: -0.01em;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .btn-primary {
-            background: var(--primary);
+            background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
             color: white;
-            box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+            border-color: #0284c7;
+            box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
         }
         .btn-primary:hover {
-            background: var(--primary-hover);
+            background: #0369a1;
+            box-shadow: 0 4px 8px -1px rgba(2, 132, 199, 0.35);
         }
 
         .btn-outline {
-            background: transparent;
+            background: #ffffff;
             border-color: var(--border);
-            color: var(--text-main);
+            color: var(--secondary);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
         .btn-outline:hover {
-            background: var(--border);
+            background: #f8fafc;
+            border-color: #cbd5e1;
         }
 
-        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+        }
+
+        button:focus-visible, a:focus-visible {
             outline: 2px solid var(--primary);
             outline-offset: 2px;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(8px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         main {
@@ -268,10 +313,12 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                height: 60px;
-                background: white;
-                border-top: 1px solid var(--border);
-                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+                height: 62px;
+                background: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-top: 1px solid rgba(226, 232, 240, 0.9);
+                box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
                 z-index: 50;
                 justify-content: space-around;
                 align-items: center;

@@ -3,7 +3,7 @@
 @section('title', 'Login')
 
 @section('content')
-<div style="max-width: 460px; margin: 2rem auto; background: white; border: 1px solid var(--border); border-top: 4px solid var(--primary); border-radius: 0.85rem; padding: 2.25rem 2rem; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);">
+<div style="max-width: 460px; margin: 2rem auto; background: white; border: 1px solid var(--border); border-top: 4px solid var(--primary); border-radius: 0.875rem; padding: 2.25rem 2rem; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);">
     <div style="text-align: center; margin-bottom: 1.75rem;">
         <div style="display: inline-flex; width: 48px; height: 48px; background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); border-radius: 0.75rem; align-items: center; justify-content: center; color: white; margin-bottom: 0.75rem; box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

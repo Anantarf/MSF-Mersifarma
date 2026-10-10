@@ -7,11 +7,17 @@
     <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--secondary);">Realisasi Kunjungan (Call Actual)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
+            <span class="eyebrow">Field Execution & Verification</span>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Realisasi Kunjungan (Call Actual)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
         </div>
-        <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);" onclick="openActualModal(null)">
-            + Kunjungan di Luar Rencana
+        <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 700;" onclick="openActualModal(null)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            Kunjungan di Luar Rencana
         </button>
     </div>
 
@@ -20,31 +26,50 @@
     <!-- Section 1: Today Plans (Planned First UX) -->
     <section style="display: flex; flex-direction: column; gap: 0.85rem;">
         <div>
-            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan Hari Ini</h2>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan Hari Ini</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Jadwal terencana (Planned Visit) diprioritaskan utama untuk efisiensi MR.</p>
         </div>
-        <div id="todayPlansLoading" style="padding: 1.75rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.5rem;">
+        <div id="todayPlansLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: var(--shadow-subtle);">
             Memuat jadwal hari ini...
         </div>
         <div id="todayPlansGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="todayPlansEmpty" style="display: none; padding: 2rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed var(--border); border-radius: 0.5rem;">
-            <p style="font-size: 0.9rem;">Tidak ada jadwal kunjungan untuk hari ini.</p>
-            <p style="font-size: 0.8rem; margin-top: 0.35rem;">Gunakan tombol <strong>+ Kunjungan di Luar Rencana</strong> jika Anda berkunjung di luar jadwal.</p>
+        <div id="todayPlansEmpty" style="display: none; padding: 3rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
+            <div style="width: 44px; height: 44px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">Tidak Ada Jadwal Kunjungan Hari Ini</h4>
+            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 380px; margin: 0 auto; text-wrap: balance;">
+                Gunakan tombol <strong>Kunjungan di Luar Rencana</strong> di atas jika Anda melakukan kunjungan di luar jadwal terencana.
+            </p>
         </div>
     </section>
 
     <!-- Section 2: Completed Actuals History -->
     <section style="display: flex; flex-direction: column; gap: 0.85rem;">
         <div>
-            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary);">Riwayat Kunjungan Selesai</h2>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Riwayat Kunjungan Selesai</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Daftar kunjungan yang telah berhasil dilaporkan dan terverifikasi.</p>
         </div>
-        <div id="actualsLoading" style="padding: 1.75rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.5rem;">
+        <div id="actualsLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: var(--shadow-subtle);">
             Memuat riwayat kunjungan...
         </div>
         <div id="actualsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="actualsEmpty" style="display: none; padding: 2rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed var(--border); border-radius: 0.5rem;">
-            Belum ada kunjungan yang diselesaikan.
+        <div id="actualsEmpty" style="display: none; padding: 3rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
+            <div style="width: 44px; height: 44px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">Belum Ada Riwayat Kunjungan</h4>
+            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 360px; margin: 0 auto; text-wrap: balance;">
+                Kunjungan yang telah berhasil diselesaikan akan tercatat rapi di sini sebagai bukti audit lapangan.
+            </p>
         </div>
     </section>
 </div>
@@ -564,5 +589,80 @@
         }
     }
 </script>
+@endpush
+
+@push('styles')
+<style>
+    .call-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.85rem;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), border-color 0.2s ease;
+    }
+    .call-card:hover {
+        transform: translateY(-2px);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+    }
+    .status-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.55rem;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-variant-numeric: tabular-nums;
+        border: 1px solid transparent;
+    }
+    .status-draft { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .status-scheduled { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+    .status-approved { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 1rem;
+        animation: modalFadeIn 0.2s ease;
+    }
+    .modal-card {
+        background: white;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 0.875rem;
+        width: 100%;
+        max-width: 580px;
+        padding: 1.5rem;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        animation: modalSlideUp 0.25s var(--ease-spring);
+    }
+    .close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        line-height: 1;
+    }
+</style>
 @endpush
 @endsection
