@@ -218,6 +218,16 @@
     let myCallLists = [];
     let reviewCallLists = [];
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[char]));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadDoctors();
         loadMyCallLists();
@@ -230,10 +240,7 @@
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         document.getElementById('periodMonthInput').value = `${yyyy}-${mm}`;
-    });
-
-    // R-32 Keyboard Accessibility: Tutup modal ketika tombol Escape ditekan
-    document.addEventListener('keydown', (e) => {
+    });    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeCreateModal();
             closeDetailModal();
@@ -241,6 +248,13 @@
         }
     });
 
+    function callListStatusClass(status) {
+        if (status === 'pending_approval') {
+            return 'pending';
+        }
+
+        return ['draft', 'approved', 'rejected'].includes(status) ? status : 'draft';
+    }
     function showAlert(message, type = 'success') {
         const alertEl = document.getElementById('statusAlert');
         alertEl.className = `alert alert-${type}`;
@@ -291,8 +305,8 @@
             <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; background: white; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
                 <input type="checkbox" name="doctor_ids" value="${doc.id}" ${selectedIds.includes(doc.id) ? 'checked' : ''} style="margin-top: 0.2rem;">
                 <div>
-                    <strong>${doc.name}</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(${doc.specialization || 'Umum'})</span>
-                    <div style="font-size: 0.75rem; color: #64748b;">${doc.address || '-'}</div>
+                    <strong>${escapeHtml(doc.name)}</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(${escapeHtml(doc.specialization || 'Umum')})</span>
+                    <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(doc.address || '-')}</div>
                 </div>
             </label>
         `).join('');
@@ -337,15 +351,15 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PERIODE: ${cl.period_month}</span>
-                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         </div>
                         <div style="font-size: 1.05rem; font-weight: 700;">Target: ${cl.doctor_count} Dokter</div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                            Approver: <strong>${cl.assigned_approver_name || '-'}</strong>
+                            Approver: <strong>${escapeHtml(cl.assigned_approver_name || '-')}</strong>
                         </div>
                         ${cl.is_rejected_revision && cl.latest_rejection_reason ? `
                             <div style="font-size: 0.775rem; color: var(--danger); background: #fef2f2; padding: 0.35rem 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; border-left: 2px solid var(--danger);">
-                                Catatan Penolakan: <em>"${cl.latest_rejection_reason}"</em>
+                                Catatan Penolakan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
                             </div>
                         ` : ''}
                     </div>
@@ -395,7 +409,7 @@
                         <span style="font-size: 0.8rem; font-weight: 700; color: var(--secondary);">${cl.period_month}</span>
                         <span class="status-badge status-pending">Perlu Review</span>
                     </div>
-                    <div style="font-size: 1rem; font-weight: 700;">Pengaju: ${cl.owner_name}</div>
+                    <div style="font-size: 1rem; font-weight: 700;">Pengaju: ${escapeHtml(cl.owner_name)}</div>
                     <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
                         Target: <strong>${cl.doctor_count} Dokter MCL</strong>
                     </div>
@@ -576,7 +590,7 @@
             const result = await res.json();
 
             if (!result.success) {
-                content.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                content.innerHTML = `<div class="alert alert-danger">${escapeHtml(result.message)}</div>`;
                 return;
             }
 
@@ -588,10 +602,10 @@
                 <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-size: 0.875rem;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                         <span>Periode: <strong>${cl.period_month}</strong></span>
-                        <span class="status-badge status-${cl.status === 'pending_approval' ? 'pending' : cl.status}">${cl.status}</span>
+                        <span class="status-badge status-${cl.status === 'pending_approval' ? 'pending' : cl.status}">${escapeHtml(cl.status)}</span>
                     </div>
-                    <div>Pemilik: <strong>${cl.owner_name}</strong></div>
-                    <div>Approver: <strong>${cl.assigned_approver_name || '-'}</strong></div>
+                    <div>Pemilik: <strong>${escapeHtml(cl.owner_name)}</strong></div>
+                    <div>Approver: <strong>${escapeHtml(cl.assigned_approver_name || '-')}</strong></div>
                 </div>
 
                 <div>
@@ -599,7 +613,7 @@
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto;">
                         ${cl.doctors.map((doc, idx) => `
                             <div style="font-size: 0.85rem; padding: 0.4rem; background: white; border: 1px solid var(--border); border-radius: 0.25rem;">
-                                ${idx + 1}. <strong>${doc.name}</strong> <span style="color: var(--text-muted);">(${doc.specialization || 'Umum'})</span>
+                                ${idx + 1}. <strong>${escapeHtml(doc.name)}</strong> <span style="color: var(--text-muted);">(${escapeHtml(doc.specialization || 'Umum')})</span>
                             </div>
                         `).join('')}
                     </div>
@@ -610,8 +624,8 @@
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; max-height: 150px; overflow-y: auto;">
                         ${cl.approval_history.map(h => `
                             <div style="padding: 0.4rem; background: #f1f5f9; border-radius: 0.25rem;">
-                                <div><strong>${h.actor_name}</strong> melakukan <code>${h.event}</code> (${new Date(h.created_at).toLocaleString('id-ID')})</div>
-                                ${h.reason ? `<div style="color: #64748b; margin-top: 0.2rem;">Catatan: <em>"${h.reason}"</em></div>` : ''}
+                                <div><strong>${escapeHtml(h.actor_name)}</strong> melakukan <code>${escapeHtml(h.event)}</code> (${new Date(h.created_at).toLocaleString('id-ID')})</div>
+                                ${h.reason ? `<div style="color: #64748b; margin-top: 0.2rem;">Catatan: <em>"${escapeHtml(h.reason)}"</em></div>` : ''}
                             </div>
                         `).join('')}
                     </div>

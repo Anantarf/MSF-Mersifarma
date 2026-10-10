@@ -17,7 +17,7 @@ class StoreCallPlanRequest extends FormRequest
             'call_list_id' => ['required', 'integer', 'exists:call_lists,id'],
             'doctor_id' => ['required', 'integer', 'exists:master_customers,id'],
             'plan_date' => ['required', 'date_format:Y-m-d'],
-            'planned_time' => ['required', 'string'],
+            'planned_time' => ['required', 'regex:/^\\d{2}:\\d{2}(:\\d{2})?$/'],
         ];
     }
 
@@ -31,6 +31,7 @@ class StoreCallPlanRequest extends FormRequest
             'plan_date.required' => 'Tanggal rencana kunjungan wajib diisi.',
             'plan_date.date_format' => 'Format tanggal rencana harus YYYY-MM-DD.',
             'planned_time.required' => 'Waktu rencana kunjungan wajib diisi.',
+            'planned_time.regex' => 'Format waktu rencana harus HH:MM atau HH:MM:SS.',
         ];
     }
 }
