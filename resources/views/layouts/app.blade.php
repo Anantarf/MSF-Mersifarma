@@ -10,9 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            /* Identitas Farmasi Medis PT Mersifarma (Teal / Health Emerald) - R-01 & R-37 */
-            --primary: #0f766e;
+        :root {            --primary: #0f766e;
             --primary-hover: #115e59;
             --primary-light: #f0fdfa;
             --secondary: #0f172a;
@@ -129,10 +127,7 @@
         .role-mr { background: #dbeafe; color: #1e40af; }
         .role-dm { background: #fef3c7; color: #92400e; }
         .role-rsm { background: #dcfce7; color: #166534; }
-        .role-mm { background: #f3e8ff; color: #6b21a8; }
-
-        /* Standar Sentuhan Minimum 44px (R-03) */
-        .btn {
+        .role-mm { background: #f3e8ff; color: #6b21a8; }        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -162,10 +157,7 @@
         }
         .btn-outline:hover {
             background: var(--border);
-        }
-
-        /* Keyboard Focus Indicator (R-32) */
-        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        }        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
             outline: 2px solid var(--primary);
             outline-offset: 2px;
         }
@@ -223,9 +215,7 @@
                     Call Plan
                 </a>
                 <a href="{{ route('call-actuals.index') }}" class="nav-link {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}">
-                    Call Actual
-                    <span class="badge-upcoming">Fase 4</span>
-                </a>
+                    Call Actual                </a>
             </nav>
 
             <div class="user-menu">

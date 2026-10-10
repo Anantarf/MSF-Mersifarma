@@ -202,13 +202,20 @@
     let currentCallListDoctors = [];
     let currentPlans = [];
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[char]));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadPlans();
         loadApprovedCallLists();
-    });
-
-    // R-32 Keyboard Accessibility: Escape key closes modal
-    document.addEventListener('keydown', (e) => {
+    });    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeCreatePlanModal();
         }
@@ -263,7 +270,8 @@
         grid.innerHTML = currentPlans.map(plan => {
             const isCompleted = plan.status === 'completed';
             const statusLabel = isCompleted ? 'Selesai Dikunjungi' : 'Dijadwalkan';
-            const statusClass = `status-${plan.status}`;
+            const safeStatus = ['scheduled', 'completed', 'cancelled'].includes(plan.status) ? plan.status : 'scheduled';
+            const statusClass = `status-${safeStatus}`;
 
             // Format tanggal Indonesia sederhana
             const dateObj = new Date(plan.plan_date + 'T' + plan.planned_time);
@@ -277,16 +285,16 @@
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">
                                 ${dateStr}
                             </span>
-                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         </div>
                         <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">
-                            ${plan.doctor_name || 'Dokter'}
+                            ${escapeHtml(plan.doctor_name || 'Dokter')}
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
-                            ${plan.doctor_specialization || 'Spesialis Umum'}
+                            ${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}
                         </div>
                         <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
-                            ${plan.doctor_address || '-'}
+                            ${escapeHtml(plan.doctor_address || '-')}
                         </div>
                         <div style="font-size: 0.8rem; font-weight: 600; color: #0f766e; margin-top: 0.5rem;">
                             Pukul: ${timeStr}
@@ -340,8 +348,8 @@
                 }
                 select.innerHTML = '<option value="">-- Pilih Call List Approved --</option>' +
                     approvedCallLists.map(cl => `
-                        <option value="${cl.id}" data-period="${cl.period_month}">
-                            Periode ${cl.period_month} (${cl.doctor_count} Dokter)
+                        <option value="${cl.id}" data-period="${escapeHtml(cl.period_month)}">
+                            Periode ${escapeHtml(cl.period_month)} (${cl.doctor_count} Dokter)
                         </option>
                     `).join('');
             }
@@ -396,7 +404,7 @@
                 doctorSelect.innerHTML = '<option value="">-- Pilih Dokter Sasaran --</option>' +
                     currentCallListDoctors.map(doc => `
                         <option value="${doc.id}">
-                            ${doc.name} (${doc.specialization || 'Umum'})
+                            ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})
                         </option>
                     `).join('');
                 doctorSelect.disabled = false;
