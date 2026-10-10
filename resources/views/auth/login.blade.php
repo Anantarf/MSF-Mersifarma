@@ -5,7 +5,7 @@
 @push('styles')
 <style>
     body {
-        background: linear-gradient(135deg, rgba(12, 35, 64, 0.78) 0%, rgba(12, 77, 161, 0.72) 100%),
+        background: linear-gradient(135deg, rgba(12, 35, 64, 0.75) 0%, rgba(12, 77, 161, 0.70) 100%),
                     url('{{ asset("images/mersifarma-facility.jpg") }}') center center / cover no-repeat fixed !important;
         min-height: 100vh;
         overflow-y: auto;
@@ -16,14 +16,34 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: calc(100vh - 65px);
+        min-height: calc(100vh - 55px);
     }
 
+    /* Footer transparan agar foto gedung Mersifarma terlihat utuh dan tombol demo tidak bertumpuk */
     footer {
-        background: rgba(255, 255, 255, 0.92) !important;
-        backdrop-filter: blur(8px);
-        padding: 0.65rem 1rem !important;
+        background: transparent !important;
+        border-top: none !important;
+        padding: 0.5rem 1.25rem 0.75rem !important;
         font-size: 0.75rem !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        text-shadow: 0 1px 4px rgba(12, 35, 64, 0.8);
+    }
+    footer strong {
+        color: #ffffff !important;
+    }
+    footer em {
+        color: #b8daf8 !important;
+    }
+    footer div {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    /* Hilangkan background kebiruan akibat browser autofill */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+        -webkit-text-fill-color: var(--text-main) !important;
     }
 
     .login-card {
@@ -32,8 +52,8 @@
         background: #ffffff;
         border-radius: 12px;
         padding: 1.75rem 1.75rem 1.5rem;
-        box-shadow: 0 16px 36px rgba(12, 35, 64, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 45px rgba(12, 35, 64, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.4);
         border-top: 4px solid var(--primary);
     }
 
@@ -49,6 +69,11 @@
     .demo-btn:hover {
         background: #f1f5f9;
         border-color: var(--primary);
+    }
+
+    #demoAccountsTrigger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(12, 35, 64, 0.3) !important;
     }
 
     @keyframes popIn {
@@ -84,19 +109,19 @@
         @csrf
         <div style="margin-bottom: 0.9rem;">
             <label for="email" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Email Pengguna</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
                    style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;"
                    placeholder="nama@mersi.com">
         </div>
 
         <div style="margin-bottom: 1.15rem;">
             <label for="password" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Kata Sandi</label>
-            <input id="password" type="password" name="password" required
+            <input id="password" type="password" name="password" required autocomplete="current-password"
                    style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;"
                    placeholder="••••••••">
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 40px; font-size: 0.9rem; font-weight: 700; border-radius: 6px;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 40px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; letter-spacing: 0.02em;">
             Masuk ke Aplikasi
         </button>
     </form>
@@ -105,7 +130,7 @@
 <!-- Floating Action Button Akun Demo di Pojok Kiri Bawah -->
 <div style="position: fixed; bottom: 20px; left: 20px; z-index: 100;">
     <!-- Popover Menu Akun Demo -->
-    <div id="demoModal" style="display: none; position: absolute; bottom: 50px; left: 0; width: 330px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; box-shadow: 0 12px 30px rgba(12, 35, 64, 0.25); animation: popIn 0.15s ease-out;">
+    <div id="demoModal" style="display: none; position: absolute; bottom: 50px; left: 0; width: 330px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; box-shadow: 0 16px 36px rgba(12, 35, 64, 0.3); animation: popIn 0.15s ease-out;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
             <div style="display: flex; align-items: center; gap: 0.45rem;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -145,7 +170,7 @@
 
     <!-- Tombol Trigger Icon Profile -->
     <button type="button" id="demoAccountsTrigger" onclick="toggleDemoModal()"
-            style="display: flex; align-items: center; gap: 0.45rem; background: #ffffff; color: var(--secondary); border: 1px solid var(--border); padding: 0.45rem 0.85rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 14px rgba(12, 35, 64, 0.2); cursor: pointer; transition: transform 0.15s ease;">
+            style="display: flex; align-items: center; gap: 0.45rem; background: #ffffff; color: var(--secondary); border: 1px solid var(--border); padding: 0.45rem 0.85rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 14px rgba(12, 35, 64, 0.25); cursor: pointer; transition: all 0.15s ease;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
