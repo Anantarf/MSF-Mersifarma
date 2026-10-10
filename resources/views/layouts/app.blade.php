@@ -384,7 +384,6 @@
                     <span class="brand-wordmark">mersi</span>
                     <span class="brand-sub">Mobile Sales Force</span>
                 </div>
-                <span class="brand-badge">v1.5</span>
             </a>
 
             <nav class="nav-links">
