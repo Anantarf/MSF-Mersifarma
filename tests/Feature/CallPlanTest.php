@@ -256,4 +256,40 @@ class CallPlanTest extends TestCase
         $responseOther->assertStatus(200)
             ->assertJsonCount(0, 'data');
     }
+    public function test_non_mr_cannot_create_call_plan_even_with_owned_approved_list(): void
+    {
+        $managerList = CallList::firstOrCreate(
+            [
+                'owner_id' => $this->dm->id,
+                'period_month' => '2027-08-01',
+            ],
+            [
+                'status' => 'approved',
+                'assigned_approver_id' => User::where('email', 'rsm@mersi.com')->firstOrFail()->id,
+                'approved_at' => Carbon::now(),
+            ]
+        );
+        $managerList->update([
+            'status' => 'approved',
+            'approved_at' => Carbon::now(),
+        ]);
+        $managerList->doctors()->sync([$this->doctor1->id]);
+
+        $response = $this->actingAs($this->dm)
+            ->postJson('/api/call-plans', [
+                'call_list_id' => $managerList->id,
+                'doctor_id' => $this->doctor1->id,
+                'plan_date' => '2027-08-12',
+                'planned_time' => '09:00:00',
+            ]);
+
+        $response->assertStatus(403);
+
+        $this->assertDatabaseMissing('call_plans', [
+            'call_list_id' => $managerList->id,
+            'mr_id' => $this->dm->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2027-08-12',
+        ]);
+    }
 }

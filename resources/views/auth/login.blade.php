@@ -217,6 +217,38 @@
         background-color: #fffaf0;
     }
 
+    .password-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .password-input-wrap .input-control {
+        padding-right: 2.5rem;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 0.65rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        padding: 0.25rem;
+        cursor: pointer;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: color 0.15s ease;
+    }
+
+    .password-toggle-btn:hover {
+        color: var(--primary);
+    }
+
     .remember-row {
         display: flex;
         align-items: center;
@@ -409,9 +441,25 @@
 
         <div class="form-group">
             <label for="password" class="form-label">Kata Sandi</label>
-            <input id="password" type="password" name="password" required autocomplete="current-password"
-                   class="input-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                   placeholder="••••••••">
+            <div class="password-input-wrap">
+                <input id="password" type="password" name="password" required autocomplete="current-password"
+                       class="input-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
+                       placeholder="••••••••">
+                <button type="button" id="togglePasswordBtn" class="password-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Tampilkan atau sembunyikan kata sandi" title="Tampilkan kata sandi">
+                    <!-- Eye Open SVG (Default when hidden) -->
+                    <svg id="eyeIconOpen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                        <circle cx="12" cy="7" r="3"/>
+                    </svg>
+                    <!-- Eye Closed SVG (When password visible) -->
+                    <svg id="eyeIconClosed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                        <line x1="2" y1="2" x2="22" y2="22"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="remember-row">
@@ -494,6 +542,32 @@
             passwordInput.classList.remove('is-invalid');
         }
         document.getElementById('demoModal').style.display = 'none';
+    }
+
+    function togglePasswordVisibility() {
+        const pwd = document.getElementById('password');
+        const btn = document.getElementById('togglePasswordBtn');
+        const eyeOpen = document.getElementById('eyeIconOpen');
+        const eyeClosed = document.getElementById('eyeIconClosed');
+        if (!pwd) return;
+
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            if (eyeOpen) eyeOpen.style.display = 'none';
+            if (eyeClosed) eyeClosed.style.display = 'block';
+            if (btn) {
+                btn.setAttribute('title', 'Sembunyikan kata sandi');
+                btn.setAttribute('aria-label', 'Sembunyikan kata sandi');
+            }
+        } else {
+            pwd.type = 'password';
+            if (eyeOpen) eyeOpen.style.display = 'block';
+            if (eyeClosed) eyeClosed.style.display = 'none';
+            if (btn) {
+                btn.setAttribute('title', 'Tampilkan kata sandi');
+                btn.setAttribute('aria-label', 'Tampilkan kata sandi');
+            }
+        }
     }
 
     async function handleLoginSubmit(event) {
