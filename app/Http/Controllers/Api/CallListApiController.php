@@ -32,7 +32,7 @@ class CallListApiController extends Controller
         $user = Auth::user();
         $mode = $request->query('mode', 'owner'); // 'owner' atau 'review'
 
-        $query = CallList::with(['owner', 'assignedApprover', 'doctors']);
+        $query = CallList::with(['owner', 'assignedApprover', 'doctors', 'approvalLogs']);
 
         if ($mode === 'review') {
             // Manager melihat antrean pengajuan yang ditugaskan kepadanya
@@ -61,12 +61,17 @@ class CallListApiController extends Controller
             'success' => true,
             'message' => 'Call Lists retrieved',
             'data' => $callLists->map(function ($cl) {
+                $latestLog = $cl->approvalLogs->sortByDesc('id')->first();
+                $isRejectedRevision = ($cl->status === 'draft' && $latestLog && $latestLog->event === 'rejected');
+
                 return [
                     'id' => $cl->id,
                     'owner_id' => $cl->owner_id,
                     'owner_name' => $cl->owner ? $cl->owner->name : null,
                     'period_month' => Carbon::parse($cl->period_month)->format('Y-m'),
                     'status' => $cl->status,
+                    'is_rejected_revision' => $isRejectedRevision,
+                    'latest_rejection_reason' => $isRejectedRevision ? $latestLog->reason : null,
                     'doctor_count' => $cl->doctors->count(),
                     'assigned_approver_id' => $cl->assigned_approver_id,
                     'assigned_approver_name' => $cl->assignedApprover ? $cl->assignedApprover->name : null,

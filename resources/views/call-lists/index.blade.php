@@ -64,6 +64,7 @@
             <h3 style="font-size: 1.15rem; font-weight: 700;">Buat Draft Call List Baru</h3>
             <button type="button" class="close-btn" onclick="closeCreateModal()">&times;</button>
         </div>
+        <div id="createModalError" style="display: none;" class="alert alert-danger"></div>
         <form id="createCallListForm" onsubmit="handleCreateSubmit(event)">
             <div style="margin-bottom: 1rem;">
                 <label for="periodMonthInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Periode Bulan (YYYY-MM)</label>
@@ -109,6 +110,7 @@
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
             Sesuai aturan bisnis, Call List yang ditolak akan dikembalikan ke status <strong>Draft</strong> agar bawahan dapat melakukan revisi dan mengajukan ulang.
         </p>
+        <div id="rejectModalError" style="display: none;" class="alert alert-danger"></div>
         <form onsubmit="handleRejectSubmit(event)">
             <input type="hidden" id="rejectCallListId">
             <div style="margin-bottom: 1rem;">
@@ -230,6 +232,15 @@
         document.getElementById('periodMonthInput').value = `${yyyy}-${mm}`;
     });
 
+    // R-32 Keyboard Accessibility: Tutup modal ketika tombol Escape ditekan
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeCreateModal();
+            closeDetailModal();
+            closeRejectModal();
+        }
+    });
+
     function showAlert(message, type = 'success') {
         const alertEl = document.getElementById('statusAlert');
         alertEl.className = `alert alert-${type}`;
@@ -277,7 +288,7 @@
             return;
         }
         container.innerHTML = allDoctors.map(doc => `
-            <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; background: white; padding: 0.4rem; border: 1px solid var(--border); border-radius: 0.25rem;">
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; background: white; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
                 <input type="checkbox" name="doctor_ids" value="${doc.id}" ${selectedIds.includes(doc.id) ? 'checked' : ''} style="margin-top: 0.2rem;">
                 <div>
                     <strong>${doc.name}</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(${doc.specialization || 'Umum'})</span>
@@ -315,12 +326,16 @@
         }
         empty.style.display = 'none';
         grid.innerHTML = myCallLists.map(cl => {
-            const statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
-            const statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+            let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
+            let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+            if (cl.is_rejected_revision) {
+                statusClass = 'status-rejected';
+                statusLabel = 'Perlu Revisi (Ditolak)';
+            }
             return `
-                <div class="call-card">
+                <div class="call-card" ${cl.is_rejected_revision ? 'style="border-left: 4px solid var(--danger);"' : ''}>
                     <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PERIODE: ${cl.period_month}</span>
                             <span class="status-badge ${statusClass}">${statusLabel}</span>
                         </div>
@@ -328,11 +343,16 @@
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
                             Approver: <strong>${cl.assigned_approver_name || '-'}</strong>
                         </div>
+                        ${cl.is_rejected_revision && cl.latest_rejection_reason ? `
+                            <div style="font-size: 0.775rem; color: var(--danger); background: #fef2f2; padding: 0.35rem 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; border-left: 2px solid var(--danger);">
+                                Catatan Penolakan: <em>"${cl.latest_rejection_reason}"</em>
+                            </div>
+                        ` : ''}
                     </div>
                     <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Lihat Detail</button>
+                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="openDetailModal(${cl.id})">Lihat Detail</button>
                         ${cl.status === 'draft' ? `
-                            <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="submitCallList(${cl.id})">Ajukan</button>
+                            <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="submitCallList(${cl.id})">Ajukan</button>
                         ` : ''}
                     </div>
                 </div>
@@ -381,15 +401,20 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                    <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Detail</button>
-                    <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; background: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
-                    <button class="btn" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; background: var(--danger); color: white;" onclick="openRejectModal(${cl.id})">Tolak</button>
+                    <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="openDetailModal(${cl.id})">Detail</button>
+                    <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px; background: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
+                    <button class="btn" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px; background: var(--danger); color: white;" onclick="openRejectModal(${cl.id})">Tolak</button>
                 </div>
             </div>
         `).join('');
     }
 
     function openCreateModal() {
+        const errEl = document.getElementById('createModalError');
+        if (errEl) {
+            errEl.style.display = 'none';
+            errEl.innerText = '';
+        }
         document.getElementById('createModal').style.display = 'flex';
     }
 
@@ -399,11 +424,15 @@
 
     async function handleCreateSubmit(e) {
         e.preventDefault();
+        const errEl = document.getElementById('createModalError');
+        errEl.style.display = 'none';
+
         const period = document.getElementById('periodMonthInput').value;
         const selectedDoctors = Array.from(document.querySelectorAll('#doctorPickerList input[name="doctor_ids"]:checked')).map(cb => parseInt(cb.value));
 
         if (!selectedDoctors.length) {
-            alert('Pilih minimal 1 dokter target.');
+            errEl.innerText = 'Pilih minimal 1 dokter target sasaran dari daftar.';
+            errEl.style.display = 'block';
             return;
         }
 
@@ -428,12 +457,14 @@
                 showAlert('Draft Call List berhasil dibuat!');
                 loadMyCallLists();
             } else {
-                alert(data.message || 'Gagal membuat Call List.');
+                errEl.innerText = data.message || 'Gagal membuat Call List.';
+                errEl.style.display = 'block';
             }
         } catch (err) {
             btn.disabled = false;
             btn.innerText = 'Simpan Draft';
-            alert('Terjadi kesalahan jaringan.');
+            errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.style.display = 'block';
         }
     }
 
@@ -447,10 +478,10 @@
                 loadMyCallLists();
                 if (['dm', 'rsm', 'mm'].includes(currentUserRole)) loadReviewCallLists();
             } else {
-                alert(data.message || 'Gagal mengajukan Call List.');
+                showAlert(data.message || 'Gagal mengajukan Call List.', 'danger');
             }
         } catch (err) {
-            alert('Terjadi kesalahan koneksi.');
+            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
         }
     }
 
@@ -468,14 +499,19 @@
                 loadMyCallLists();
                 closeDetailModal();
             } else {
-                alert(data.message || 'Gagal menyetujui Call List.');
+                showAlert(data.message || 'Gagal menyetujui Call List.', 'danger');
             }
         } catch (err) {
-            alert('Terjadi kesalahan koneksi.');
+            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
         }
     }
 
     function openRejectModal(id) {
+        const errEl = document.getElementById('rejectModalError');
+        if (errEl) {
+            errEl.style.display = 'none';
+            errEl.innerText = '';
+        }
         document.getElementById('rejectCallListId').value = id;
         document.getElementById('rejectReasonInput').value = '';
         document.getElementById('rejectModal').style.display = 'flex';
@@ -487,11 +523,15 @@
 
     async function handleRejectSubmit(e) {
         e.preventDefault();
+        const errEl = document.getElementById('rejectModalError');
+        errEl.style.display = 'none';
+
         const id = document.getElementById('rejectCallListId').value;
         const reason = document.getElementById('rejectReasonInput').value.trim();
 
         if (!reason) {
-            alert('Alasan penolakan wajib diisi.');
+            errEl.innerText = 'Alasan penolakan wajib diisi untuk panduan revisi bawahan.';
+            errEl.style.display = 'block';
             return;
         }
 
@@ -515,12 +555,14 @@
                 loadReviewCallLists();
                 loadMyCallLists();
             } else {
-                alert(data.message || 'Gagal menolak Call List.');
+                errEl.innerText = data.message || 'Gagal menolak Call List.';
+                errEl.style.display = 'block';
             }
         } catch (err) {
             btn.disabled = false;
             btn.innerText = 'Tolak & Kembalikan';
-            alert('Terjadi kesalahan jaringan.');
+            errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.style.display = 'block';
         }
     }
 
