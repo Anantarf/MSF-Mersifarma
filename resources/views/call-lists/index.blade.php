@@ -76,6 +76,10 @@
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
                     Pilih Dokter Target dari MCL (Minimal 1 Dokter):
                 </label>
+                <div style="margin-bottom: 0.5rem;">
+                    <input type="text" id="doctorSearchInput" placeholder="Cari nama atau spesialisasi dokter..." oninput="filterDoctorPicker(this.value)"
+                           style="width: 100%; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;">
+                </div>
                 <div id="doctorPickerList" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: #fafafa;">
                     <span style="font-size: 0.85rem; color: var(--text-muted);">Memuat daftar dokter...</span>
                 </div>
@@ -312,6 +316,15 @@
         `).join('');
     }
 
+    function filterDoctorPicker(keyword) {
+        const term = String(keyword || '').toLowerCase().trim();
+        const labels = document.querySelectorAll('#doctorPickerList label');
+        labels.forEach(label => {
+            const text = label.innerText.toLowerCase();
+            label.style.display = text.includes(term) ? 'flex' : 'none';
+        });
+    }
+
     async function loadMyCallLists() {
         document.getElementById('loadingMyLists').style.display = 'block';
         try {
@@ -342,27 +355,23 @@
         grid.innerHTML = myCallLists.map(cl => {
             let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
             let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
-            let borderLeftColor = 'var(--primary)';
-            if (cl.status === 'approved') borderLeftColor = 'var(--success)';
-            if (cl.status === 'pending_approval') borderLeftColor = 'var(--warning)';
             if (cl.is_rejected_revision) {
                 statusClass = 'status-rejected';
                 statusLabel = 'Perlu Revisi (Ditolak)';
-                borderLeftColor = 'var(--danger)';
             }
             return `
-                <div class="call-card" style="border-left: 4px solid ${borderLeftColor};">
+                <div class="call-card">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PERIODE: ${cl.period_month}</span>
                             <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         </div>
-                        <div style="font-size: 1.05rem; font-weight: 700;">Target: ${cl.doctor_count} Dokter</div>
+                        <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">Target: ${cl.doctor_count} Dokter</div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
                             Approver: <strong>${escapeHtml(cl.assigned_approver_name || '-')}</strong>
                         </div>
                         ${cl.is_rejected_revision && cl.latest_rejection_reason ? `
-                            <div style="font-size: 0.775rem; color: var(--danger); background: #fef2f2; padding: 0.35rem 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; border-left: 2px solid var(--danger);">
+                            <div style="font-size: 0.775rem; color: var(--danger); background: #fef2f2; padding: 0.45rem 0.6rem; border-radius: 0.375rem; margin-top: 0.5rem; border: 1px solid #fecaca;">
                                 Catatan Penolakan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
                             </div>
                         ` : ''}
@@ -407,13 +416,13 @@
         }
         empty.style.display = 'none';
         grid.innerHTML = reviewCallLists.map(cl => `
-            <div class="call-card" style="border-left: 4px solid var(--warning);">
+            <div class="call-card">
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <span style="font-size: 0.8rem; font-weight: 700; color: var(--secondary);">${cl.period_month}</span>
                         <span class="status-badge status-pending">Perlu Review</span>
                     </div>
-                    <div style="font-size: 1rem; font-weight: 700;">Pengaju: ${escapeHtml(cl.owner_name)}</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--secondary);">Pengaju: ${escapeHtml(cl.owner_name)}</div>
                     <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
                         Target: <strong>${cl.doctor_count} Dokter MCL</strong>
                     </div>

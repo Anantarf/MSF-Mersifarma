@@ -229,6 +229,25 @@
         setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
     }
 
+    function applyFilters() {
+        loadPlans();
+    }
+
+    function setQuickDate(type) {
+        const input = document.getElementById('filterDateInput');
+        if (type === 'all') {
+            input.value = '';
+        } else if (type === 'today') {
+            const today = new Date();
+            input.value = today.toISOString().split('T')[0];
+        } else if (type === 'tomorrow') {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            input.value = tomorrow.toISOString().split('T')[0];
+        }
+        applyFilters();
+    }
+
     async function loadPlans() {
         const loading = document.getElementById('loadingPlans');
         loading.style.display = 'block';
@@ -279,7 +298,7 @@
             const timeStr = plan.planned_time.substring(0, 5) + ' WIB';
 
             return `
-                <div class="plan-card" style="${isCompleted ? 'border-left: 4px solid var(--success);' : 'border-left: 4px solid var(--primary);'}">
+                <div class="plan-card">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">
@@ -296,7 +315,7 @@
                         <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
                             ${escapeHtml(plan.doctor_address || '-')}
                         </div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #0f766e; margin-top: 0.5rem;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--primary); margin-top: 0.5rem;">
                             Pukul: ${timeStr}
                         </div>
                     </div>
