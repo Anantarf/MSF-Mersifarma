@@ -99,19 +99,22 @@
 
 @section('content')
 <div class="login-card">
-    <!-- Enterprise Branding Header -->
-    <div style="text-align: center; margin-bottom: 1.35rem;">
-        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; margin-bottom: 0.45rem;">
-            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 40px; height: 40px; object-fit: contain;">
-            <span style="font-family: 'Nunito', sans-serif; font-size: 2.15rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; line-height: 1; text-transform: lowercase;">
+    <!-- Mersifarma Official Branding Header -->
+    <div style="text-align: center; margin-bottom: 1.25rem;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; margin-bottom: 0.25rem;">
+            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 42px; height: 42px; object-fit: contain;">
+            <span style="font-family: 'Nunito', sans-serif; font-size: 2.2rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; line-height: 1; text-transform: lowercase;">
                 mersi
             </span>
         </div>
-        <h1 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.01em; margin-bottom: 0.15rem;">
-            Mobile Sales Force
-        </h1>
-        <p style="color: var(--text-muted); font-size: 0.78rem; font-weight: 600;">
-            PT Mersifarma Tirmaku Mercusana
+        <h2 style="font-size: 0.82rem; font-weight: 800; color: var(--secondary); letter-spacing: 0.04em; text-transform: uppercase;">
+            PT MERSIFARMA TIRMAKU MERCUSANA
+        </h2>
+        <p style="color: var(--primary); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.1rem;">
+            MOBILE SALES FORCE (MSF)
+        </p>
+        <p style="color: var(--text-muted); font-size: 0.7rem; font-style: italic; margin-top: 0.25rem;">
+            "Good Quality Improves Life's Quality"
         </p>
     </div>
 
