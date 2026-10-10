@@ -87,6 +87,7 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Login berhasil',
+                    'redirect_url' => redirect()->intended(route('call-lists.index'))->getTargetUrl(),
                     'data' => [
                         'user' => [
                             'id' => Auth::id(),

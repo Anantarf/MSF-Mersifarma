@@ -23,12 +23,12 @@
         min-height: calc(100vh - 55px);
     }
 
-    /* Suppress global alert outside card to preserve centered layout */
+    /* Suppress global static alert outside card */
     main > .alert {
         display: none !important;
     }
 
-    /* Transparent centered footer for cinematic background */
+    /* Transparent centered footer */
     footer {
         background: transparent !important;
         border-top: none !important;
@@ -63,6 +63,77 @@
         cursor: text !important;
         user-select: auto !important;
         -webkit-user-select: auto !important;
+    }
+
+    /* ==========================================================================
+       Top Floating Toast Notification
+       ========================================================================== */
+    .top-toast-banner {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        max-width: 440px;
+        width: calc(100% - 32px);
+        padding: 0.85rem 1.15rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        box-shadow: 0 16px 36px rgba(12, 35, 64, 0.35);
+        animation: slideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .top-toast-success {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-left: 5px solid #16a34a;
+        color: #15803d;
+    }
+
+    .top-toast-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-left: 5px solid #dc2626;
+        color: #b91c1c;
+    }
+
+    .top-toast-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .top-toast-text {
+        flex: 1;
+        line-height: 1.4;
+    }
+
+    .top-toast-close {
+        margin-left: auto;
+        border: none;
+        background: none;
+        font-size: 1.35rem;
+        line-height: 1;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        padding: 0 0.25rem;
+        transition: opacity 0.15s ease;
+    }
+
+    .top-toast-close:hover {
+        opacity: 1;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translate(-50%, -20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
     }
 
     /* ==========================================================================
@@ -117,39 +188,6 @@
         font-size: 0.75rem;
         font-weight: 500;
         font-style: italic;
-    }
-
-    /* Card Alerts */
-    .card-alert-error {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-left: 4px solid var(--danger);
-        border-radius: 6px;
-        padding: 0.6rem 0.75rem;
-        margin-bottom: 1rem;
-        font-size: 0.8rem;
-        color: #991b1b;
-        text-align: left;
-    }
-
-    .card-alert-error-header {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-weight: 700;
-        margin-bottom: 0.2rem;
-    }
-
-    .card-alert-success {
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        border-left: 4px solid var(--success);
-        border-radius: 6px;
-        padding: 0.6rem 0.75rem;
-        margin-bottom: 1rem;
-        font-size: 0.8rem;
-        color: #166534;
-        text-align: left;
     }
 
     /* Form Fields */
@@ -306,6 +344,30 @@
 @endpush
 
 @section('content')
+<!-- Top Floating Notification Toast -->
+@php
+    $hasError = $errors->any() || session('error');
+    $hasSuccess = session('success');
+    $initialMessage = $errors->first() ?? session('error') ?? session('success');
+    $toastClass = $hasError ? 'top-toast-error' : ($hasSuccess ? 'top-toast-success' : '');
+@endphp
+
+<div id="topNotificationBanner" class="top-toast-banner {{ $toastClass }}" style="display: {{ ($hasError || $hasSuccess) ? 'flex' : 'none' }};" role="alert">
+    <div id="topNotificationIcon" class="top-toast-icon">
+        @if ($hasError)
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        @else
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+        @endif
+    </div>
+    <div id="topNotificationText" class="top-toast-text">{{ $initialMessage }}</div>
+    <button type="button" onclick="closeTopNotification()" class="top-toast-close" aria-label="Tutup">&times;</button>
+</div>
+
 <div class="login-card">
     <!-- Brand Header -->
     <div class="brand-header">
@@ -323,28 +385,8 @@
         </p>
     </div>
 
-    <!-- Error Alert Box -->
-    @if ($errors->any())
-        <div class="card-alert-error" role="alert">
-            <div class="card-alert-error-header">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <span>Gagal Masuk</span>
-            </div>
-            <div>{{ $errors->first() }}</div>
-        </div>
-    @endif
-
-    <!-- Success Alert Box -->
-    @if (session('success'))
-        <div class="card-alert-success" role="status">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Authentication Form -->
-    <form method="POST" action="{{ route('login.post') }}" id="loginForm" onsubmit="handleLoginSubmit()">
+    <form method="POST" action="{{ route('login.post') }}" id="loginForm" onsubmit="handleLoginSubmit(event)">
         @csrf
         <div class="form-group">
             <label for="username" class="form-label">Username</label>
@@ -432,21 +474,128 @@
         const usernameInput = document.getElementById('username') || document.getElementById('email');
         if (usernameInput) {
             usernameInput.value = account;
+            usernameInput.classList.remove('is-invalid');
         }
-        document.getElementById('password').value = password;
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.value = password;
+            passwordInput.classList.remove('is-invalid');
+        }
         document.getElementById('demoModal').style.display = 'none';
     }
 
-    function handleLoginSubmit() {
+    async function handleLoginSubmit(event) {
+        event.preventDefault();
         const btn = document.getElementById('submitBtn');
         const text = document.getElementById('btnText');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const rememberInput = document.getElementById('remember');
+
+        usernameInput.classList.remove('is-invalid');
+        passwordInput.classList.remove('is-invalid');
+
         if (btn && text) {
             btn.disabled = true;
-            btn.style.opacity = '0.8';
+            btn.style.opacity = '0.85';
             btn.style.cursor = 'wait';
             text.textContent = 'Memverifikasi...';
         }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch("{{ route('login.post') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    username: usernameInput.value,
+                    password: passwordInput.value,
+                    remember: rememberInput.checked
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showTopNotification('success', 'Login berhasil! Mengalihkan ke sistem...');
+                if (btn && text) {
+                    text.textContent = 'Mengalihkan...';
+                }
+                const redirectTarget = (data && data.redirect_url) ? data.redirect_url : "{{ route('call-lists.index') }}";
+                setTimeout(() => {
+                    window.location.href = redirectTarget;
+                }, 700);
+            } else {
+                const errorMsg = data.message || 'Username atau kata sandi yang Anda masukkan salah.';
+                showTopNotification('error', errorMsg);
+                usernameInput.classList.add('is-invalid');
+                passwordInput.classList.add('is-invalid');
+                if (btn && text) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    text.textContent = 'Masuk ke Aplikasi';
+                }
+            }
+        } catch (error) {
+            document.getElementById('loginForm').submit();
+        }
     }
+
+    let topToastTimer = null;
+
+    function showTopNotification(type, message) {
+        const banner = document.getElementById('topNotificationBanner');
+        const text = document.getElementById('topNotificationText');
+        const icon = document.getElementById('topNotificationIcon');
+        if (!banner || !text) return;
+
+        if (topToastTimer) {
+            clearTimeout(topToastTimer);
+            topToastTimer = null;
+        }
+
+        banner.className = 'top-toast-banner ' + (type === 'success' ? 'top-toast-success' : 'top-toast-error');
+        text.textContent = message;
+        banner.style.opacity = '1';
+        banner.style.transform = 'translate(-50%, 0)';
+        
+        if (type === 'success') {
+            icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+            topToastTimer = setTimeout(() => {
+                closeTopNotification();
+            }, 4500);
+        } else {
+            icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        }
+
+        banner.style.display = 'flex';
+    }
+
+    function closeTopNotification() {
+        const banner = document.getElementById('topNotificationBanner');
+        if (banner) {
+            banner.style.opacity = '0';
+            banner.style.transform = 'translate(-50%, -15px)';
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 200);
+        }
+    }
+
+    // Auto dismiss existing success notification after page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const banner = document.getElementById('topNotificationBanner');
+        if (banner && banner.classList.contains('top-toast-success') && banner.style.display !== 'none') {
+            topToastTimer = setTimeout(() => {
+                closeTopNotification();
+            }, 4500);
+        }
+    });
 
     // Close popover if clicked outside
     document.addEventListener('click', function(event) {
