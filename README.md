@@ -106,10 +106,13 @@ Sesuai kontrak [docs/API_CONTRACT.md](docs/API_CONTRACT.md), sistem menyediakan 
 | `POST` | `/api/auth/login` | Login session via JSON API | ✅ **Siap** |
 | `POST` | `/api/auth/logout` | Logout session via JSON API | ✅ **Siap** |
 | `GET` | `/api/me` | Informasi profil pengguna yang sedang login | ✅ **Siap** |
-| `POST` | `/api/call-lists` | Membuat draft Call List bulanan | ⏳ *Fase 2* |
-| `GET` | `/api/call-lists` | Mengambil daftar Call List milik sendiri / antrean review | ⏳ *Fase 2* |
-| `GET` | `/api/call-lists/{id}` | Detail Call List dan log histori persetujuan | ⏳ *Fase 2* |
-| `PATCH` | `/api/call-lists/{id}/approve` | Persetujuan (Approve/Reject) oleh direct manager | ⏳ *Fase 2* |
+| `GET` | `/api/doctors` | Mengambil seluruh daftar dokter Master Customer List (MCL) | ✅ **Siap** |
+| `POST` | `/api/call-lists` | Membuat draft Call List bulanan | ✅ **Siap** |
+| `GET` | `/api/call-lists` | Mengambil daftar Call List milik sendiri / antrean review | ✅ **Siap** |
+| `GET` | `/api/call-lists/{id}` | Detail Call List dan log histori persetujuan | ✅ **Siap** |
+| `PUT` | `/api/call-lists/{id}` | Memperbarui dokter sasaran draft Call List | ✅ **Siap** |
+| `POST` | `/api/call-lists/{id}/submit` | Mengajukan Call List ke direct manager untuk approval | ✅ **Siap** |
+| `PATCH` | `/api/call-lists/{id}/approve` | Persetujuan (Approve/Reject) oleh direct manager | ✅ **Siap** |
 | `POST` | `/api/call-plans` | Menjadwalkan Call Plan dari Call List Approved | ⏳ *Fase 3* |
 | `GET` | `/api/call-plans` | Mengambil daftar jadwal Call Plan milik MR | ⏳ *Fase 3* |
 | `POST` | `/api/call-actuals` | Mencatat realisasi kunjungan (Planned / Without Plan) | ⏳ *Fase 4* |
