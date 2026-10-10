@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'MSF') : Mobile Sales Force PT Mersifarma</title>
-    <!-- Fonts: Plus Jakarta Sans for UI/data + Outfit for brand/headings -->
+    <!-- Fonts: Nunito for Mersi wordmark + Plus Jakarta Sans for UI/data + Outfit for headings -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #0066b2;          /* PT Mersifarma TM Official Corporate Blue */
-            --primary-hover: #00508c;    /* Deep Mersi Blue hover */
-            --primary-light: #eff6fc;    /* Mersi Blue subtle background tint */
-            --primary-border: #b9ddf8;   /* Mersi Blue crisp border */
+            --primary: #0c4da1;          /* PT Mersifarma TM Authentic Blue */
+            --primary-hover: #083c80;    /* Deep Mersi Blue hover */
+            --primary-light: #eff6fd;    /* Mersi Blue subtle background tint */
+            --primary-border: #b8daf8;   /* Mersi Blue crisp border */
             --secondary: #0c2340;        /* Mersifarma Deep Corporate Navy */
             --secondary-hover: #08182d;
             --success: #059669;          /* Emerald */
@@ -74,40 +74,40 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.65rem;
             text-decoration: none;
             color: var(--secondary);
         }
 
-        .brand-icon {
-            width: 34px;
-            height: 34px;
-            background: var(--primary);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+        .brand-logo-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            display: block;
         }
 
         .brand-titles {
             display: flex;
             flex-direction: column;
-            line-height: 1.15;
+            line-height: 1.1;
         }
 
-        .brand-name {
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--secondary);
-            letter-spacing: 0.02em;
+        .brand-wordmark {
+            font-family: 'Nunito', 'Outfit', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: -0.035em;
+            line-height: 0.95;
+            text-transform: lowercase;
+            display: inline-block;
         }
 
         .brand-sub {
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 700;
-            color: var(--primary);
-            letter-spacing: 0.06em;
+            color: var(--secondary);
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
@@ -373,16 +373,9 @@
     <header>
         <div class="nav-container">
             <a href="{{ route('call-lists.index') }}" class="brand">
-                <div class="brand-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 11C4 6.5 6.5 4 11 4V11H4Z" fill="white"/>
-                        <path d="M13 4C17.5 4 20 6.5 20 11H13V4Z" fill="white"/>
-                        <path d="M4 13H11V20C6.5 20 4 17.5 4 13Z" fill="white"/>
-                        <path d="M13 13H20C20 17.5 17.5 20 13 20V13Z" fill="white"/>
-                    </svg>
-                </div>
+                <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" class="brand-logo-img">
                 <div class="brand-titles">
-                    <span class="brand-name brand-text">MERSIFARMA</span>
+                    <span class="brand-wordmark">mersi</span>
                     <span class="brand-sub">Mobile Sales Force</span>
                 </div>
                 <span class="brand-badge">v1.5</span>
