@@ -346,15 +346,27 @@
 @section('content')
 <!-- Top Floating Notification Toast -->
 @php
-    $hasError = $errors->any() || session('error');
-    $hasSuccess = session('success');
-    $initialMessage = $errors->first() ?? session('error') ?? session('success');
-    $toastClass = $hasError ? 'top-toast-error' : ($hasSuccess ? 'top-toast-success' : '');
+    $initialMessage = '';
+    $toastType = 'info';
+
+    if ($errors->any()) {
+        $initialMessage = $errors->first();
+        $toastType = 'error';
+    } elseif (session('error')) {
+        $initialMessage = session('error');
+        $toastType = 'error';
+    } elseif (session('success')) {
+        $initialMessage = session('success');
+        $toastType = 'success';
+    }
+
+    $shouldShow = !empty(trim((string)$initialMessage));
+    $toastClass = $toastType === 'error' ? 'top-toast-error' : ($toastType === 'success' ? 'top-toast-success' : '');
 @endphp
 
-<div id="topNotificationBanner" class="top-toast-banner {{ $toastClass }}" style="display: {{ ($hasError || $hasSuccess) ? 'flex' : 'none' }};" role="alert">
+<div id="topNotificationBanner" class="top-toast-banner {{ $toastClass }}" style="display: {{ $shouldShow ? 'flex' : 'none' }};" role="alert">
     <div id="topNotificationIcon" class="top-toast-icon">
-        @if ($hasError)
+        @if ($toastType === 'error')
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
@@ -530,7 +542,15 @@
                     window.location.href = redirectTarget;
                 }, 700);
             } else {
-                const errorMsg = data.message || 'Username atau kata sandi yang Anda masukkan salah.';
+                let errorMsg = 'Username atau kata sandi yang Anda masukkan salah.';
+                if (data && data.message) {
+                    errorMsg = data.message;
+                } else if (data && data.errors) {
+                    const firstKey = Object.keys(data.errors)[0];
+                    if (firstKey && data.errors[firstKey] && data.errors[firstKey][0]) {
+                        errorMsg = data.errors[firstKey][0];
+                    }
+                }
                 showTopNotification('error', errorMsg);
                 usernameInput.classList.add('is-invalid');
                 passwordInput.classList.add('is-invalid');
@@ -549,6 +569,7 @@
     let topToastTimer = null;
 
     function showTopNotification(type, message) {
+        if (!message || typeof message !== 'string' || message.trim() === '') return;
         const banner = document.getElementById('topNotificationBanner');
         const text = document.getElementById('topNotificationText');
         const icon = document.getElementById('topNotificationIcon');
@@ -587,13 +608,21 @@
         }
     }
 
-    // Auto dismiss existing success notification after page load
+    // Safety guard & Auto dismiss on page load
     document.addEventListener('DOMContentLoaded', function() {
         const banner = document.getElementById('topNotificationBanner');
-        if (banner && banner.classList.contains('top-toast-success') && banner.style.display !== 'none') {
-            topToastTimer = setTimeout(() => {
-                closeTopNotification();
-            }, 4500);
+        const text = document.getElementById('topNotificationText');
+        if (banner) {
+            const hasText = text && text.textContent.trim().length > 0;
+            if (!hasText) {
+                banner.style.display = 'none';
+                return;
+            }
+            if (banner.classList.contains('top-toast-success')) {
+                topToastTimer = setTimeout(() => {
+                    closeTopNotification();
+                }, 4500);
+            }
         }
     });
 
