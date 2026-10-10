@@ -63,4 +63,25 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 404);
             }
         });
+
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                $statusCode = $e->getStatusCode();
+                $headers = $e->getHeaders();
+                $errorCode = $headers['X-Error-Code'] ?? match ($statusCode) {
+                    403 => 'APPROVAL_NOT_ALLOWED',
+                    404 => 'NOT_FOUND',
+                    409 => 'CONFLICT',
+                    422 => 'VALIDATION_FAILED',
+                    default => 'HTTP_ERROR',
+                };
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => $errorCode,
+                    'errors' => (object) [],
+                ], $statusCode);
+            }
+        });
     })->create();

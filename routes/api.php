@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\CallListApiController;
+use App\Http\Controllers\Api\CallPlanApiController;
 use App\Http\Controllers\Api\DoctorApiController;
 
 /*
@@ -34,4 +35,8 @@ Route::middleware('auth')->group(function () {
     // Supporting Workflow Actions
     Route::put('/call-lists/{id}', [CallListApiController::class, 'update']);
     Route::post('/call-lists/{id}/submit', [CallListApiController::class, 'submit']);
+
+    // 2 Mandatory Call Plan Routes (PDF P0)
+    Route::post('/call-plans', [CallPlanApiController::class, 'store']);
+    Route::get('/call-plans', [CallPlanApiController::class, 'index']);
 });

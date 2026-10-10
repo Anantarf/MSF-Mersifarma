@@ -221,7 +221,6 @@
                 </a>
                 <a href="{{ route('call-plans.index') }}" class="nav-link {{ request()->routeIs('call-plans.*') ? 'active' : '' }}">
                     Call Plan
-                    <span class="badge-upcoming">Fase 3</span>
                 </a>
                 <a href="{{ route('call-actuals.index') }}" class="nav-link {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}">
                     Call Actual
