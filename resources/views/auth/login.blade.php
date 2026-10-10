@@ -58,25 +58,17 @@
         border-top: 4px solid var(--primary);
     }
 
-    /* Mencegah kursor caret/text-box berkedip pada teks statis */
-    .login-card * {
-        caret-color: transparent;
-    }
-    .login-card h1,
-    .login-card h2,
-    .login-card p,
-    .login-card label,
-    .login-card span,
-    .login-card img {
-        user-select: none;
+    /* Mencegah kursor caret/text-box berkedip di luar input */
+    *:not(input):not(textarea) {
+        caret-color: transparent !important;
         -webkit-user-select: none;
-        cursor: default;
+        user-select: none;
     }
-    .login-card input {
+    input, textarea {
         caret-color: var(--primary) !important;
         cursor: text !important;
-        user-select: text !important;
-        -webkit-user-select: text !important;
+        user-select: auto !important;
+        -webkit-user-select: auto !important;
     }
 
     .input-control {
