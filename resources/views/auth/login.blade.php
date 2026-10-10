@@ -347,10 +347,10 @@
     <form method="POST" action="{{ route('login.post') }}" id="loginForm" onsubmit="handleLoginSubmit()">
         @csrf
         <div class="form-group">
-            <label for="email" class="form-label">Email Pengguna</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
-                   class="input-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
-                   placeholder="nama@mersi.com">
+            <label for="username" class="form-label">Username</label>
+            <input id="username" type="text" name="username" value="{{ old('username', old('email')) }}" required autofocus autocomplete="username"
+                   class="input-control {{ $errors->has('email') || $errors->has('login') || $errors->has('username') ? 'is-invalid' : '' }}"
+                   placeholder="Contoh: mr atau mr@mersi.com">
         </div>
 
         <div class="form-group">
@@ -428,8 +428,11 @@
         modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'block' : 'none';
     }
 
-    function fillAccount(email, password) {
-        document.getElementById('email').value = email;
+    function fillAccount(account, password) {
+        const usernameInput = document.getElementById('username') || document.getElementById('email');
+        if (usernameInput) {
+            usernameInput.value = account;
+        }
         document.getElementById('password').value = password;
         document.getElementById('demoModal').style.display = 'none';
     }

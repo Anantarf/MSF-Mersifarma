@@ -21,12 +21,43 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+        $loginInput = $request->input('username') ?? $request->input('email') ?? $request->input('login');
+
+        $request->merge([
+            'login' => $loginInput,
         ]);
 
-        $throttleKey = Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
+        $request->validate([
+            'login' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ], [
+            'login.required' => 'Username atau email wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
+        ]);
+
+        $resolvedEmail = $loginInput;
+        if (!str_contains($loginInput, '@')) {
+            if (strtolower($loginInput) === 'superadmin') {
+                $user = User::where('role', 'mm')->first();
+            } else {
+                $user = User::where('email', $loginInput.'@mersi.com')
+                    ->orWhere('name', 'LIKE', $loginInput.'%')
+                    ->first();
+            }
+
+            if ($user) {
+                $resolvedEmail = $user->email;
+            } else {
+                $resolvedEmail = $loginInput.'@mersi.com';
+            }
+        }
+
+        $credentials = [
+            'email' => $resolvedEmail,
+            'password' => $request->input('password'),
+        ];
+
+        $throttleKey = Str::transliterate(Str::lower($loginInput).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -45,7 +76,7 @@ class AuthController extends Controller
 
             return back()->withErrors([
                 'email' => $message,
-            ])->onlyInput('email');
+            ])->onlyInput('username', 'email');
         }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -76,7 +107,7 @@ class AuthController extends Controller
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email atau password salah',
+                'message' => 'Username atau password salah',
                 'error_code' => 'INVALID_CREDENTIALS',
                 'errors' => [
                     'email' => ['Kredensial yang diberikan tidak cocok dengan data kami.'],
@@ -85,8 +116,8 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
-        ])->onlyInput('email');
+            'email' => 'Username atau kata sandi yang Anda masukkan salah.',
+        ])->onlyInput('username', 'email');
     }
 
     public function logout(Request $request)

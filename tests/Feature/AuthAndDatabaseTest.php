@@ -28,6 +28,17 @@ class AuthAndDatabaseTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_login_with_username_succeeds(): void
+    {
+        $response = $this->post('/login', [
+            'username' => 'mr',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/call-lists');
+        $this->assertAuthenticated();
+    }
+
     public function test_api_login_returns_json_envelope(): void
     {
         $response = $this->postJson('/api/auth/login', [
