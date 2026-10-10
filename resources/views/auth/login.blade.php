@@ -398,15 +398,7 @@
 
 <div id="topNotificationBanner" class="top-toast-banner {{ $toastClass }}" style="display: {{ $shouldShow ? 'flex' : 'none' }};" role="alert">
     <div id="topNotificationIcon" class="top-toast-icon">
-        @if ($toastType === 'error')
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-        @else
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-        @endif
+        <i class="bi {{ $toastType === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill' }}" style="font-size: 1.15rem;"></i>
     </div>
     <div id="topNotificationText" class="top-toast-text">{{ $initialMessage }}</div>
     <button type="button" onclick="closeTopNotification()" class="top-toast-close" aria-label="Tutup">&times;</button>
@@ -446,18 +438,7 @@
                        class="input-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
                        placeholder="••••••••">
                 <button type="button" id="togglePasswordBtn" class="password-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Tampilkan atau sembunyikan kata sandi" title="Tampilkan kata sandi">
-                    <!-- Eye Open SVG (Default when hidden) -->
-                    <svg id="eyeIconOpen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                        <circle cx="12" cy="7" r="3"/>
-                    </svg>
-                    <!-- Eye Closed SVG (When password visible) -->
-                    <svg id="eyeIconClosed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
-                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
-                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
-                        <line x1="2" y1="2" x2="22" y2="22"/>
-                    </svg>
+                    <i id="passwordEyeIcon" class="bi bi-eye" style="font-size: 1.1rem;"></i>
                 </button>
             </div>
         </div>
@@ -480,10 +461,7 @@
     <div id="demoModal" class="demo-popover" role="dialog" aria-label="Pilihan Akun Demo">
         <div class="demo-popover-header">
             <div style="display: flex; align-items: center; gap: 0.45rem;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
+                <i class="bi bi-person-badge" style="font-size: 1.05rem; color: var(--primary);"></i>
                 <strong style="font-size: 0.8rem; color: var(--secondary);">Akun Demo Pengujian</strong>
             </div>
             <button type="button" onclick="toggleDemoModal()" aria-label="Tutup" class="demo-close-btn">&times;</button>
@@ -516,10 +494,7 @@
     </div>
 
     <button type="button" id="demoAccountsTrigger" onclick="toggleDemoModal()" class="floating-demo-trigger" aria-haspopup="dialog">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-        </svg>
+        <i class="bi bi-person-badge" style="font-size: 1.05rem; color: var(--primary);"></i>
         <span>Akun Demo</span>
     </button>
 </div>
@@ -539,30 +514,35 @@
         const passwordInput = document.getElementById('password');
         if (passwordInput) {
             passwordInput.value = password;
+            passwordInput.type = 'password';
             passwordInput.classList.remove('is-invalid');
+            const eyeIcon = document.getElementById('passwordEyeIcon');
+            if (eyeIcon) eyeIcon.className = 'bi bi-eye';
+            const btn = document.getElementById('togglePasswordBtn');
+            if (btn) {
+                btn.setAttribute('title', 'Tampilkan kata sandi');
+                btn.setAttribute('aria-label', 'Tampilkan kata sandi');
+            }
         }
         document.getElementById('demoModal').style.display = 'none';
     }
 
     function togglePasswordVisibility() {
         const pwd = document.getElementById('password');
+        const icon = document.getElementById('passwordEyeIcon');
         const btn = document.getElementById('togglePasswordBtn');
-        const eyeOpen = document.getElementById('eyeIconOpen');
-        const eyeClosed = document.getElementById('eyeIconClosed');
-        if (!pwd) return;
+        if (!pwd || !icon) return;
 
         if (pwd.type === 'password') {
             pwd.type = 'text';
-            if (eyeOpen) eyeOpen.style.display = 'none';
-            if (eyeClosed) eyeClosed.style.display = 'block';
+            icon.className = 'bi bi-eye-slash';
             if (btn) {
                 btn.setAttribute('title', 'Sembunyikan kata sandi');
                 btn.setAttribute('aria-label', 'Sembunyikan kata sandi');
             }
         } else {
             pwd.type = 'password';
-            if (eyeOpen) eyeOpen.style.display = 'block';
-            if (eyeClosed) eyeClosed.style.display = 'none';
+            icon.className = 'bi bi-eye';
             if (btn) {
                 btn.setAttribute('title', 'Tampilkan kata sandi');
                 btn.setAttribute('aria-label', 'Tampilkan kata sandi');
@@ -660,12 +640,12 @@
         banner.style.transform = 'translate(-50%, 0)';
         
         if (type === 'success') {
-            icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+            icon.innerHTML = '<i class="bi bi-check-circle-fill" style="font-size: 1.15rem;"></i>';
             topToastTimer = setTimeout(() => {
                 closeTopNotification();
             }, 4500);
         } else {
-            icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            icon.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="font-size: 1.15rem;"></i>';
         }
 
         banner.style.display = 'flex';
