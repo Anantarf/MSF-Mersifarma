@@ -99,22 +99,22 @@
 
 @section('content')
 <div class="login-card">
-    <!-- Login Card Branding Header -->
-    <div style="text-align: center; margin-bottom: 1.25rem;">
-        <!-- Logo tanpa mersi (center) -->
-        <div style="margin-bottom: 0.55rem;">
-            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 48px; height: 48px; object-fit: contain; display: inline-block;">
+    <!-- Login Card Branding Header (Refined Visual Hierarchy) -->
+    <div style="text-align: center; margin-bottom: 1.35rem;">
+        <!-- Logo Emblem Proporsional (Center) -->
+        <div style="margin-bottom: 0.75rem;">
+            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 58px; height: 58px; object-fit: contain; display: inline-block;">
         </div>
         <!-- Mobile Sales Force -->
-        <h1 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.01em; margin-bottom: 0.2rem;">
+        <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.3rem;">
             Mobile Sales Force
         </h1>
-        <!-- PT MERSIFARMA TIRMAKU MERCUSANA -->
-        <h2 style="font-size: 0.8rem; font-weight: 800; color: var(--primary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.2rem;">
-            PT MERSIFARMA TIRMAKU MERCUSANA
+        <!-- PT Mersifarma Tirmaku Mercusana -->
+        <h2 style="font-size: 0.85rem; font-weight: 700; color: #1e293b; letter-spacing: -0.01em; margin-bottom: 0.25rem;">
+            PT Mersifarma Tirmaku Mercusana
         </h2>
         <!-- Slogan -->
-        <p style="color: var(--text-muted); font-size: 0.72rem; font-style: italic;">
+        <p style="color: var(--primary); font-size: 0.75rem; font-weight: 500; font-style: italic;">
             "Good Quality Improves Life's Quality"
         </p>
     </div>
