@@ -7,17 +7,12 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <span class="eyebrow">Medical Representative Operations</span>
-            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Target Dokter (Call List)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Kelola perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Target Dokter (Call List)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan target sasaran dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Buat Call List Baru
+                + Buat Call List Baru
             </button>
         </div>
     </div>
@@ -42,21 +37,26 @@
         <div id="loadingMyLists" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
             Memuat daftar Call List...
         </div>
-        <div id="myListsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="emptyMyLists" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
-            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="12" y1="18" x2="12" y2="12"></line>
-                    <line x1="9" y1="15" x2="15" y2="15"></line>
-                </svg>
-            </div>
+        <div id="myListsTableWrap" class="table-responsive" style="display: none;">
+            <table class="enterprise-table">
+                <thead>
+                    <tr>
+                        <th>Periode</th>
+                        <th>Target Sasaran</th>
+                        <th>Status</th>
+                        <th>Atasan Peninjau</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="myListsTableBody"></tbody>
+            </table>
+        </div>
+        <div id="emptyMyLists" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Call List</h4>
-            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto 1.25rem; text-wrap: balance;">
-                Mulai dengan menyusun target dokter bulanan dan ajukan ke atasan langsung Anda untuk diverifikasi.
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
+                Susun perencanaan target dokter bulanan dan ajukan ke atasan langsung Anda untuk mendapatkan persetujuan operasional.
             </p>
-            <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Pertama</button>
+            <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Baru</button>
         </div>
     </div>
 
@@ -66,15 +66,23 @@
         <div id="loadingReview" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
             Memuat antrean pengajuan...
         </div>
-        <div id="reviewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="emptyReview" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
-            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; color: var(--success);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-            </div>
+        <div id="reviewTableWrap" class="table-responsive" style="display: none;">
+            <table class="enterprise-table">
+                <thead>
+                    <tr>
+                        <th>Periode</th>
+                        <th>Bawahan Pengaju</th>
+                        <th>Target Sasaran</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="reviewTableBody"></tbody>
+            </table>
+        </div>
+        <div id="emptyReview" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Semua Pengajuan Telah Ditinjau</h4>
-            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto; text-wrap: balance;">
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto;">
                 Tidak ada pengajuan bawahan yang sedang menunggu persetujuan Anda saat ini.
             </p>
         </div>
@@ -194,19 +202,19 @@
         box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
     }
     .status-badge {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         font-weight: 700;
-        padding: 0.2rem 0.55rem;
-        border-radius: 9999px;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.03em;
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
         font-variant-numeric: tabular-nums;
         border: 1px solid transparent;
     }
-    .status-draft { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .status-draft { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .status-pending { background: #fffbeb; color: #92400e; border-color: #fde68a; }
     .status-approved { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
     .status-rejected { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
@@ -217,27 +225,23 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(15, 23, 42, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 50;
         padding: 1rem;
-        animation: modalFadeIn 0.2s ease;
     }
     .modal-card {
         background: white;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 0.875rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
         width: 100%;
         max-width: 500px;
         padding: 1.5rem;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        animation: modalSlideUp 0.25s var(--ease-spring);
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
     }
     .close-btn {
         background: transparent;
@@ -380,15 +384,18 @@
     }
 
     function renderMyListsGrid() {
-        const grid = document.getElementById('myListsGrid');
+        const tableWrap = document.getElementById('myListsTableWrap');
+        const tbody = document.getElementById('myListsTableBody');
         const empty = document.getElementById('emptyMyLists');
         if (!myCallLists.length) {
-            grid.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
             empty.style.display = 'block';
             return;
         }
         empty.style.display = 'none';
-        grid.innerHTML = myCallLists.map(cl => {
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = myCallLists.map(cl => {
             let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
             let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
             if (cl.is_rejected_revision) {
@@ -396,29 +403,33 @@
                 statusLabel = 'Perlu Revisi (Ditolak)';
             }
             return `
-                <div class="call-card">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
-                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PERIODE: ${cl.period_month}</span>
-                            <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-                        </div>
-                        <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">Target: ${cl.doctor_count} Dokter</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                            Approver: <strong>${escapeHtml(cl.assigned_approver_name || '-')}</strong>
-                        </div>
+                <tr>
+                    <td>
+                        <strong style="color: var(--secondary); font-size: 0.95rem;">${cl.period_month}</strong>
+                    </td>
+                    <td>
+                        <strong>${cl.doctor_count} Dokter Sasaran</strong>
+                    </td>
+                    <td>
+                        <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         ${cl.is_rejected_revision && cl.latest_rejection_reason ? `
-                            <div style="font-size: 0.775rem; color: var(--danger); background: #fef2f2; padding: 0.45rem 0.6rem; border-radius: 0.375rem; margin-top: 0.5rem; border: 1px solid #fecaca;">
-                                Catatan Penolakan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
+                            <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+                                Catatan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
                             </div>
                         ` : ''}
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="openDetailModal(${cl.id})">Lihat Detail</button>
-                        ${cl.status === 'draft' ? `
-                            <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="submitCallList(${cl.id})">Ajukan</button>
-                        ` : ''}
-                    </div>
-                </div>
+                    </td>
+                    <td>
+                        <span>${escapeHtml(cl.assigned_approver_name || '-')}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 0.35rem;">
+                            <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Detail</button>
+                            ${cl.status === 'draft' ? `
+                                <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="submitCallList(${cl.id})">Ajukan</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
             `;
         }).join('');
     }
@@ -443,32 +454,39 @@
     }
 
     function renderReviewGrid() {
-        const grid = document.getElementById('reviewGrid');
+        const tableWrap = document.getElementById('reviewTableWrap');
+        const tbody = document.getElementById('reviewTableBody');
         const empty = document.getElementById('emptyReview');
         if (!reviewCallLists.length) {
-            grid.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
             empty.style.display = 'block';
             return;
         }
         empty.style.display = 'none';
-        grid.innerHTML = reviewCallLists.map(cl => `
-            <div class="call-card">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--secondary);">${cl.period_month}</span>
-                        <span class="status-badge status-pending">Perlu Review</span>
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = reviewCallLists.map(cl => `
+            <tr>
+                <td>
+                    <strong style="color: var(--secondary); font-size: 0.95rem;">${cl.period_month}</strong>
+                </td>
+                <td>
+                    <strong>${escapeHtml(cl.owner_name)}</strong>
+                </td>
+                <td>
+                    <strong>${cl.doctor_count} Dokter Sasaran</strong>
+                </td>
+                <td>
+                    <span class="status-badge status-pending">Menunggu Review</span>
+                </td>
+                <td style="text-align: right;">
+                    <div style="display: inline-flex; gap: 0.35rem;">
+                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Periksa</button>
+                        <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; background: var(--success); border-color: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
+                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; color: var(--danger); border-color: #fca5a5;" onclick="openRejectModal(${cl.id})">Tolak</button>
                     </div>
-                    <div style="font-size: 1rem; font-weight: 700; color: var(--secondary);">Pengaju: ${escapeHtml(cl.owner_name)}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
-                        Target: <strong>${cl.doctor_count} Dokter MCL</strong>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                    <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px;" onclick="openDetailModal(${cl.id})">Detail</button>
-                    <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px; background: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
-                    <button class="btn" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; min-height: 40px; background: var(--danger); color: white;" onclick="openRejectModal(${cl.id})">Tolak</button>
-                </div>
-            </div>
+                </td>
+            </tr>
         `).join('');
     }
 

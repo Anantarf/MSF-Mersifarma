@@ -7,17 +7,12 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <span class="eyebrow">Medical Representative Operations</span>
-            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Jadwal Kunjungan (Call Plan)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan (Call Plan)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Buat Jadwal Baru
+                + Buat Jadwal Baru
             </button>
         </div>
     </div>
@@ -26,13 +21,13 @@
     <div id="planStatusAlert" style="display: none;" class="alert"></div>
 
     <!-- Filter Bar -->
-    <div style="background: white; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; box-shadow: var(--shadow-subtle);">
+    <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
         <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
             <label for="filterDateInput" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
                 Filter Tanggal:
             </label>
             <input type="date" id="filterDateInput" onchange="applyFilters()"
-                   style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;">
+                   style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;">
             <div style="display: flex; gap: 0.35rem;">
                 <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('all')">Semua</button>
                 <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('today')">Hari Ini</button>
@@ -45,7 +40,7 @@
                 Status:
             </label>
             <select id="filterStatusSelect" onchange="applyFilters()"
-                    style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;">
+                    style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;">
                 <option value="">Semua Status</option>
                 <option value="scheduled">Dijadwalkan (Scheduled)</option>
                 <option value="completed">Selesai Dikunjungi (Completed)</option>
@@ -59,20 +54,25 @@
             Memuat jadwal kunjungan...
         </div>
 
-        <div id="plansGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
+        <div id="planTableWrap" class="table-responsive" style="display: none;">
+            <table class="enterprise-table">
+                <thead>
+                    <tr>
+                        <th>Jadwal Kunjungan</th>
+                        <th>Dokter Sasaran</th>
+                        <th>Spesialisasi & Faskes</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="planTableBody"></tbody>
+            </table>
+        </div>
 
-        <div id="emptyPlans" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
-            <div style="width: 48px; height: 48px; margin: 0 auto 0.85rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-            </div>
+        <div id="emptyPlans" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Jadwal Kunjungan</h4>
-            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 400px; margin: 0 auto 1.25rem; text-wrap: balance;">
-                Pastikan Anda telah memiliki <strong>Call List yang Disetujui (Approved)</strong> dan klik tombol di bawah untuk membuat jadwal harian.
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
+                Pastikan Anda telah memiliki <strong>Call List yang Disetujui (Approved)</strong> dan klik tombol di bawah untuk menyusun jadwal harian.
             </p>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">+ Buat Jadwal Kunjungan</button>
         </div>
@@ -164,12 +164,12 @@
         box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
     }
     .status-badge {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         font-weight: 700;
-        padding: 0.2rem 0.55rem;
-        border-radius: 9999px;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.03em;
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
@@ -186,27 +186,23 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(15, 23, 42, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 50;
         padding: 1rem;
-        animation: modalFadeIn 0.2s ease;
     }
     .modal-card {
         background: white;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 0.875rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
         width: 100%;
         max-width: 500px;
         padding: 1.5rem;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        animation: modalSlideUp 0.25s var(--ease-spring);
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
     }
     .close-btn {
         background: transparent;
@@ -299,61 +295,57 @@
     }
 
     function renderPlansGrid() {
-        const grid = document.getElementById('plansGrid');
+        const tableWrap = document.getElementById('planTableWrap');
+        const tbody = document.getElementById('planTableBody');
         const empty = document.getElementById('emptyPlans');
 
         if (!currentPlans.length) {
-            grid.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
             empty.style.display = 'block';
             return;
         }
 
         empty.style.display = 'none';
-        grid.innerHTML = currentPlans.map(plan => {
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = currentPlans.map(plan => {
             const isCompleted = plan.status === 'completed';
             const statusLabel = isCompleted ? 'Selesai Dikunjungi' : 'Dijadwalkan';
             const safeStatus = ['scheduled', 'completed', 'cancelled'].includes(plan.status) ? plan.status : 'scheduled';
             const statusClass = `status-${safeStatus}`;
 
-            // Format tanggal Indonesia sederhana
             const dateObj = new Date(plan.plan_date + 'T' + plan.planned_time);
-            const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
             const timeStr = plan.planned_time.substring(0, 5) + ' WIB';
 
             return `
-                <div class="plan-card">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
-                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">
-                                ${dateStr}
-                            </span>
-                            <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-                        </div>
-                        <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">
-                            ${escapeHtml(plan.doctor_name || 'Dokter')}
-                        </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
-                            ${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}
-                        </div>
-                        <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
-                            ${escapeHtml(plan.doctor_address || '-')}
-                        </div>
-                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--primary); margin-top: 0.5rem;">
-                            Pukul: ${timeStr}
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <tr>
+                    <td>
+                        <strong style="color: var(--secondary); font-size: 0.9rem;">${dateStr}</strong>
+                        <div style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${timeStr}</div>
+                    </td>
+                    <td>
+                        <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name || 'Dokter')}</strong>
+                    </td>
+                    <td>
+                        <div>${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}</div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
+                    </td>
+                    <td>
+                        <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                    </td>
+                    <td style="text-align: right;">
                         ${!isCompleted ? `
-                            <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; min-height: 40px; text-decoration: none;">
+                            <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; text-decoration: none;">
                                 Mulai Kunjungan
                             </a>
                         ` : `
-                            <span style="font-size: 0.75rem; color: var(--success); font-weight: 600; align-self: center;">
-                                Kunjungan Selesai
+                            <span style="font-size: 0.8rem; color: var(--success); font-weight: 600;">
+                                Selesai
                             </span>
                         `}
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `;
         }).join('');
     }

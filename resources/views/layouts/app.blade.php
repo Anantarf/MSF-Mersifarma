@@ -11,25 +11,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #0284c7;          /* Mersifarma Medical Sky-Blue */
-            --primary-hover: #0369a1;    /* Deep sky hover */
-            --primary-light: #f0f9ff;    /* Sky tint */
-            --primary-border: #bae6fd;   /* Sky light border */
-            --mersi-cyan: #0ea5e9;       /* Vibrant cyan accent */
-            --mersi-teal: #0f766e;       /* Pharma clinic teal */
-            --secondary: #0f172a;        /* Deep slate navy */
-            --secondary-hover: #1e293b;
-            --success: #059669;          /* Emerald for approved/completed */
-            --danger: #dc2626;           /* Crimson alert */
-            --warning: #d97706;          /* Amber pending */
+            --primary: #008289;          /* PT Mersifarma TM Corporate Teal */
+            --primary-hover: #00686e;    /* Deep teal hover */
+            --primary-light: #f0fdfa;    /* Teal light tint */
+            --primary-border: #99f6e4;   /* Teal border */
+            --secondary: #1e293b;        /* Charcoal slate navy */
+            --secondary-hover: #0f172a;
+            --success: #059669;          /* Emerald */
+            --danger: #dc2626;           /* Red */
+            --warning: #d97706;          /* Amber */
             --surface: #ffffff;
             --background: #f8fafc;
-            --border: #e2e8f0;
+            --border: #cbd5e1;           /* Crisp solid enterprise border */
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-            --shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
-            --shadow-elevated: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
         }
 
         * {
@@ -37,28 +32,16 @@
             margin: 0;
             padding: 0;
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         h1, h2, h3, .brand-text {
             font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-            letter-spacing: -0.025em;
-            text-wrap: balance;
+            color: var(--secondary);
+            font-weight: 700;
         }
 
         .tabular-nums {
             font-variant-numeric: tabular-nums;
-        }
-
-        .eyebrow {
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--primary);
-            display: inline-block;
-            margin-bottom: 0.25rem;
         }
 
         body {
@@ -97,15 +80,14 @@
         }
 
         .brand-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
-            border-radius: 0.5rem;
+            width: 34px;
+            height: 34px;
+            background: var(--primary);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
         }
 
         .brand-titles {
@@ -194,7 +176,7 @@
             text-transform: uppercase;
         }
 
-        .role-mr { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .role-mr { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
         .role-dm { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .role-rsm { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .role-mm { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
@@ -203,48 +185,49 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 44px;
+            min-height: 40px;
             padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: 6px;
             font-size: 0.875rem;
             font-weight: 600;
             border: 1px solid transparent;
             cursor: pointer;
-            transition: all 0.2s var(--ease-spring);
+            transition: background-color 0.15s ease, border-color 0.15s ease;
             text-decoration: none;
-            letter-spacing: -0.01em;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
         }
 
         .btn-primary {
-            background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
-            color: white;
-            border-color: #0284c7;
-            box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary-hover);
         }
         .btn-primary:hover {
-            background: #0369a1;
-            box-shadow: 0 4px 8px -1px rgba(2, 132, 199, 0.35);
+            background: var(--primary-hover);
         }
 
         .btn-outline {
             background: #ffffff;
             border-color: var(--border);
             color: var(--secondary);
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
         .btn-outline:hover {
             background: #f8fafc;
-            border-color: #cbd5e1;
+            border-color: #94a3b8;
+        }
+
+        input, select, textarea {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-main);
+            background: #ffffff;
         }
 
         input:focus, select:focus, textarea:focus {
             border-color: var(--primary) !important;
             outline: none !important;
-            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+            box-shadow: 0 0 0 2px rgba(0, 130, 137, 0.2) !important;
         }
 
         button:focus-visible, a:focus-visible {
@@ -252,14 +235,46 @@
             outline-offset: 2px;
         }
 
-        @keyframes modalFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #ffffff;
         }
 
-        @keyframes modalSlideUp {
-            from { opacity: 0; transform: translateY(8px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .enterprise-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+
+        .enterprise-table th {
+            background: #f8fafc;
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            color: var(--secondary);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .enterprise-table td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .enterprise-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .enterprise-table tbody tr:hover {
+            background: #f8fafc;
         }
 
         main {
@@ -313,12 +328,10 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                height: 62px;
-                background: rgba(255, 255, 255, 0.92);
-                backdrop-filter: blur(16px);
-                -webkit-backdrop-filter: blur(16px);
-                border-top: 1px solid rgba(226, 232, 240, 0.9);
-                box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
+                height: 60px;
+                background: #ffffff;
+                border-top: 1px solid var(--border);
+                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
                 z-index: 50;
                 justify-content: space-around;
                 align-items: center;

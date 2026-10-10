@@ -7,17 +7,11 @@
     <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <span class="eyebrow">Field Execution & Verification</span>
-            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">Realisasi Kunjungan (Call Actual)</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem; text-wrap: balance;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Realisasi Kunjungan (Call Actual)</h1>
+            <p style="color: var(--text-muted); font-size: 0.875rem;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
         </div>
-        <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 700;" onclick="openActualModal(null)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="16"></line>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-            Kunjungan di Luar Rencana
+        <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 600;" onclick="openActualModal(null)">
+            + Kunjungan di Luar Rencana
         </button>
     </div>
 
@@ -29,22 +23,26 @@
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan Hari Ini</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Jadwal terencana (Planned Visit) diprioritaskan utama untuk efisiensi MR.</p>
         </div>
-        <div id="todayPlansLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: var(--shadow-subtle);">
+        <div id="todayPlansLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
             Memuat jadwal hari ini...
         </div>
-        <div id="todayPlansGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="todayPlansEmpty" style="display: none; padding: 3rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
-            <div style="width: 44px; height: 44px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-            </div>
+        <div id="todayPlansTableWrap" class="table-responsive" style="display: none;">
+            <table class="enterprise-table">
+                <thead>
+                    <tr>
+                        <th>Jam Rencana</th>
+                        <th>Dokter Sasaran</th>
+                        <th>Spesialisasi & Alamat</th>
+                        <th style="text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="todayPlansTableBody"></tbody>
+            </table>
+        </div>
+        <div id="todayPlansEmpty" style="display: none; padding: 2.5rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">Tidak Ada Jadwal Kunjungan Hari Ini</h4>
-            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 380px; margin: 0 auto; text-wrap: balance;">
-                Gunakan tombol <strong>Kunjungan di Luar Rencana</strong> di atas jika Anda melakukan kunjungan di luar jadwal terencana.
+            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 400px; margin: 0 auto;">
+                Gunakan tombol <strong>+ Kunjungan di Luar Rencana</strong> di atas jika Anda melakukan kunjungan di luar jadwal terencana.
             </p>
         </div>
     </section>
@@ -55,20 +53,27 @@
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Riwayat Kunjungan Selesai</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Daftar kunjungan yang telah berhasil dilaporkan dan terverifikasi.</p>
         </div>
-        <div id="actualsLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: var(--shadow-subtle);">
+        <div id="actualsLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
             Memuat riwayat kunjungan...
         </div>
-        <div id="actualsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;"></div>
-        <div id="actualsEmpty" style="display: none; padding: 3rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px dashed #cbd5e1; border-radius: 0.75rem;">
-            <div style="width: 44px; height: 44px; margin: 0 auto 0.75rem; border-radius: 50%; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                </svg>
-            </div>
+        <div id="actualsTableWrap" class="table-responsive" style="display: none;">
+            <table class="enterprise-table">
+                <thead>
+                    <tr>
+                        <th>Tanggal & Jam</th>
+                        <th>Dokter Sasaran</th>
+                        <th>Kategori Kunjungan</th>
+                        <th>Detailing Produk</th>
+                        <th>Verifikasi Bukti</th>
+                    </tr>
+                </thead>
+                <tbody id="actualsTableBody"></tbody>
+            </table>
+        </div>
+        <div id="actualsEmpty" style="display: none; padding: 2.5rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">Belum Ada Riwayat Kunjungan</h4>
-            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 360px; margin: 0 auto; text-wrap: balance;">
-                Kunjungan yang telah berhasil diselesaikan akan tercatat rapi di sini sebagai bukti audit lapangan.
+            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 380px; margin: 0 auto;">
+                Kunjungan yang telah berhasil diselesaikan akan tercatat rapi di tabel ini sebagai bukti audit operasional.
             </p>
         </div>
     </section>
@@ -415,48 +420,52 @@
     }
 
     function renderTodayPlans() {
-        const grid = document.getElementById('todayPlansGrid');
+        const tableWrap = document.getElementById('todayPlansTableWrap');
+        const tbody = document.getElementById('todayPlansTableBody');
         const empty = document.getElementById('todayPlansEmpty');
         if (!todayPlans.length) {
-            grid.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
             empty.style.display = 'block';
             return;
         }
         empty.style.display = 'none';
-        grid.innerHTML = todayPlans.map((plan) => `
-            <article class="call-card" style="background: white; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 0.2rem 0.5rem; border-radius: 0.25rem;">
-                            TERJADWAL HARI INI
-                        </span>
-                        <span style="font-size: 0.8rem; font-weight: 700; color: var(--secondary);">
-                            ${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB
-                        </span>
-                    </div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">${escapeHtml(plan.doctor_name)}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">${escapeHtml(plan.doctor_specialization || 'Umum')}</div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">${escapeHtml(plan.doctor_address || '-')}</div>
-                </div>
-                <div style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.5rem;">
-                    <button type="button" class="btn btn-primary" style="width: 100%; min-height: 42px; font-size: 0.9rem;" onclick="openActualModal(${plan.id})">
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = todayPlans.map((plan) => `
+            <tr>
+                <td>
+                    <strong style="color: var(--primary); font-size: 0.95rem;">${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Hari Ini</div>
+                </td>
+                <td>
+                    <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name)}</strong>
+                </td>
+                <td>
+                    <div>${escapeHtml(plan.doctor_specialization || 'Umum')}</div>
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
+                </td>
+                <td style="text-align: right;">
+                    <button type="button" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="openActualModal(${plan.id})">
                         Mulai Kunjungan
                     </button>
-                </div>
-            </article>
+                </td>
+            </tr>
         `).join('');
     }
 
     function renderActuals() {
-        const grid = document.getElementById('actualsGrid');
+        const tableWrap = document.getElementById('actualsTableWrap');
+        const tbody = document.getElementById('actualsTableBody');
         const empty = document.getElementById('actualsEmpty');
         if (!actuals.length) {
-            grid.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
             empty.style.display = 'block';
             return;
         }
         empty.style.display = 'none';
-        grid.innerHTML = actuals.map((actual) => {
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = actuals.map((actual) => {
             let visitTypeLabel = 'Terencana';
             let visitBadgeClass = 'status-approved';
             if (actual.visit_type === 'unplanned') {
@@ -468,28 +477,34 @@
             }
 
             return `
-                <article class="call-card" style="background: white; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
-                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">${escapeHtml(actual.visit_date)}</span>
-                            <span class="status-badge ${visitBadgeClass}">${escapeHtml(visitTypeLabel)}</span>
-                        </div>
-                        <div style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">${escapeHtml(actual.doctor_name)}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">${escapeHtml(actual.doctor_specialization || 'Spesialis')}</div>
-                        <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.5rem;">
-                            <strong>Produk Detailing:</strong> ${actual.products.map((p) => escapeHtml(p.name)).join(', ')}
-                        </div>
+                <tr>
+                    <td>
+                        <strong style="color: var(--secondary); font-size: 0.9rem;">${escapeHtml(actual.visit_date)}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(actual.check_in || '')} - ${escapeHtml(actual.check_out || '')}</div>
+                    </td>
+                    <td>
+                        <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(actual.doctor_name)}</strong>
+                        <div style="font-size: 0.775rem; color: var(--text-muted);">${escapeHtml(actual.doctor_specialization || 'Spesialis')}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge ${visitBadgeClass}">${escapeHtml(visitTypeLabel)}</span>
                         ${actual.visit_reason ? `
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; font-style: italic;">
-                                Alasan: "${escapeHtml(actual.visit_reason)}"
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; font-style: italic;">
+                                "${escapeHtml(actual.visit_reason)}"
                             </div>
                         ` : ''}
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-                        <span>Status: <strong style="color: var(--success);">Selesai Terverifikasi</strong></span>
-                        <span>Foto & TTD Tersimpan</span>
-                    </div>
-                </article>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.825rem; font-weight: 600; color: var(--secondary);">
+                            ${actual.products.map((p) => escapeHtml(p.name)).join(', ')}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--success); font-weight: 600; font-size: 0.8rem;">
+                            ✓ Foto & TTD Terverifikasi
+                        </span>
+                    </td>
+                </tr>
             `;
         }).join('');
     }
@@ -611,19 +626,19 @@
         box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
     }
     .status-badge {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         font-weight: 700;
-        padding: 0.2rem 0.55rem;
-        border-radius: 9999px;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.03em;
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
         font-variant-numeric: tabular-nums;
         border: 1px solid transparent;
     }
-    .status-draft { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .status-draft { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .status-scheduled { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
     .status-approved { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 
@@ -633,27 +648,23 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(15, 23, 42, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 50;
         padding: 1rem;
-        animation: modalFadeIn 0.2s ease;
     }
     .modal-card {
         background: white;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        border-radius: 0.875rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
         width: 100%;
         max-width: 580px;
         padding: 1.5rem;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        animation: modalSlideUp 0.25s var(--ease-spring);
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
     }
     .close-btn {
         background: transparent;
