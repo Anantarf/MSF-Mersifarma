@@ -461,7 +461,7 @@
 
     <footer>
         <div style="max-width: 1100px; margin: 0 auto; text-align: center;">
-            Mobile Force System v1.0 - Ananta Raihan Fatih
+            Mobile Sales Force v1.0 - Ananta Raihan Fatih
         </div>
     </footer>
 
