@@ -24,7 +24,30 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $throttleKey = \Illuminate\Support\Str::transliterate(\Illuminate\Support\Str::lower($request->input('email')).'|'.$request->ip());
+
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            $message = "Terlalu banyak percobaan login. Silakan coba lagi dalam {$seconds} detik.";
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'error_code' => 'TOO_MANY_ATTEMPTS',
+                    'errors' => [
+                        'email' => [$message],
+                    ],
+                ], 429);
+            }
+
+            return back()->withErrors([
+                'email' => $message,
+            ])->onlyInput('email');
+        }
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -45,6 +68,8 @@ class AuthController extends Controller
 
             return redirect()->intended(route('call-lists.index'));
         }
+
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
 
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([

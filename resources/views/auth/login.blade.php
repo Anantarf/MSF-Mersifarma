@@ -14,9 +14,15 @@
     main {
         padding: 1rem !important;
         display: flex;
+        flex-direction: column !important;
         align-items: center;
         justify-content: center;
         min-height: calc(100vh - 55px);
+    }
+
+    /* Sembunyikan alert global di luar card agar form tetap rapi di tengah */
+    main > .alert {
+        display: none !important;
     }
 
     /* Footer transparan terpusat di tengah layar */
@@ -50,6 +56,19 @@
         box-shadow: 0 20px 45px rgba(12, 35, 64, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.4);
         border-top: 4px solid var(--primary);
+    }
+
+    .input-control {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .input-control.is-invalid {
+        border-color: var(--danger) !important;
+        background-color: #fffaf0;
     }
 
     .demo-btn {
@@ -96,25 +115,52 @@
         </p>
     </div>
 
+    <!-- Error Alert Box di dalam Card -->
+    @if ($errors->any())
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid var(--danger); border-radius: 6px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; color: #991b1b; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 0.35rem; font-weight: 700; margin-bottom: 0.2rem;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>Gagal Masuk</span>
+            </div>
+            <div>{{ $errors->first() }}</div>
+        </div>
+    @endif
+
+    @if (session('success'))
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid var(--success); border-radius: 6px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; color: #166534; text-align: left;">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <!-- Login Form -->
-    <form method="POST" action="{{ route('login.post') }}" id="loginForm">
+    <form method="POST" action="{{ route('login.post') }}" id="loginForm" onsubmit="handleLoginSubmit()">
         @csrf
         <div style="margin-bottom: 0.9rem;">
             <label for="email" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Email Pengguna</label>
             <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
-                   style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;"
+                   class="input-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
                    placeholder="nama@mersi.com">
         </div>
 
-        <div style="margin-bottom: 1.15rem;">
+        <div style="margin-bottom: 0.85rem;">
             <label for="password" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Kata Sandi</label>
             <input id="password" type="password" name="password" required autocomplete="current-password"
-                   style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;"
+                   class="input-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
                    placeholder="••••••••">
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 40px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; letter-spacing: 0.02em;">
-            Masuk ke Aplikasi
+        <!-- Opsi Ingat Saya (Remember Me) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.15rem; font-size: 0.8rem;">
+            <label style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                <input type="checkbox" name="remember" id="remember" style="accent-color: var(--primary); cursor: pointer; width: 15px; height: 15px;">
+                <span>Ingat saya di perangkat ini</span>
+            </label>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; min-height: 40px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; letter-spacing: 0.02em;">
+            <span id="btnText">Masuk ke Aplikasi</span>
         </button>
     </form>
 </div>
@@ -122,7 +168,7 @@
 <!-- Floating Action Button Akun Demo di Pojok Kiri Bawah -->
 <div style="position: fixed; bottom: 20px; left: 20px; z-index: 100;">
     <!-- Popover Menu Akun Demo -->
-    <div id="demoModal" style="display: none; position: absolute; bottom: 50px; left: 0; width: 330px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; box-shadow: 0 16px 36px rgba(12, 35, 64, 0.3); animation: popIn 0.15s ease-out;">
+    <div id="demoModal" style="display: none; position: absolute; bottom: 50px; left: 0; width: 330px; max-width: calc(100vw - 40px); background: white; border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; box-shadow: 0 16px 36px rgba(12, 35, 64, 0.3); animation: popIn 0.15s ease-out;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; padding-bottom: 0.45rem; border-bottom: 1px solid #f1f5f9;">
             <div style="display: flex; align-items: center; gap: 0.45rem;">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -181,6 +227,17 @@
         document.getElementById('email').value = email;
         document.getElementById('password').value = password;
         document.getElementById('demoModal').style.display = 'none';
+    }
+
+    function handleLoginSubmit() {
+        const btn = document.getElementById('submitBtn');
+        const text = document.getElementById('btnText');
+        if (btn && text) {
+            btn.disabled = true;
+            btn.style.opacity = '0.8';
+            btn.style.cursor = 'wait';
+            text.textContent = 'Memverifikasi...';
+        }
     }
 
     // Close popover if clicked outside
