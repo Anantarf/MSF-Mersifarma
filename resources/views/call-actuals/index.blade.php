@@ -178,8 +178,15 @@
     document.addEventListener('DOMContentLoaded', async () => {
         initSignaturePad();
         await Promise.all([loadDoctors(), loadProducts()]);
-        loadTodayPlans();
+        await loadTodayPlans();
         loadActuals();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoPlanId = urlParams.get('plan_id');
+        const autoDocId = urlParams.get('doctor_id');
+        if (autoPlanId) {
+            openActualModal(parseInt(autoPlanId), autoDocId ? parseInt(autoDocId) : null);
+        }
     });
 
     document.addEventListener('keydown', (e) => {
@@ -462,14 +469,16 @@
         }).join('');
     }
 
-    function openActualModal(planId) {
+    function openActualModal(planId, fallbackDoctorId = null) {
         const plan = planId ? todayPlans.find((item) => item.id === planId) : null;
-        document.getElementById('actualPlanId').value = plan ? plan.id : '';
-        document.getElementById('actualModalTitle').innerText = plan ? 'Catat Planned Visit' : 'Catat Kunjungan di Luar Rencana';
+        document.getElementById('actualPlanId').value = plan ? plan.id : (planId || '');
+        document.getElementById('actualModalTitle').innerText = (plan || planId) ? 'Catat Planned Visit' : 'Catat Kunjungan di Luar Rencana';
         document.getElementById('actualDateInput').value = todayString();
-        document.getElementById('visitReasonWrap').style.display = plan ? 'none' : 'block';
-        document.getElementById('actualDoctorSelect').disabled = !!plan;
-        renderDoctorSelect(plan ? plan.doctor_id : '');
+        document.getElementById('visitReasonWrap').style.display = (plan || planId) ? 'none' : 'block';
+        document.getElementById('actualDoctorSelect').disabled = !!(plan || planId);
+        
+        const docIdToSelect = plan ? plan.doctor_id : (fallbackDoctorId || '');
+        renderDoctorSelect(docIdToSelect);
         renderProductPicker();
 
         // Reset foto & tanda tangan
