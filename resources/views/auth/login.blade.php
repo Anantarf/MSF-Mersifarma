@@ -461,7 +461,7 @@
     <div id="demoModal" class="demo-popover" role="dialog" aria-label="Pilihan Akun Demo">
         <div class="demo-popover-header">
             <div style="display: flex; align-items: center; gap: 0.45rem;">
-                <i class="bi bi-person-badge" style="font-size: 1.05rem; color: var(--primary);"></i>
+                <i class="bi bi-people-fill" style="font-size: 1.05rem; color: var(--primary);"></i>
                 <strong style="font-size: 0.8rem; color: var(--secondary);">Akun Demo Pengujian</strong>
             </div>
             <button type="button" onclick="toggleDemoModal()" aria-label="Tutup" class="demo-close-btn">&times;</button>
@@ -494,7 +494,7 @@
     </div>
 
     <button type="button" id="demoAccountsTrigger" onclick="toggleDemoModal()" class="floating-demo-trigger" aria-haspopup="dialog">
-        <i class="bi bi-person-badge" style="font-size: 1.05rem; color: var(--primary);"></i>
+        <i class="bi bi-people-fill" style="font-size: 1.05rem; color: var(--primary);"></i>
         <span>Akun Demo</span>
     </button>
 </div>
