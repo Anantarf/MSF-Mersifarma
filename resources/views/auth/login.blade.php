@@ -102,8 +102,8 @@
     <!-- Login Card Branding Header (Refined Visual Hierarchy) -->
     <div style="text-align: center; margin-bottom: 1.35rem;">
         <!-- Logo Emblem Proporsional (Center) -->
-        <div style="margin-bottom: 0.75rem;">
-            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 58px; height: 58px; object-fit: contain; display: inline-block;">
+        <div style="margin-bottom: 0.65rem;">
+            <img src="{{ asset('images/logo-mersifarma.png') }}" alt="Logo PT Mersifarma TM" style="width: 72px; height: 72px; object-fit: contain; display: inline-block;">
         </div>
         <!-- Mobile Sales Force -->
         <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.3rem;">
