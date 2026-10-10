@@ -58,6 +58,27 @@
         border-top: 4px solid var(--primary);
     }
 
+    /* Mencegah kursor caret/text-box berkedip pada teks statis */
+    .login-card * {
+        caret-color: transparent;
+    }
+    .login-card h1,
+    .login-card h2,
+    .login-card p,
+    .login-card label,
+    .login-card span,
+    .login-card img {
+        user-select: none;
+        -webkit-user-select: none;
+        cursor: default;
+    }
+    .login-card input {
+        caret-color: var(--primary) !important;
+        cursor: text !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+    }
+
     .input-control {
         width: 100%;
         padding: 0.55rem 0.75rem;
