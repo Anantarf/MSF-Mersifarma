@@ -460,13 +460,8 @@
     </main>
 
     <footer>
-        <div style="max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-                <strong style="color: var(--secondary);">PT Mersifarma TM</strong>: <em style="color: var(--primary);">"Good Quality Improves Life's Quality"</em>
-            </div>
-            <div style="color: var(--text-muted);">
-                MSF Baseline v1.5 &bull; Mobile Sales Force System
-            </div>
+        <div style="max-width: 1100px; margin: 0 auto; text-align: center;">
+            Mobile Force System v1.0 - Ananta Raihan Fatih
         </div>
     </footer>
 

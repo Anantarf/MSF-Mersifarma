@@ -19,23 +19,18 @@
         min-height: calc(100vh - 55px);
     }
 
-    /* Footer transparan agar foto gedung Mersifarma terlihat utuh dan tombol demo tidak bertumpuk */
+    /* Footer transparan terpusat di tengah layar */
     footer {
         background: transparent !important;
         border-top: none !important;
-        padding: 0.5rem 1.25rem 0.75rem !important;
-        font-size: 0.75rem !important;
-        color: rgba(255, 255, 255, 0.8) !important;
-        text-shadow: 0 1px 4px rgba(12, 35, 64, 0.8);
-    }
-    footer strong {
-        color: #ffffff !important;
-    }
-    footer em {
-        color: #b8daf8 !important;
+        padding: 0.65rem 1rem 0.85rem !important;
+        font-size: 0.8rem !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+        text-shadow: 0 1px 4px rgba(12, 35, 64, 0.85);
+        text-align: center !important;
     }
     footer div {
-        color: rgba(255, 255, 255, 0.85) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
     }
 
     /* Hilangkan background kebiruan akibat browser autofill */
