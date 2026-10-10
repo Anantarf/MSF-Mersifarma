@@ -342,12 +342,16 @@
         grid.innerHTML = myCallLists.map(cl => {
             let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
             let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+            let borderLeftColor = 'var(--primary)';
+            if (cl.status === 'approved') borderLeftColor = 'var(--success)';
+            if (cl.status === 'pending_approval') borderLeftColor = 'var(--warning)';
             if (cl.is_rejected_revision) {
                 statusClass = 'status-rejected';
                 statusLabel = 'Perlu Revisi (Ditolak)';
+                borderLeftColor = 'var(--danger)';
             }
             return `
-                <div class="call-card" ${cl.is_rejected_revision ? 'style="border-left: 4px solid var(--danger);"' : ''}>
+                <div class="call-card" style="border-left: 4px solid ${borderLeftColor};">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem;">
                             <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PERIODE: ${cl.period_month}</span>

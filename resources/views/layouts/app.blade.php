@@ -5,22 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'MSF') : Mobile Sales Force PT Mersifarma</title>
-    <!-- Fonts -->
+    <!-- Fonts: Plus Jakarta Sans for UI/data + Outfit for brand/headings -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {            --primary: #0f766e;
-            --primary-hover: #115e59;
-            --primary-light: #f0fdfa;
-            --secondary: #0f172a;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --warning: #d97706;
+        :root {
+            --primary: #0284c7;          /* Mersifarma Medical Sky-Blue */
+            --primary-hover: #0369a1;    /* Deep sky hover */
+            --primary-light: #f0f9ff;    /* Sky tint */
+            --primary-border: #bae6fd;   /* Sky light border */
+            --mersi-cyan: #0ea5e9;       /* Vibrant cyan accent */
+            --mersi-teal: #0f766e;       /* Pharma clinic teal */
+            --secondary: #0f172a;        /* Deep slate navy */
+            --secondary-hover: #1e293b;
+            --success: #059669;          /* Emerald for approved/completed */
+            --danger: #dc2626;           /* Crimson alert */
+            --warning: #d97706;          /* Amber pending */
             --surface: #ffffff;
             --background: #f8fafc;
             --border: #e2e8f0;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-muted: #64748b;
         }
 
@@ -28,7 +33,12 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        h1, h2, h3, .brand-text {
+            font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: -0.015em;
         }
 
         body {
@@ -41,10 +51,12 @@
 
         header {
             background: var(--surface);
+            border-top: 3px solid var(--primary);
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 40;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
         }
 
         .nav-container {
@@ -59,34 +71,66 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
             text-decoration: none;
             color: var(--secondary);
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+        }
+
+        .brand-titles {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+
+        .brand-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--secondary);
+            letter-spacing: 0.02em;
+        }
+
+        .brand-sub {
+            font-size: 0.65rem;
             font-weight: 700;
-            font-size: 1.15rem;
+            color: var(--primary);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         .brand-badge {
-            background: var(--primary);
-            color: white;
-            font-size: 0.75rem;
-            padding: 0.2rem 0.5rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+            font-size: 0.7rem;
+            padding: 0.15rem 0.45rem;
             border-radius: 0.375rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .nav-link {
             text-decoration: none;
             color: var(--text-muted);
             font-size: 0.9rem;
-            font-weight: 500;
-            padding: 0.5rem 0.75rem;
+            font-weight: 600;
+            padding: 0.5rem 0.85rem;
             border-radius: 0.375rem;
             min-height: 44px;
             display: inline-flex;
@@ -95,9 +139,15 @@
             transition: all 0.15s ease;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover {
             color: var(--primary);
             background: var(--primary-light);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
         }
 
         .badge-upcoming {
@@ -124,10 +174,12 @@
             text-transform: uppercase;
         }
 
-        .role-mr { background: #dbeafe; color: #1e40af; }
-        .role-dm { background: #fef3c7; color: #92400e; }
-        .role-rsm { background: #dcfce7; color: #166534; }
-        .role-mm { background: #f3e8ff; color: #6b21a8; }        .btn {
+        .role-mr { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .role-dm { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .role-rsm { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .role-mm { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -145,6 +197,7 @@
         .btn-primary {
             background: var(--primary);
             color: white;
+            box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
         }
         .btn-primary:hover {
             background: var(--primary-hover);
@@ -157,7 +210,9 @@
         }
         .btn-outline:hover {
             background: var(--border);
-        }        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        }
+
+        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
             outline: 2px solid var(--primary);
             outline-offset: 2px;
         }
@@ -179,6 +234,16 @@
         }
         .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border);
+            background: white;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
 
         @media (max-width: 640px) {
             .nav-container {
@@ -203,7 +268,16 @@
     <header>
         <div class="nav-container">
             <a href="{{ route('call-lists.index') }}" class="brand">
-                <span>MSF Mersifarma</span>
+                <div class="brand-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                        <path d="m8.5 8.5 7 7"/>
+                    </svg>
+                </div>
+                <div class="brand-titles">
+                    <span class="brand-name brand-text">MERSIFARMA</span>
+                    <span class="brand-sub">Mobile Sales Force</span>
+                </div>
                 <span class="brand-badge">v1.5</span>
             </a>
 
@@ -215,7 +289,8 @@
                     Call Plan
                 </a>
                 <a href="{{ route('call-actuals.index') }}" class="nav-link {{ request()->routeIs('call-actuals.*') ? 'active' : '' }}">
-                    Call Actual                </a>
+                    Call Actual
+                </a>
             </nav>
 
             <div class="user-menu">
@@ -249,8 +324,18 @@
             </div>
         @endif
 
-        @yield('content')
     </main>
+
+    <footer>
+        <div style="max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong style="color: var(--secondary);">PT Mersifarma TM</strong> &mdash; <em>Good Quality Improves Life's Quality</em>
+            </div>
+            <div style="color: var(--text-muted);">
+                MSF Baseline v1.5 &bull; Mobile Sales Force System
+            </div>
+        </div>
+    </footer>
 
     <script>
         // Global CSRF helper for API Fetch requests
