@@ -362,15 +362,13 @@
         try {
             const res = await window.apiFetch(`/api/call-plans${queryString}`);
             const result = await res.json();
-            loading.style.display = 'none';
-
-            if (result.success) {
-                currentPlans = result.data;
-                renderPlansGrid();
-            }
+            currentPlans = (result && result.success && Array.isArray(result.data)) ? result.data : [];
         } catch (err) {
-            loading.style.display = 'none';
+            currentPlans = [];
             console.error('Gagal memuat jadwal', err);
+        } finally {
+            loading.style.display = 'none';
+            renderPlansGrid();
         }
     }
 

@@ -433,6 +433,7 @@
 
 @push('scripts')
 <script>
+    const currentUserRole = "{{ auth()->user()->role }}";
     let todayPlans = [];
     let actuals = [];
     let doctors = [];
@@ -454,7 +455,9 @@
     document.addEventListener('DOMContentLoaded', async () => {
         initSignaturePad();
         await Promise.all([loadDoctors(), loadProducts()]);
-        await loadActiveSession();
+        if (currentUserRole === 'mr') {
+            await loadActiveSession();
+        }
         await loadTodayPlans();
         loadActuals();
 
@@ -1023,10 +1026,12 @@
         try {
             const res = await window.apiFetch(`/api/call-plans?date=${todayString()}&status=scheduled`);
             const result = await res.json();
-            todayPlans = result.success ? result.data : [];
-            renderTodayPlans();
+            todayPlans = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+        } catch (err) {
+            todayPlans = [];
         } finally {
-            loading.style.display = 'none';
+            if (loading) loading.style.display = 'none';
+            renderTodayPlans();
         }
     }
 
@@ -1039,10 +1044,12 @@
         try {
             const res = await window.apiFetch('/api/call-actuals');
             const result = await res.json();
-            actuals = result.success ? result.data : [];
-            renderActuals();
+            actuals = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+        } catch (err) {
+            actuals = [];
         } finally {
-            loading.style.display = 'none';
+            if (loading) loading.style.display = 'none';
+            renderActuals();
         }
     }
 
@@ -1486,6 +1493,7 @@
 
     function renderActiveSession() {
         const section = document.getElementById('activeSessionSection');
+        if (!section) return;
         if (!activeSession) {
             section.style.display = 'none';
             return;
