@@ -151,14 +151,29 @@
                     <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
                 </div>
 
-                <!-- 2. Tanggal & Jam Kunjungan -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
-                    <div>
-                        <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                            <i class="bi bi-calendar-event" style="color: var(--primary); margin-right: 0.25rem;"></i>Tanggal Kunjungan
-                        </label>
-                        <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                <!-- 2. Tanggal Kunjungan -->
+                <div style="margin-bottom: 1rem;">
+                    <label for="actualDateDisplay" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                        <i class="bi bi-calendar-event" style="color: var(--primary); margin-right: 0.25rem;"></i>Tanggal Kunjungan
+                    </label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="text" id="actualDateDisplay" readonly placeholder="Pilih tanggal kunjungan"
+                               onclick="openActualDatePicker()"
+                               style="width: 100%; padding: 0.55rem 2.5rem 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; background: var(--surface); cursor: pointer; font-weight: 500; color: var(--secondary);"
+                               title="Klik untuk memilih tanggal">
+                        <button type="button" onclick="openActualDatePicker()" 
+                                style="position: absolute; right: 0.5rem; background: none; border: none; color: var(--primary); cursor: pointer; padding: 0.25rem 0.4rem; font-size: 1.1rem; display: flex; align-items: center;"
+                                title="Buka Kalender" aria-label="Buka Kalender">
+                            <i class="bi bi-calendar3"></i>
+                        </button>
+                        <input type="date" id="actualDateInput" required
+                               style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; bottom: 0; left: 0;"
+                               onchange="syncActualDateDisplay()">
                     </div>
+                </div>
+
+                <!-- 3. Jam Kunjungan (Pas & Proporsional 50:50) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.15rem;">
                     <div>
                         <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
                             <i class="bi bi-clock" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Check-in
@@ -438,6 +453,10 @@
 
         // Listeners for draft auto-save
         document.getElementById('actualDoctorSelect')?.addEventListener('change', saveActualDraft);
+        document.getElementById('actualDateInput')?.addEventListener('change', () => {
+            syncActualDateDisplay();
+            saveActualDraft();
+        });
         document.getElementById('checkInInput')?.addEventListener('change', saveActualDraft);
         document.getElementById('checkOutInput')?.addEventListener('change', saveActualDraft);
         document.getElementById('visitReasonInput')?.addEventListener('input', saveActualDraft);
@@ -477,11 +496,31 @@
         const monthNum = parseInt(parts[1], 10);
         const day = parseInt(parts[2], 10);
         const monthNames = [
-            'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-            'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         ];
         const monthName = monthNames[monthNum - 1] || parts[1];
         return `${day} ${monthName} ${year}`;
+    }
+
+    function openActualDatePicker() {
+        const picker = document.getElementById('actualDateInput');
+        if (picker) {
+            if (typeof picker.showPicker === 'function') {
+                picker.showPicker();
+            } else {
+                picker.focus();
+                picker.click();
+            }
+        }
+    }
+
+    function syncActualDateDisplay() {
+        const input = document.getElementById('actualDateInput');
+        const display = document.getElementById('actualDateDisplay');
+        if (input && display) {
+            display.value = formatVisitDateIndonesian(input.value);
+        }
     }
 
     function formatWaktuIndonesia(timeOrDate) {
@@ -802,6 +841,7 @@
         const draft = {
             plan_id: planId || null,
             doctor_id: docId,
+            visit_date: document.getElementById('actualDateInput')?.value || todayString(),
             check_in: checkIn,
             check_out: checkOut,
             visit_reason: reason,
@@ -845,6 +885,10 @@
                 const docSel = document.getElementById('actualDoctorSelect');
                 if (docSel) docSel.value = draft.doctor_id;
             }
+            if (draft.visit_date) {
+                document.getElementById('actualDateInput').value = draft.visit_date;
+            }
+            syncActualDateDisplay();
             if (draft.check_in) document.getElementById('checkInInput').value = draft.check_in;
             if (draft.check_out) document.getElementById('checkOutInput').value = draft.check_out;
             if (draft.visit_reason) document.getElementById('visitReasonInput').value = draft.visit_reason;
@@ -1196,6 +1240,7 @@
         document.getElementById('actualPlanId').value = plan ? plan.id : (planId || '');
         document.getElementById('actualModalTitle').innerText = (plan || planId) ? 'Laporan Kunjungan Terencana' : 'Laporan Kunjungan di Luar Rencana';
         document.getElementById('actualDateInput').value = todayString();
+        syncActualDateDisplay();
         document.getElementById('visitReasonWrap').style.display = (plan || planId) ? 'none' : 'block';
         document.getElementById('actualDoctorSelect').disabled = !!(plan || planId);
         

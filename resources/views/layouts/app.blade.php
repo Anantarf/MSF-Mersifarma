@@ -1010,12 +1010,30 @@
             return String(timeOrDate);
         };
 
+        window.formatTanggalIndonesia = function(dateStr) {
+            if (!dateStr) return '-';
+            const parts = String(dateStr).split('T')[0].split(' ')[0].split('-');
+            if (parts.length !== 3) return dateStr;
+            const year = parts[0];
+            const monthNum = parseInt(parts[1], 10);
+            const day = parseInt(parts[2], 10);
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const monthName = monthNames[monthNum - 1] || parts[1];
+            return `${day} ${monthName} ${year}`;
+        };
+
         window.formatDateTimeIndonesia = function(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr);
             if (isNaN(d.getTime())) return dateStr;
             const day = d.getDate();
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
             const month = monthNames[d.getMonth()];
             const year = d.getFullYear();
             const h = String(d.getHours()).padStart(2, '0');
