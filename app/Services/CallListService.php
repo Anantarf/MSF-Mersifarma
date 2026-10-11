@@ -244,6 +244,8 @@ class CallListService
                 'id' => $sub->id,
                 'name' => $sub->name,
                 'role' => $sub->role,
+                'role_subtitle' => $sub->role_subtitle,
+                'call_list_id' => $cl?->id,
                 'has_submitted' => ! is_null($cl),
                 'status' => $cl?->status ?? 'not_submitted',
                 'doctor_count' => $cl ? $cl->doctors->count() : 0,

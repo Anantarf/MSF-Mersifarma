@@ -396,6 +396,130 @@
             background: #f8fafc;
         }
 
+        /* Team Monitoring Roster List */
+        .team-roster-list {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .team-roster-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            gap: 0.85rem;
+            transition: background-color 0.15s ease;
+        }
+
+        .team-roster-item:last-child {
+            border-bottom: none;
+        }
+
+        .team-roster-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .team-roster-user {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 0.15rem;
+        }
+
+        .team-roster-name-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .team-roster-name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .team-roster-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .team-roster-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .team-roster-count {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .team-roster-num {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .team-roster-label {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+        }
+
+        .team-roster-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 140px;
+            justify-content: flex-start;
+        }
+
+        .team-roster-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .team-roster-status.status-approved { color: #047857; }
+        .team-roster-status.status-approved .team-roster-dot { background: #10b981; }
+
+        .team-roster-status.status-pending { color: #b45309; }
+        .team-roster-status.status-pending .team-roster-dot { background: #f59e0b; }
+
+        .team-roster-status.status-draft { color: #b91c1c; }
+        .team-roster-status.status-draft .team-roster-dot { background: #ef4444; }
+
+        .team-roster-status.status-none { color: #64748b; }
+        .team-roster-status.status-none .team-roster-dot { background: #94a3b8; }
+
+        @media (max-width: 640px) {
+            .team-roster-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .team-roster-meta {
+                width: 100%;
+                justify-content: space-between;
+                gap: 0.5rem;
+                padding-top: 0.4rem;
+                border-top: 1px dashed #f1f5f9;
+            }
+        }
+
         /* Enterprise Modals */
         .modal-backdrop {
             position: fixed;

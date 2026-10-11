@@ -100,10 +100,10 @@
                 </div>
             </div>
 
-            <!-- Subordinates Progress Breakdown -->
+            <!-- Subordinates Progress Breakdown as a Clean List -->
             <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;">Status Anggota Tim:</div>
-                <div id="subordinatesPillContainer" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">Daftar Anggota Tim & Target:</div>
+                <div id="subordinatesListContainer" class="team-roster-list"></div>
             </div>
         </div>
 
@@ -576,31 +576,58 @@
                 document.getElementById('statApproved').innerText = `${data.approved_count} / ${data.total_subordinates}`;
                 document.getElementById('statPending').innerText = data.pending_count;
 
-                const pillContainer = document.getElementById('subordinatesPillContainer');
+                const listContainer = document.getElementById('subordinatesListContainer');
                 if (data.subordinates_detail && data.subordinates_detail.length) {
-                    pillContainer.innerHTML = data.subordinates_detail.map(sub => {
-                        let statusClass = 'status-draft';
-                        let label = 'Belum Ajukan';
+                    listContainer.innerHTML = data.subordinates_detail.map(sub => {
+                        let statusTheme = 'status-none';
+                        let statusText = 'Belum Mengajukan';
+
                         if (sub.status === 'approved') {
-                            statusClass = 'status-approved';
-                            label = `${sub.doctor_count} Dokter Disetujui`;
+                            statusTheme = 'status-approved';
+                            statusText = 'Disetujui';
                         } else if (sub.status === 'pending_approval') {
-                            statusClass = 'status-pending';
-                            label = `${sub.doctor_count} Dokter Menunggu`;
+                            statusTheme = 'status-pending';
+                            statusText = 'Menunggu Review';
                         } else if (sub.status === 'draft') {
-                            statusClass = 'status-rejected';
-                            label = 'Perlu Revisi';
+                            statusTheme = 'status-draft';
+                            statusText = 'Perlu Revisi';
                         }
+
+                        const actionBtn = sub.call_list_id ? `
+                            <button type="button" class="btn btn-outline btn-sm" onclick="viewListDetail(${sub.call_list_id})" style="padding: 0.25rem 0.65rem; font-size: 0.775rem;">
+                                Lihat Target
+                            </button>
+                        ` : `
+                            <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Belum Ada Target</span>
+                        `;
+
                         return `
-                            <div class="status-badge ${statusClass}" style="font-size: 0.75rem; padding: 0.25rem 0.55rem;">
-                                <span>${escapeHtml(sub.name)}</span>
-                                <span style="opacity: 0.5;">:</span>
-                                <span>${label}</span>
+                            <div class="team-roster-item">
+                                <div class="team-roster-user">
+                                    <div class="team-roster-name-wrap">
+                                        <strong class="team-roster-name">${escapeHtml(sub.name)}</strong>
+                                        <span class="role-pill role-${sub.role}">${sub.role.toUpperCase()}</span>
+                                    </div>
+                                    <span class="team-roster-subtitle">${escapeHtml(sub.role_subtitle || '')}</span>
+                                </div>
+                                <div class="team-roster-meta">
+                                    <div class="team-roster-count">
+                                        <span class="team-roster-num tabular-nums">${sub.doctor_count}</span>
+                                        <span class="team-roster-label">Dokter Sasaran</span>
+                                    </div>
+                                    <div class="team-roster-status ${statusTheme}">
+                                        <span class="team-roster-dot"></span>
+                                        <span>${statusText}</span>
+                                    </div>
+                                    <div class="team-roster-action">
+                                        ${actionBtn}
+                                    </div>
+                                </div>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    pillContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Tidak ada anggota tim terdaftar.</span>';
+                    listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">Tidak ada anggota tim terdaftar.</div>';
                 }
             }
         } catch (err) {
