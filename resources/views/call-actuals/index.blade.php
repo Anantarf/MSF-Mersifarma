@@ -198,7 +198,7 @@
                 <!-- Step 1 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <div>
-                        <button type="button" onclick="resetActualForm()" class="btn btn-outline btn-sm" style="color: var(--text-muted); border-color: var(--border); font-size: 0.8rem;" title="Kosongkan seluruh isian formulir">
+                        <button type="button" onclick="resetActualForm()" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fecdd3; background: #fff5f5; font-size: 0.8rem; font-weight: 500;" title="Kosongkan seluruh isian formulir">
                             Hapus Isian
                         </button>
                     </div>
@@ -285,7 +285,7 @@
                                 <span id="photoFileName" style="font-size: 0.725rem; color: var(--text-muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;"></span>
                             </div>
                         </div>
-                        <button type="button" onclick="clearPhoto()" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3; font-size: 0.75rem; padding: 0.2rem 0.5rem;" title="Hapus foto">
+                        <button type="button" onclick="clearPhoto()" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fecdd3; background: #fff5f5; font-size: 0.75rem; padding: 0.2rem 0.5rem; font-weight: 500;" title="Hapus foto">
                             Hapus
                         </button>
                     </div>
@@ -313,7 +313,7 @@
                             <span id="sigBadgeRecorded" style="display: none; font-size: 0.75rem; font-weight: 600; color: var(--success);">
                                 Tanda tangan tersimpan
                             </span>
-                            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; margin-left: auto;" onclick="clearSignature()">
+                            <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fecdd3; background: #fff5f5; font-size: 0.75rem; padding: 0.2rem 0.55rem; margin-left: auto; font-weight: 500;" onclick="clearSignature()">
                                 Bersihkan Kanvas
                             </button>
                         </div>
@@ -341,7 +341,7 @@
                                 <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 36px; height: 36px; object-fit: cover; border-radius: 0.25rem; border: 1px solid var(--border);">
                                 <span id="stampFileName" style="font-size: 0.725rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px;"></span>
                             </div>
-                            <button type="button" onclick="clearStampFile()" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3; font-size: 0.75rem; padding: 0.15rem 0.45rem;" title="Hapus foto stempel">Hapus</button>
+                            <button type="button" onclick="clearStampFile()" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #fecdd3; background: #fff5f5; font-size: 0.75rem; padding: 0.15rem 0.45rem; font-weight: 500;" title="Hapus foto stempel">Hapus</button>
                         </div>
                     </div>
                 </div>
