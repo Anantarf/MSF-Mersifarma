@@ -299,7 +299,7 @@
                             </button>
                         </div>
                         <div style="border: 1px solid var(--border); border-radius: 0.375rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
-                            <canvas id="signatureCanvas" width="500" height="120" style="width: 100%; height: 120px; display: block; border-radius: 0.25rem; cursor: crosshair; background: #fbfcfd;"></canvas>
+                            <canvas id="signatureCanvas" width="500" height="165" style="width: 100%; height: 165px; display: block; border-radius: 0.25rem; cursor: crosshair; background: #fbfcfd;"></canvas>
                             <div id="sigPlaceholder" style="position: absolute; bottom: 16px; left: 16px; right: 16px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; transition: opacity 0.2s ease;">
                                 <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di area ini</span>
                             </div>
@@ -624,7 +624,7 @@
         if (rect.width > 0 && Math.abs(sigCanvas.width - Math.round(rect.width)) > 2) {
             const currentData = touchSignatureDataUrl || document.getElementById('signatureUrlInput')?.value;
             sigCanvas.width = Math.round(rect.width);
-            sigCanvas.height = 120;
+            sigCanvas.height = 165;
             sigCtx.strokeStyle = '#0f172a';
             sigCtx.lineWidth = 2.5;
             sigCtx.lineCap = 'round';
