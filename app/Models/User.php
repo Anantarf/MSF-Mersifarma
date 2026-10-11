@@ -104,4 +104,23 @@ class User extends Authenticatable
     {
         return $this->role === 'mm';
     }
+
+    public function getRoleSubtitleAttribute(): string
+    {
+        return match ($this->username) {
+            'mr' => 'Medical Representative Jakarta Selatan 1',
+            'mr2' => 'Medical Representative Jakarta Selatan 2',
+            'dm' => 'District Manager Jakarta Selatan',
+            'dm2' => 'District Manager Jakarta Timur',
+            'rsm' => 'Regional Sales Manager DKI Jakarta',
+            'mm' => 'Marketing Manager Nasional',
+            default => match ($this->role) {
+                'mr' => 'Medical Representative',
+                'dm' => 'District Manager',
+                'rsm' => 'Regional Sales Manager',
+                'mm' => 'Marketing Manager',
+                default => strtoupper((string) $this->role),
+            },
+        };
+    }
 }

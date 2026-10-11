@@ -160,6 +160,32 @@
             gap: 0.75rem;
         }
 
+        .user-profile-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.25;
+            text-align: right;
+        }
+
+        .user-profile-top {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .user-profile-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .user-profile-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
         .role-pill, .role-badge {
             display: inline-flex;
             align-items: center;
@@ -458,6 +484,9 @@
             .user-menu {
                 gap: 0.5rem;
             }
+            .user-profile-subtitle {
+                display: none;
+            }
             .mobile-bottom-nav {
                 display: flex;
                 position: fixed;
@@ -529,13 +558,16 @@
             </nav>
 
             <div class="user-menu">
-                <div>
-                    <strong>{{ auth()->user()->name }}</strong>
-                    <span class="role-pill role-{{ auth()->user()->role }}">{{ strtoupper(auth()->user()->role) }}</span>
+                <div class="user-profile-badge">
+                    <div class="user-profile-top">
+                        <strong class="user-profile-name">{{ auth()->user()->name }}</strong>
+                        <span class="role-pill role-{{ auth()->user()->role }}">{{ strtoupper(auth()->user()->role) }}</span>
+                    </div>
+                    <span class="user-profile-subtitle">{{ auth()->user()->role_subtitle }}</span>
                 </div>
                 <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                     @csrf
-                    <button type="submit" class="btn btn-outline" style="min-height: 44px; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Keluar</button>
+                    <button type="submit" class="btn btn-outline" style="min-height: 40px; padding: 0.35rem 0.75rem; font-size: 0.82rem;">Keluar</button>
                 </form>
             </div>
         </div>

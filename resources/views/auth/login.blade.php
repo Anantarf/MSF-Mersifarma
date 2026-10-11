@@ -318,8 +318,8 @@
         position: absolute;
         bottom: 50px;
         left: 0;
-        width: 330px;
-        max-width: calc(100vw - 40px);
+        width: 360px;
+        max-width: calc(100vw - 32px);
         background: #ffffff;
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -350,22 +350,47 @@
     .demo-btn-list {
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.4rem;
     }
 
     .demo-btn {
+        display: flex;
         justify-content: space-between;
-        font-size: 0.8rem;
-        padding: 0.45rem 0.65rem;
-        min-height: 38px;
-        border-radius: 0.375rem;
+        align-items: center;
+        padding: 0.55rem 0.75rem;
+        min-height: 48px;
+        border-radius: 6px;
         width: 100%;
         text-align: left;
+        gap: 0.6rem;
     }
 
     .demo-btn:hover {
-        background: #f1f5f9;
+        background: #f8fafc;
         border-color: var(--primary);
+    }
+
+    .demo-btn-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+        gap: 0.15rem;
+        min-width: 0;
+    }
+
+    .demo-btn-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--secondary);
+    }
+
+    .demo-btn-subtitle {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     @keyframes popIn {
@@ -471,23 +496,38 @@
 
         <div class="demo-btn-list">
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('mr@mersi.com', 'password')">
-                <span><strong>Rudi Hartono</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(MR Jakarta Selatan 1)</span></span>
+                <div class="demo-btn-info">
+                    <strong class="demo-btn-name">Rudi Hartono</strong>
+                    <span class="demo-btn-subtitle">Medical Representative Jakarta Selatan 1</span>
+                </div>
                 <span class="role-pill role-mr">MR</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('dm@mersi.com', 'password')">
-                <span><strong>Wisnu Santhika</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Jakarta Selatan)</span></span>
+                <div class="demo-btn-info">
+                    <strong class="demo-btn-name">Wisnu Santhika</strong>
+                    <span class="demo-btn-subtitle">District Manager Jakarta Selatan</span>
+                </div>
                 <span class="role-pill role-dm">DM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('rsm@mersi.com', 'password')">
-                <span><strong>Siti Rahma</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(RSM DKI Jakarta)</span></span>
+                <div class="demo-btn-info">
+                    <strong class="demo-btn-name">Siti Rahma</strong>
+                    <span class="demo-btn-subtitle">Regional Sales Manager DKI Jakarta</span>
+                </div>
                 <span class="role-pill role-rsm">RSM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('mm@mersi.com', 'password')">
-                <span><strong>Budi Santoso</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(MM Nasional)</span></span>
+                <div class="demo-btn-info">
+                    <strong class="demo-btn-name">Budi Santoso</strong>
+                    <span class="demo-btn-subtitle">Marketing Manager Nasional</span>
+                </div>
                 <span class="role-pill role-mm">MM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('dm2@mersi.com', 'password')">
-                <span><strong>Hendra Gunawan</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Jakarta Timur)</span></span>
+                <div class="demo-btn-info">
+                    <strong class="demo-btn-name">Hendra Gunawan</strong>
+                    <span class="demo-btn-subtitle">District Manager Jakarta Timur</span>
+                </div>
                 <span class="role-pill role-dm">DM</span>
             </button>
         </div>

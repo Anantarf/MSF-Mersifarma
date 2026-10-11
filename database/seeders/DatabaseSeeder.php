@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         $mm = User::updateOrCreate(
             ['email' => 'mm@mersi.com'],
             [
-                'name' => 'Budi Santoso (MM Nasional)',
+                'name' => 'Budi Santoso',
                 'username' => 'mm',
                 'password' => $defaultPassword,
                 'role' => 'mm',
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
         $rsm = User::updateOrCreate(
             ['email' => 'rsm@mersi.com'],
             [
-                'name' => 'Siti Rahma (RSM DKI Jakarta)',
+                'name' => 'Siti Rahma',
                 'username' => 'rsm',
                 'password' => $defaultPassword,
                 'role' => 'rsm',
@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
         $dm = User::updateOrCreate(
             ['email' => 'dm@mersi.com'],
             [
-                'name' => 'Wisnu Santhika (DM Jakarta Selatan)',
+                'name' => 'Wisnu Santhika',
                 'username' => 'dm',
                 'password' => $defaultPassword,
                 'role' => 'dm',
@@ -68,7 +68,7 @@ class DatabaseSeeder extends Seeder
         $dm2 = User::updateOrCreate(
             ['email' => 'dm2@mersi.com'],
             [
-                'name' => 'Hendra Gunawan (DM Jakarta Timur)',
+                'name' => 'Hendra Gunawan',
                 'username' => 'dm2',
                 'password' => $defaultPassword,
                 'role' => 'dm',
@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
         $mr = User::updateOrCreate(
             ['email' => 'mr@mersi.com'],
             [
-                'name' => 'Rudi Hartono (MR Jakarta Selatan 1)',
+                'name' => 'Rudi Hartono',
                 'username' => 'mr',
                 'password' => $defaultPassword,
                 'role' => 'mr',
@@ -92,7 +92,7 @@ class DatabaseSeeder extends Seeder
         $mr2 = User::updateOrCreate(
             ['email' => 'mr2@mersi.com'],
             [
-                'name' => 'Ahmad Dahlan (MR Jakarta Selatan 2)',
+                'name' => 'Ahmad Dahlan',
                 'username' => 'mr2',
                 'password' => $defaultPassword,
                 'role' => 'mr',
