@@ -151,15 +151,32 @@
                     </button>
                 </div>
                 <input type="hidden" id="photoUrlInput" required>
-                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                    <label class="btn btn-outline" style="min-height: 40px; font-size: 0.8rem; cursor: pointer; gap: 0.35rem;">
-                        <i class="bi bi-camera-fill" style="font-size: 1rem; color: var(--primary);"></i>
-                        <span>Pilih / Ambil Foto</span>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; gap: 0.35rem;" onclick="toggleLiveCamera()">
+                        <i class="bi bi-camera-video" style="font-size: 1rem; color: var(--primary);"></i>
+                        <span id="liveCameraBtnText">Buka Kamera Langsung</span>
+                    </button>
+                    <label class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; cursor: pointer; gap: 0.35rem;">
+                        <i class="bi bi-image" style="font-size: 1rem; color: var(--primary);"></i>
+                        <span>Pilih Berkas Foto</span>
                         <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="handlePhotoFile(this)">
                     </label>
                     <div id="photoPreviewContainer" style="display: none; align-items: center; gap: 0.5rem;">
-                        <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 44px; height: 44px; object-fit: cover; border-radius: 0.375rem; border: 1px solid var(--border);">
-                        <span id="photoFileName" style="font-size: 0.75rem; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 38px; height: 38px; object-fit: cover; border-radius: 0.375rem; border: 1px solid var(--border);">
+                        <span id="photoFileName" style="font-size: 0.75rem; color: var(--text-muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    </div>
+                </div>
+
+                <!-- Live Camera Viewfinder -->
+                <div id="cameraViewfinderWrap" style="display: none; margin-top: 0.65rem; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: #0f172a; position: relative;">
+                    <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 220px; object-fit: cover; display: block;"></video>
+                    <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 0.5rem; padding: 0.4rem; background: linear-gradient(transparent, rgba(15,23,42,0.85));">
+                        <button type="button" class="btn btn-primary" style="font-size: 0.775rem; padding: 0.3rem 0.75rem;" onclick="capturePhotoFromCamera()">
+                            <i class="bi bi-camera"></i> Ambil Foto Sekarang
+                        </button>
+                        <button type="button" class="btn btn-outline" style="font-size: 0.775rem; padding: 0.3rem 0.65rem; background: #ffffff; color: var(--secondary);" onclick="stopLiveCamera()">
+                            Tutup Kamera
+                        </button>
                     </div>
                 </div>
                 <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Wajib menyertakan bukti foto di tempat praktik dokter.</small>
@@ -179,8 +196,12 @@
                     </div>
                 </div>
                 <input type="hidden" id="signatureUrlInput" required>
-                <div style="border: 1px solid var(--border); border-radius: 0.5rem; background: #ffffff; padding: 0.25rem; touch-action: none;">
+                <div style="border: 1px solid var(--border); border-radius: 0.5rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
                     <canvas id="signatureCanvas" width="500" height="130" style="width: 100%; height: 130px; display: block; border-radius: 0.375rem; cursor: crosshair; background: #fafafa;"></canvas>
+                    <div id="sigPlaceholder" style="position: absolute; bottom: 18px; left: 18px; right: 18px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; transition: opacity 0.2s ease;">
+                        <span style="font-size: 0.725rem; color: #94a3b8; font-weight: 500;">Tanda tangan dokter di atas garis ini</span>
+                        <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">✕</span>
+                    </div>
                 </div>
                 <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Dokter menandatangani langsung di kanvas dengan jari atau mouse.</small>
             </div>
@@ -207,9 +228,16 @@
                 <textarea id="visitReasonInput" rows="2" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
-                <button type="submit" id="actualSubmitButton" class="btn btn-primary">Simpan Laporan</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div id="draftStatusBadge" style="font-size: 0.75rem; color: var(--text-muted); display: none; align-items: center; gap: 0.35rem;">
+                    <i class="bi bi-clock-history" style="color: var(--primary);"></i>
+                    <span>Draf tersimpan lokal</span>
+                    <button type="button" onclick="clearActualDraft(true)" style="background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.75rem; padding: 0; margin-left: 0.25rem;">Hapus Draf</button>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-left: auto;">
+                    <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
+                    <button type="submit" id="actualSubmitButton" class="btn btn-primary">Simpan Laporan</button>
+                </div>
             </div>
         </form>
     </div>
@@ -310,6 +338,12 @@
         await loadTodayPlans();
         loadActuals();
 
+        // Listeners for draft auto-save
+        document.getElementById('actualDoctorSelect')?.addEventListener('change', saveActualDraft);
+        document.getElementById('checkInInput')?.addEventListener('change', saveActualDraft);
+        document.getElementById('checkOutInput')?.addEventListener('change', saveActualDraft);
+        document.getElementById('visitReasonInput')?.addEventListener('input', saveActualDraft);
+
         const urlParams = new URLSearchParams(window.location.search);
         const autoPlanId = urlParams.get('plan_id');
         const autoDocId = urlParams.get('doctor_id');
@@ -352,6 +386,8 @@
         return `${day} ${monthName} ${year}`;
     }
 
+    let cameraStream = null;
+
     function initSignaturePad() {
         sigCanvas = document.getElementById('signatureCanvas');
         if (!sigCanvas) return;
@@ -375,6 +411,7 @@
 
         sigCanvas.addEventListener('mousedown', (e) => {
             isDrawing = true;
+            setSigPlaceholderVisible(false);
             const pos = getPos(e);
             sigCtx.beginPath();
             sigCtx.moveTo(pos.x, pos.y);
@@ -391,12 +428,14 @@
             if (isDrawing) {
                 isDrawing = false;
                 document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                saveActualDraft();
             }
         });
 
         sigCanvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             isDrawing = true;
+            setSigPlaceholderVisible(false);
             const pos = getPos(e);
             sigCtx.beginPath();
             sigCtx.moveTo(pos.x, pos.y);
@@ -415,19 +454,28 @@
             if (isDrawing) {
                 isDrawing = false;
                 document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                saveActualDraft();
             }
         }, { passive: false });
+    }
+
+    function setSigPlaceholderVisible(visible) {
+        const el = document.getElementById('sigPlaceholder');
+        if (el) el.style.opacity = visible ? '1' : '0';
     }
 
     function clearSignature() {
         if (!sigCanvas || !sigCtx) return;
         sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
         document.getElementById('signatureUrlInput').value = '';
+        setSigPlaceholderVisible(true);
+        saveActualDraft();
     }
 
     function useSampleSignature() {
         if (!sigCanvas || !sigCtx) return;
         clearSignature();
+        setSigPlaceholderVisible(false);
         sigCtx.beginPath();
         sigCtx.moveTo(60, 80);
         sigCtx.bezierCurveTo(90, 30, 140, 40, 180, 85);
@@ -439,6 +487,70 @@
         sigCtx.lineTo(360, 95);
         sigCtx.stroke();
         document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+        saveActualDraft();
+    }
+
+    async function toggleLiveCamera() {
+        if (cameraStream) {
+            stopLiveCamera();
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            window.showToast('Browser Anda tidak mendukung akses kamera langsung.', 'warning');
+            return;
+        }
+
+        const wrap = document.getElementById('cameraViewfinderWrap');
+        const btnText = document.getElementById('liveCameraBtnText');
+        try {
+            btnText.innerText = 'Menghubungkan...';
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } }
+            });
+            const video = document.getElementById('cameraVideo');
+            video.srcObject = cameraStream;
+            wrap.style.display = 'block';
+            btnText.innerText = 'Tutup Kamera';
+        } catch (err) {
+            console.warn('Camera access denied or unavailable:', err);
+            window.showToast('Kamera tidak dapat diakses atau izin ditolak. Silakan gunakan berkas foto.', 'warning');
+            stopLiveCamera();
+        }
+    }
+
+    function stopLiveCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        const wrap = document.getElementById('cameraViewfinderWrap');
+        if (wrap) wrap.style.display = 'none';
+        const btnText = document.getElementById('liveCameraBtnText');
+        if (btnText) btnText.innerText = 'Buka Kamera Langsung';
+        const video = document.getElementById('cameraVideo');
+        if (video) video.srcObject = null;
+    }
+
+    function capturePhotoFromCamera() {
+        const video = document.getElementById('cameraVideo');
+        if (!video || !cameraStream) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        document.getElementById('photoUrlInput').value = dataUrl;
+        document.getElementById('photoPreviewImg').src = dataUrl;
+        document.getElementById('photoFileName').innerText = 'kamera-langsung-' + Date.now() + '.jpg';
+        document.getElementById('photoPreviewContainer').style.display = 'flex';
+
+        stopLiveCamera();
+        saveActualDraft();
+        window.showToast('Foto berhasil diambil dari kamera langsung.', 'success');
     }
 
     function handlePhotoFile(input) {
@@ -451,6 +563,7 @@
                 document.getElementById('photoPreviewImg').src = dataUrl;
                 document.getElementById('photoFileName').innerText = file.name;
                 document.getElementById('photoPreviewContainer').style.display = 'flex';
+                saveActualDraft();
             };
             reader.readAsDataURL(file);
         }
@@ -463,6 +576,106 @@
         document.getElementById('photoPreviewImg').src = dataUrl;
         document.getElementById('photoFileName').innerText = 'klinik-mitra-verified.svg';
         document.getElementById('photoPreviewContainer').style.display = 'flex';
+        saveActualDraft();
+    }
+
+    function saveActualDraft() {
+        const planId = document.getElementById('actualPlanId')?.value;
+        const sessionId = document.getElementById('actualSessionId')?.value;
+        if (sessionId) return; // sesi berjalan menggunakan pencatatan server
+
+        const docId = document.getElementById('actualDoctorSelect')?.value || '';
+        const checkIn = document.getElementById('checkInInput')?.value || '';
+        const checkOut = document.getElementById('checkOutInput')?.value || '';
+        const reason = document.getElementById('visitReasonInput')?.value || '';
+        const productIds = Array.from(document.querySelectorAll('#productPicker input[name="product_ids"]:checked')).map(i => parseInt(i.value));
+        const photoUrl = document.getElementById('photoUrlInput')?.value || '';
+        const signatureUrl = document.getElementById('signatureUrlInput')?.value || '';
+
+        if (!docId && !photoUrl && !signatureUrl && productIds.length === 0 && !reason) {
+            return;
+        }
+
+        const draft = {
+            plan_id: planId || null,
+            doctor_id: docId,
+            check_in: checkIn,
+            check_out: checkOut,
+            visit_reason: reason,
+            product_ids: productIds,
+            photo_url: photoUrl,
+            signature_url: signatureUrl
+        };
+
+        try {
+            localStorage.setItem('msf_actual_draft', JSON.stringify(draft));
+            updateDraftBadge();
+        } catch (e) {
+            // Storage quota fallback
+        }
+    }
+
+    function updateDraftBadge() {
+        const badge = document.getElementById('draftStatusBadge');
+        if (!badge) return;
+        const raw = localStorage.getItem('msf_actual_draft');
+        badge.style.display = raw ? 'inline-flex' : 'none';
+    }
+
+    function clearActualDraft(showNotice = false) {
+        localStorage.removeItem('msf_actual_draft');
+        updateDraftBadge();
+        if (showNotice) {
+            window.showToast('Draf kunjungan lokal telah dihapus.', 'info');
+        }
+    }
+
+    function restoreActualDraft(planId) {
+        const raw = localStorage.getItem('msf_actual_draft');
+        if (!raw) return;
+        try {
+            const draft = JSON.parse(raw);
+            if (planId && draft.plan_id && String(draft.plan_id) !== String(planId)) return;
+            if (!planId && draft.plan_id) return;
+
+            if (draft.doctor_id && !planId) {
+                const docSel = document.getElementById('actualDoctorSelect');
+                if (docSel) docSel.value = draft.doctor_id;
+            }
+            if (draft.check_in) document.getElementById('checkInInput').value = draft.check_in;
+            if (draft.check_out) document.getElementById('checkOutInput').value = draft.check_out;
+            if (draft.visit_reason) document.getElementById('visitReasonInput').value = draft.visit_reason;
+
+            if (draft.product_ids && Array.isArray(draft.product_ids)) {
+                document.querySelectorAll('#productPicker input[name="product_ids"]').forEach(input => {
+                    input.checked = draft.product_ids.includes(parseInt(input.value));
+                });
+            }
+
+            if (draft.photo_url) {
+                document.getElementById('photoUrlInput').value = draft.photo_url;
+                document.getElementById('photoPreviewImg').src = draft.photo_url;
+                document.getElementById('photoFileName').innerText = 'draf-foto-tersimpan.jpg';
+                document.getElementById('photoPreviewContainer').style.display = 'flex';
+            }
+
+            if (draft.signature_url) {
+                document.getElementById('signatureUrlInput').value = draft.signature_url;
+                const img = new Image();
+                img.onload = () => {
+                    if (sigCtx && sigCanvas) {
+                        sigCtx.drawImage(img, 0, 0);
+                        setSigPlaceholderVisible(false);
+                    }
+                };
+                img.src = draft.signature_url;
+            }
+
+            updateDraftBadge();
+            window.showToast('Draf kunjungan tersimpan dipulihkan.', 'info', 2000);
+        } catch (e) {
+            console.warn('Failed to parse draft:', e);
+        }
     }
 
     function todayString() {
@@ -538,7 +751,7 @@
         }
         picker.innerHTML = products.map((product) => `
             <label style="display: flex; gap: 0.5rem; align-items: flex-start; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; font-size: 0.85rem; cursor: pointer; transition: background 0.15s ease;">
-                <input type="checkbox" name="product_ids" value="${product.id}" style="margin-top: 0.2rem;">
+                <input type="checkbox" name="product_ids" value="${product.id}" onchange="saveActualDraft()" style="margin-top: 0.2rem;">
                 <div style="flex: 1;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <strong>${escapeHtml(product.name)}</strong>
@@ -709,9 +922,13 @@
         document.getElementById('visitReasonInput').value = '';
         document.getElementById('actualModalError').style.display = 'none';
         document.getElementById('actualModal').style.display = 'flex';
+
+        updateDraftBadge();
+        restoreActualDraft(planId);
     }
 
     function closeActualModal() {
+        stopLiveCamera();
         document.getElementById('actualModal').style.display = 'none';
     }
 
@@ -771,6 +988,7 @@
             });
             const result = await res.json();
             if (result.success) {
+                clearActualDraft(false);
                 closeActualModal();
                 showActualAlert('Laporan kunjungan dokter berhasil disimpan dan dicatat.');
                 await loadActiveSession();

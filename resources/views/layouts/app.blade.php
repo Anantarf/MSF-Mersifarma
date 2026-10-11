@@ -983,6 +983,14 @@
             html += '</div>';
             return html;
         };
+
+        // Native Network Status Listeners (Efficient & Friendly)
+        window.addEventListener('online', () => {
+            window.showToast('Koneksi internet terhubung kembali.', 'info', 3000);
+        });
+        window.addEventListener('offline', () => {
+            window.showToast('Koneksi internet terputus. Mode offline aktif, draf tersimpan lokal.', 'warning', 4500);
+        });
     </script>
     @stack('scripts')
 </body>
