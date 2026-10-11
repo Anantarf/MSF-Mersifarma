@@ -249,28 +249,12 @@
                     </div>
                     <input type="hidden" id="photoUrlInput" required>
 
-                    <!-- Pilihan Aksi Foto (Bersih, tanpa icon mengganggu) -->
+                    <!-- Pilihan Aksi Foto (Upload Foto) -->
                     <div id="photoActionRow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="toggleLiveCamera()">
-                            <span id="liveCameraBtnText">Buka Kamera</span>
-                        </button>
-                        <label class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; margin-bottom: 0;">
-                            <span>Pilih dari Perangkat</span>
+                        <label class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.85rem; cursor: pointer; margin-bottom: 0; font-weight: 500;">
+                            <span>Upload Foto</span>
                             <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="handlePhotoFile(this)">
                         </label>
-                    </div>
-
-                    <!-- Live Camera Viewfinder -->
-                    <div id="cameraViewfinderWrap" style="display: none; margin-top: 0.65rem; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: #0f172a; position: relative;">
-                        <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 220px; object-fit: cover; display: block;"></video>
-                        <div style="display: flex; justify-content: center; gap: 0.5rem; padding: 0.5rem; background: rgba(15,23,42,0.9);">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="capturePhotoFromCamera()">
-                                Ambil Foto
-                            </button>
-                            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff;" onclick="stopLiveCamera()">
-                                Batal
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Pratinjau Foto Rapi & Jelas -->
