@@ -146,7 +146,7 @@
                 <!-- 1. Pilihan Dokter -->
                 <div style="margin-bottom: 1rem;">
                     <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                        <i class="bi bi-person-badge" style="color: var(--primary); margin-right: 0.25rem;"></i>Dokter
+                        <i class="bi bi-heart-pulse" style="color: var(--primary); margin-right: 0.25rem;"></i>Dokter
                     </label>
                     <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
                 </div>
