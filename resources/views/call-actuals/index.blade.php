@@ -145,24 +145,32 @@
             <div id="stepSection1">
                 <!-- 1. Pilihan Dokter -->
                 <div style="margin-bottom: 1rem;">
-                    <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Dokter</label>
+                    <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                        <i class="bi bi-person-badge" style="color: var(--primary); margin-right: 0.25rem;"></i>Dokter
+                    </label>
                     <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
                 </div>
 
                 <!-- 2. Tanggal & Jam Kunjungan -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
                     <div>
-                        <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Tanggal Kunjungan</label>
+                        <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                            <i class="bi bi-calendar-event" style="color: var(--primary); margin-right: 0.25rem;"></i>Tanggal Kunjungan
+                        </label>
                         <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
                     <div>
-                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
+                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                            <i class="bi bi-clock" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Check-in
+                        </label>
                         <input type="text" id="checkInInput" required value="08.30" maxlength="5" inputmode="numeric" placeholder="08.30"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
                                oninput="window.autoFormatTimeInput(this)" onblur="window.normalizeTime24(this)">
                     </div>
                     <div>
-                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
+                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                            <i class="bi bi-clock-history" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Check-out
+                        </label>
                         <input type="text" id="checkOutInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
                                oninput="window.autoFormatTimeInput(this)" onblur="window.normalizeTime24(this)">
@@ -1153,7 +1161,7 @@
             if (i < currentActualStep) {
                 num.style.background = 'var(--success)';
                 num.style.color = 'white';
-                num.innerHTML = '✓';
+                num.innerHTML = '<i class="bi bi-check-lg"></i>';
                 if (title) {
                     title.style.color = 'var(--secondary)';
                     title.style.fontWeight = '600';

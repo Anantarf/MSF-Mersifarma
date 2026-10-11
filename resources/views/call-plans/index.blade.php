@@ -130,7 +130,7 @@
             <!-- 4. Jam Rencana Kunjungan -->
             <div style="margin-bottom: 1.5rem;">
                 <label for="plannedTimeInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Jam Rencana Kunjungan
+                    <i class="bi bi-clock" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Rencana Kunjungan
                 </label>
                 <input type="text" id="plannedTimeInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
                        style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
