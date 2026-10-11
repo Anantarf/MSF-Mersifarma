@@ -109,31 +109,32 @@
 <!-- MODAL: Form Pelaporan Kunjungan (Call Actual) -->
 <div id="actualModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card" style="max-width: 580px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 id="actualModalTitle" style="font-size: 1.2rem; font-weight: 700; color: var(--secondary);">Catat Kunjungan Lapangan</h3>
+        <!-- Modal Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+            <h3 id="actualModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin: 0;">Catat Kunjungan Lapangan</h3>
             <button type="button" class="close-btn" onclick="closeActualModal()">&times;</button>
         </div>
 
         <div id="actualModalError" style="display: none; margin-bottom: 0.85rem;" class="alert alert-danger"></div>
 
         <!-- 3-STEP PROGRESS STEPPER -->
-        <div class="stepper-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border);">
+        <div class="stepper-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.6rem 0.85rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
             <!-- Step 1 -->
-            <div id="stepIndicator1" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(1)">
-                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">1</span>
-                <span class="step-title" style="font-size: 0.825rem; font-weight: 700; color: var(--primary);">Dokter & Waktu</span>
+            <div id="stepIndicator1" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(1)">
+                <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">1</span>
+                <span class="step-title" style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">Dokter & Waktu</span>
             </div>
-            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.65rem;" id="stepLine1"></div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine1"></div>
             <!-- Step 2 -->
-            <div id="stepIndicator2" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(2)">
-                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">2</span>
-                <span class="step-title" style="font-size: 0.825rem; font-weight: 500; color: var(--text-muted);">Produk</span>
+            <div id="stepIndicator2" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(2)">
+                <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">2</span>
+                <span class="step-title" style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Produk</span>
             </div>
-            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.65rem;" id="stepLine2"></div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine2"></div>
             <!-- Step 3 -->
-            <div id="stepIndicator3" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(3)">
-                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">3</span>
-                <span class="step-title" style="font-size: 0.825rem; font-weight: 500; color: var(--text-muted);">Bukti Kunjungan</span>
+            <div id="stepIndicator3" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(3)">
+                <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">3</span>
+                <span class="step-title" style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Bukti Kunjungan</span>
             </div>
         </div>
 
