@@ -33,6 +33,7 @@
 | ADR-026 | Label utama UI: **Target Dokter**, **Jadwal Kunjungan**, **Pelaksanaan Kunjungan**; subtitle PDF wajib pada **heading halaman**, bukan semua item menu; menu mobile boleh diringkas | Mempermudah MR dan menjaga keterlacakan PDF tanpa mengubah API/domain | UX |
 | ADR-027 | **P0** memakai **Isi Laporan Kunjungan** + input waktu manual + **Simpan Laporan**; **P1** baru memakai Mulai/Akhiri Kunjungan dengan timestamp server | Cegah status Check-in/Check-out palsu | UX/Priority |
 | ADR-028 | Label **Perlu Revisi** hanya ketika current status Draft setelah reject dan belum resubmit; pending/approved mengalahkan histori reject lama | Hindari tampilan status usang | UX/State |
+| ADR-029 | Sembunyikan tombol input kunjungan untuk non-MR dan sediakan switch akun demo instan | Mencegah error 403 bagi manajer dan mempermudah evaluasi presentasi | UX/Role |
 
 ## Dokumentasi yang wajib menjelaskan asumsi
 
@@ -56,6 +57,16 @@
 - Pending approval tua tidak otomatis di-escalate; tampilkan usia dan lakukan follow-up manual.
 - Tidak ada offline mode/GPS/photo content verification/insentif calculations.
 - Generated indexes, composite FK, CHECK dan transaksi **belum diverifikasi di MySQL** sampai implementasi.
+
+### ADR-029: Role-Based Supervisory Context & Quick Demo Switching
+- Date: 2026-10-11
+- Status: Accepted
+- Problem: Akun manajer (DM/RSM/MM) masih melihat tombol buat jadwal dan kunjungan yang memicu 403 Forbidden di backend. Selain itu, penguji studi kasus harus bolak-balik logout untuk menguji alur multi-role.
+- Decision: Sembunyikan tombol input kunjungan/jadwal bagi non-MR, tampilkan banner peran supervisi yang informatif, auto-fokus ke tab Persetujuan Masuk jika ada antrean bagi manajer, dan sediakan switch akun demo cepat di navbar.
+- Source of requirement: Engineering necessity / UX
+- API/DB/UX impact: Backend API tetap utuh; Blade UI lebih akurat terhadap hak akses pengguna.
+- Risks/trade-offs: Tidak ada.
+- Tests to update: Mempertahankan 100% kelulusan tes PHPUnit.
 
 ## Format ADR baru
 

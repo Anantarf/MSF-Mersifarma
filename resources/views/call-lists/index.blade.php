@@ -11,9 +11,11 @@
             <p style="color: var(--text-muted); font-size: 0.8125rem;">Call List Bulanan : Perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
+            @if(auth()->user()->role !== 'mm')
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
                 + Buat Call List Baru
             </button>
+            @endif
         </div>
     </div>
 
@@ -51,10 +53,16 @@
         </div>
         <div id="emptyMyLists" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Call List</h4>
+            @if(auth()->user()->role !== 'mm')
             <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
                 Susun perencanaan target dokter bulanan dan ajukan ke atasan langsung Anda untuk mendapatkan persetujuan operasional.
             </p>
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Baru</button>
+            @else
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 440px; margin: 0 auto;">
+                Sebagai Marketing Manager (MM), tugas utama Anda adalah meninjau dan menyetujui pengajuan Target Dokter dari Regional Sales Manager (RSM) pada tab <strong>Persetujuan Masuk</strong>.
+            </p>
+            @endif
         </div>
     </div>
 
@@ -344,7 +352,10 @@
         window.showToast(message, type);
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, isManual = true) {
+        if (isManual) {
+            sessionStorage.setItem('call_list_tab_manual', '1');
+        }
         document.getElementById('tabMyLists').classList.remove('active');
         if (document.getElementById('tabReview')) {
             document.getElementById('tabReview').classList.remove('active');
@@ -505,6 +516,9 @@
                 reviewCallLists = result.data;
                 document.getElementById('reviewCount').innerText = reviewCallLists.length;
                 renderReviewGrid();
+                if (['dm', 'rsm', 'mm'].includes(currentUserRole) && reviewCallLists.length > 0 && !sessionStorage.getItem('call_list_tab_manual')) {
+                    switchTab('review', false);
+                }
             }
         } catch (err) {
             document.getElementById('loadingReview').style.display = 'none';

@@ -7,6 +7,7 @@ use App\Models\MasterCustomer;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -197,5 +198,18 @@ class AuthAndDatabaseTest extends TestCase
         $this->assertNotNull($approvedList);
         $this->assertCount(4, $approvedList->doctors);
         $this->assertGreaterThanOrEqual(3, $approvedList->approvalLogs->count());
+    }
+
+    public function test_demo_switch_allows_switching_demo_user(): void
+    {
+        $mr = User::where('username', 'mr')->firstOrFail();
+        $dm = User::where('username', 'dm')->firstOrFail();
+
+        $response = $this->actingAs($mr)->post('/demo-switch', [
+            'username' => 'dm',
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertEquals($dm->id, Auth::id());
     }
 }

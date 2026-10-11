@@ -847,7 +847,19 @@
                 </a>
             </nav>
 
-            <div class="user-menu">
+            <div class="user-menu" style="display: flex; align-items: center; gap: 0.65rem;">
+                <!-- Fast Demo Role Switcher (ADR-029) -->
+                <form action="{{ route('demo.switch') }}" method="POST" style="display: inline-flex; align-items: center; margin: 0;" title="Beralih peran akun demo secara instan">
+                    @csrf
+                    <select name="username" onchange="this.form.submit()" style="font-size: 0.775rem; padding: 0.3rem 0.55rem; border-radius: 5px; border: 1px solid var(--border-strong); background: #f8fafc; color: var(--secondary); font-weight: 600; cursor: pointer; min-height: 38px;" aria-label="Ganti Akun Demo">
+                        <option value="mr" {{ auth()->user()->username === 'mr' ? 'selected' : '' }}>Rudi Hartono (MR)</option>
+                        <option value="dm" {{ auth()->user()->username === 'dm' ? 'selected' : '' }}>Wisnu Santhika (DM)</option>
+                        <option value="rsm" {{ auth()->user()->username === 'rsm' ? 'selected' : '' }}>Siti Rahma (RSM)</option>
+                        <option value="mm" {{ auth()->user()->username === 'mm' ? 'selected' : '' }}>Budi Santoso (MM)</option>
+                        <option value="dm2" {{ auth()->user()->username === 'dm2' ? 'selected' : '' }}>Hendra Gunawan (DM 2)</option>
+                    </select>
+                </form>
+
                 <div class="user-profile-badge">
                     <div class="user-profile-top">
                         <strong class="user-profile-name">{{ auth()->user()->name }}</strong>
@@ -857,7 +869,7 @@
                 </div>
                 <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                     @csrf
-                    <button type="submit" class="btn btn-outline" style="min-height: 40px; padding: 0.35rem 0.75rem; font-size: 0.82rem;">Keluar</button>
+                    <button type="submit" class="btn btn-outline" style="min-height: 38px; padding: 0.35rem 0.75rem; font-size: 0.82rem;">Keluar</button>
                 </form>
             </div>
         </div>

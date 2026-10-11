@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/call-actuals', function () {
         return view('call-actuals.index');
     })->name('call-actuals.index');
+
+    Route::post('/demo-switch', [AuthController::class, 'switchDemoUser'])->name('demo.switch');
 });
 
 // Mount same-origin API routes with web middleware (session + CSRF) per ADR-003

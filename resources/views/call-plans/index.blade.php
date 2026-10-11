@@ -11,11 +11,24 @@
             <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Plan : Perencanaan jadwal harian kunjungan target dokter dari Call List yang telah disetujui.</p>
         </div>
         <div>
+            @if(auth()->user()->role === 'mr')
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">
                 + Buat Jadwal Baru
             </button>
+            @endif
         </div>
     </div>
+
+    @if(auth()->user()->role !== 'mr')
+    <div style="background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 0.85rem 1.15rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.2rem;">
+            Mode Supervisi Manajemen: {{ strtoupper(auth()->user()->role) }}
+        </h4>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0; line-height: 1.45;">
+            Anda masuk sebagai <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->role_subtitle }}). Modul penjadwalan kunjungan khusus digunakan oleh tim Medical Representative (MR) pelaksana lapangan.
+        </p>
+    </div>
+    @endif
 
     <!-- Alert Banner inside view -->
     <div id="planStatusAlert" style="display: none;" class="alert"></div>
@@ -69,10 +82,16 @@
 
         <div id="emptyPlans" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Jadwal Kunjungan</h4>
+            @if(auth()->user()->role === 'mr')
             <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
                 Pastikan Anda telah memiliki <strong>Call List yang Disetujui (Approved)</strong> dan klik tombol di bawah untuk menyusun jadwal harian.
             </p>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">+ Buat Jadwal Kunjungan</button>
+            @else
+            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto;">
+                Jadwal kunjungan harian disusun oleh Medical Representative (MR) pelaksana lapangan di bawah supervisi Anda.
+            </p>
+            @endif
         </div>
     </div>
 </div>

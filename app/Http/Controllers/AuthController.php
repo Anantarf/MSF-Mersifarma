@@ -167,4 +167,20 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function switchDemoUser(Request $request)
+    {
+        $username = strtolower(trim((string) $request->input('username')));
+        $validUsers = ['mr', 'dm', 'rsm', 'mm', 'dm2', 'mr2'];
+
+        if (! in_array($username, $validUsers, true)) {
+            return back()->with('error', 'Akun demo tidak valid.');
+        }
+
+        $user = User::where('username', $username)->firstOrFail();
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return back()->with('success', "Beralih ke akun demo: {$user->name} (".strtoupper($user->role).')');
+    }
 }

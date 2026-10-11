@@ -10,13 +10,27 @@
             <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Pelaksanaan Kunjungan</h1>
             <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Actual : Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
         </div>
+        @if(auth()->user()->role === 'mr')
         <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 600;" onclick="openActualModal(null)">
             + Kunjungan di Luar Rencana
         </button>
+        @endif
     </div>
+
+    @if(auth()->user()->role !== 'mr')
+    <div style="background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 0.85rem 1.15rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.2rem;">
+            Mode Supervisi Manajemen: {{ strtoupper(auth()->user()->role) }}
+        </h4>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0; line-height: 1.45;">
+            Anda masuk sebagai <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->role_subtitle }}). Modul pelaporan kunjungan lapangan aktif khusus digunakan oleh tim Medical Representative (MR). Untuk memverifikasi dan menyetujui target dokter, silakan akses modul <a href="{{ route('call-lists.index') }}" style="color: var(--primary); font-weight: 600;">Target Dokter</a>.
+        </p>
+    </div>
+    @endif
 
     <div id="actualStatusAlert" style="display: none;" class="alert"></div>
 
+    @if(auth()->user()->role === 'mr')
     <!-- Section 0: Kunjungan Sedang Berlangsung (Active Session P1) -->
     <section id="activeSessionSection" style="display: none; background: #ffffff; border: 1px solid var(--border); border-left: 4px solid var(--success); border-radius: 6px; padding: 1.15rem 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -47,6 +61,7 @@
             </div>
         </div>
     </section>
+    @endif
 
     <!-- Section 1: Today Plans (Planned First UX) -->
     <section style="display: flex; flex-direction: column; gap: 0.85rem;">
@@ -70,9 +85,15 @@
         </div>
         <div id="todayPlansEmpty" style="display: none; padding: 2.5rem 1.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">Tidak Ada Jadwal Kunjungan Hari Ini</h4>
+            @if(auth()->user()->role === 'mr')
             <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 400px; margin: 0 auto;">
                 Gunakan tombol <strong>+ Kunjungan di Luar Rencana</strong> di atas jika Anda melakukan kunjungan di luar jadwal terencana.
             </p>
+            @else
+            <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 400px; margin: 0 auto;">
+                Jadwal harian disusun dan dilaksanakan oleh tim Medical Representative (MR) di lapangan.
+            </p>
+            @endif
         </div>
     </section>
 
