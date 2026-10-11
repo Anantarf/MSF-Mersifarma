@@ -17,17 +17,6 @@
         @endif
     </div>
 
-    @if(auth()->user()->role !== 'mr')
-    <div style="background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 0.85rem 1.15rem;">
-        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.2rem;">
-            Mode Supervisi Manajemen: {{ strtoupper(auth()->user()->role) }}
-        </h4>
-        <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0; line-height: 1.45;">
-            Anda masuk sebagai <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->role_subtitle }}). Modul pelaporan kunjungan lapangan aktif khusus digunakan oleh tim Medical Representative (MR). Untuk memverifikasi dan menyetujui target dokter, silakan akses modul <a href="{{ route('call-lists.index') }}" style="color: var(--primary); font-weight: 600;">Target Dokter</a>.
-        </p>
-    </div>
-    @endif
-
     <div id="actualStatusAlert" style="display: none;" class="alert"></div>
 
     @if(auth()->user()->role === 'mr')
@@ -91,7 +80,7 @@
             </p>
             @else
             <p style="font-size: 0.825rem; color: var(--text-muted); max-width: 400px; margin: 0 auto;">
-                Jadwal harian disusun dan dilaksanakan oleh tim Medical Representative (MR) di lapangan.
+                Belum ada jadwal kunjungan untuk hari ini.
             </p>
             @endif
         </div>
