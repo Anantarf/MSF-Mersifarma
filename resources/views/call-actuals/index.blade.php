@@ -198,14 +198,14 @@
                 <!-- Step 1 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <div>
-                        <button type="button" onclick="resetActualForm()" class="btn btn-outline btn-sm" style="color: var(--text-muted); border-color: var(--border); font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Kosongkan seluruh isian formulir">
-                            <i class="bi bi-eraser"></i> Hapus Isian
+                        <button type="button" onclick="resetActualForm()" class="btn btn-outline btn-sm" style="color: var(--text-muted); border-color: var(--border); font-size: 0.8rem;" title="Kosongkan seluruh isian formulir">
+                            Hapus Isian
                         </button>
                     </div>
                     <div style="display: flex; gap: 0.5rem; margin-left: auto;">
                         <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
                         <button type="button" class="btn btn-primary" onclick="goToActualStep(2)">
-                            Lanjut <i class="bi bi-arrow-right"></i>
+                            Lanjut
                         </button>
                     </div>
                 </div>
@@ -232,10 +232,10 @@
                 <!-- Step 2 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="goToActualStep(1)">
-                        <i class="bi bi-arrow-left"></i> Kembali
+                        Kembali
                     </button>
                     <button type="button" class="btn btn-primary" onclick="goToActualStep(3)">
-                        Lanjut <i class="bi bi-arrow-right"></i>
+                        Lanjut
                     </button>
                 </div>
             </div>
@@ -243,55 +243,64 @@
             <!-- ================= STEP 3: BUKTI & VERIFIKASI ================= -->
             <div id="stepSection3" style="display: none;">
                 <!-- 1. Foto Kunjungan -->
-                <div style="margin-bottom: 1.15rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">Foto Bukti Kunjungan</label>
-                        <button type="button" class="btn btn-outline" style="min-height: 26px; padding: 0.1rem 0.45rem; font-size: 0.725rem;" onclick="useSamplePhoto()">
-                            + Gunakan Foto Sampel
+                <div style="margin-bottom: 1.15rem; background: #ffffff; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 0;">Foto Bukti Kunjungan</label>
+                        <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;" onclick="useSamplePhoto()">
+                            Gunakan Foto Sampel
                         </button>
                     </div>
                     <input type="hidden" id="photoUrlInput" required>
 
-                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; gap: 0.35rem;" onclick="toggleLiveCamera()">
-                            <i class="bi bi-camera-video" style="font-size: 0.95rem; color: var(--primary);"></i>
-                            <span id="liveCameraBtnText">Buka Kamera Langsung</span>
+                    <!-- Pilihan Aksi Foto (Bersih, tanpa icon mengganggu) -->
+                    <div id="photoActionRow" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="toggleLiveCamera()">
+                            <span id="liveCameraBtnText">Buka Kamera</span>
                         </button>
-                        <label class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; cursor: pointer; gap: 0.35rem;">
-                            <i class="bi bi-image" style="font-size: 0.95rem; color: var(--primary);"></i>
-                            <span>Pilih Berkas Foto</span>
+                        <label class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; margin-bottom: 0;">
+                            <span>Pilih dari Perangkat</span>
                             <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="handlePhotoFile(this)">
                         </label>
-                        <div id="photoPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.2rem 0.5rem;">
-                            <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 32px; height: 32px; object-fit: cover; border-radius: 0.25rem;">
-                            <span id="photoFileName" style="font-size: 0.725rem; color: var(--text-muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                        </div>
                     </div>
 
                     <!-- Live Camera Viewfinder -->
                     <div id="cameraViewfinderWrap" style="display: none; margin-top: 0.65rem; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: #0f172a; position: relative;">
-                        <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 200px; object-fit: cover; display: block;"></video>
-                        <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 0.5rem; padding: 0.4rem; background: linear-gradient(transparent, rgba(15,23,42,0.85));">
-                            <button type="button" class="btn btn-primary" style="font-size: 0.775rem; padding: 0.3rem 0.75rem;" onclick="capturePhotoFromCamera()">
-                                <i class="bi bi-camera"></i> Ambil Foto Sekarang
+                        <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 220px; object-fit: cover; display: block;"></video>
+                        <div style="display: flex; justify-content: center; gap: 0.5rem; padding: 0.5rem; background: rgba(15,23,42,0.9);">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="capturePhotoFromCamera()">
+                                Ambil Foto
                             </button>
-                            <button type="button" class="btn btn-outline" style="font-size: 0.775rem; padding: 0.3rem 0.65rem; background: #ffffff; color: var(--secondary);" onclick="stopLiveCamera()">
-                                Tutup Kamera
+                            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff;" onclick="stopLiveCamera()">
+                                Batal
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Pratinjau Foto Rapi & Jelas -->
+                    <div id="photoPreviewContainer" style="display: none; margin-top: 0.65rem; align-items: center; justify-content: space-between; gap: 0.75rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.45rem 0.65rem;">
+                        <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+                            <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 44px; height: 44px; object-fit: cover; border-radius: 0.25rem; border: 1px solid var(--border);">
+                            <div style="min-width: 0;">
+                                <div style="font-size: 0.775rem; font-weight: 600; color: var(--secondary);">Foto Tersimpan</div>
+                                <span id="photoFileName" style="font-size: 0.725rem; color: var(--text-muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;"></span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearPhoto()" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3; font-size: 0.75rem; padding: 0.2rem 0.5rem;" title="Hapus foto">
+                            Hapus
+                        </button>
                     </div>
                 </div>
 
                 <!-- 2. Verifikasi Bukti Dokter -->
-                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
-                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">Verifikasi Dokter</label>
-                        <div style="display: flex; gap: 0.25rem; background: #e2e8f0; padding: 0.15rem; border-radius: 0.375rem;">
-                            <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600;" onclick="switchVerificationMode('touch')">
-                                <i class="bi bi-pen"></i> Tanda Tangan Layar
+                <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.85rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 0;">Verifikasi Dokter</label>
+                        <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 0.2rem; border-radius: 0.375rem; border: 1px solid var(--border);">
+                            <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600; border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="switchVerificationMode('touch')">
+                                Tanda Tangan Layar
                             </button>
-                            <button type="button" id="tabSignStamp" class="btn btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; border-radius: 0.25rem; background: transparent; color: var(--text-muted);" onclick="switchVerificationMode('stamp')">
-                                <i class="bi bi-patch-check"></i> Foto Stempel / Resep
+                            <button type="button" id="tabSignStamp" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 0.25rem; background: transparent; color: var(--text-muted); font-weight: 500; border: none;" onclick="switchVerificationMode('stamp')">
+                                Foto Stempel / Resep
                             </button>
                         </div>
                     </div>
@@ -300,39 +309,39 @@
 
                     <!-- Panel 1: Tanda Tangan Layar Sentuh -->
                     <div id="panelSignTouch">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                            <div id="sigBadgeRecorded" style="display: none; align-items: center; gap: 0.35rem; font-size: 0.725rem; font-weight: 600; color: var(--success); background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.1rem 0.45rem; border-radius: 0.25rem;">
-                                <i class="bi bi-check-circle-fill"></i> Tanda Tangan Terisi
-                            </div>
-                            <button type="button" class="btn btn-outline" style="min-height: 26px; padding: 0.1rem 0.45rem; font-size: 0.725rem; margin-left: auto;" onclick="clearSignature()">
-                                <i class="bi bi-eraser"></i> Bersihkan Kanvas
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <span id="sigBadgeRecorded" style="display: none; font-size: 0.75rem; font-weight: 600; color: var(--success);">
+                                Tanda tangan tersimpan
+                            </span>
+                            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.55rem; margin-left: auto;" onclick="clearSignature()">
+                                Bersihkan Kanvas
                             </button>
                         </div>
-                        <div style="border: 1px solid var(--border); border-radius: 0.375rem; background: #ffffff; padding: 0.2rem; touch-action: none; position: relative;">
-                            <canvas id="signatureCanvas" width="500" height="110" style="width: 100%; height: 110px; display: block; border-radius: 0.25rem; cursor: crosshair; background: #fafafa;"></canvas>
-                            <div id="sigPlaceholder" style="position: absolute; bottom: 14px; left: 14px; right: 14px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 2px; transition: opacity 0.2s ease;">
-                                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di atas garis ini</span>
-                                <span style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700;">✕</span>
+                        <div style="border: 1px solid var(--border); border-radius: 0.375rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
+                            <canvas id="signatureCanvas" width="500" height="120" style="width: 100%; height: 120px; display: block; border-radius: 0.25rem; cursor: crosshair; background: #fbfcfd;"></canvas>
+                            <div id="sigPlaceholder" style="position: absolute; bottom: 16px; left: 16px; right: 16px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; transition: opacity 0.2s ease;">
+                                <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di area ini</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Panel 2: Foto Stempel Basah / Paraf Resep Fisik -->
-                    <div id="panelSignStamp" style="display: none; text-align: center; border: 1px dashed var(--border-strong); border-radius: 0.375rem; padding: 0.75rem; background: white;">
-                        <p style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                            Unggah foto stempel basah klinik atau paraf fisik dokter pada lembar resep/kunjungan.
+                    <div id="panelSignStamp" style="display: none; text-align: center; border: 1px dashed var(--border-strong); border-radius: 0.375rem; padding: 1rem; background: #fbfcfd;">
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.65rem;">
+                            Unggah foto stempel klinik atau paraf fisik dokter pada lembar resep.
                         </p>
                         <div style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                            <label class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; cursor: pointer; gap: 0.35rem;">
-                                <i class="bi bi-camera" style="font-size: 0.95rem; color: var(--primary);"></i>
-                                <span>Pilih / Foto Stempel Fisik</span>
+                            <label class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; margin-bottom: 0;">
+                                <span>Pilih Berkas Stempel</span>
                                 <input type="file" id="stampFileInput" accept="image/*" style="display: none;" onchange="handleStampFile(this)">
                             </label>
-                            <div id="stampPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.2rem 0.5rem;">
-                                <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 30px; height: 30px; object-fit: cover; border-radius: 0.25rem;">
-                                <span id="stampFileName" style="font-size: 0.725rem; color: var(--text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                <button type="button" onclick="clearStampFile()" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem;" title="Hapus foto stempel">&times;</button>
+                        </div>
+                        <div id="stampPreviewContainer" style="display: none; margin-top: 0.65rem; align-items: center; justify-content: space-between; gap: 0.75rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.45rem 0.65rem; max-width: 320px; margin-left: auto; margin-right: auto;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
+                                <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 36px; height: 36px; object-fit: cover; border-radius: 0.25rem; border: 1px solid var(--border);">
+                                <span id="stampFileName" style="font-size: 0.725rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px;"></span>
                             </div>
+                            <button type="button" onclick="clearStampFile()" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3; font-size: 0.75rem; padding: 0.15rem 0.45rem;" title="Hapus foto stempel">Hapus</button>
                         </div>
                     </div>
                 </div>
@@ -340,10 +349,10 @@
                 <!-- Step 3 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="goToActualStep(2)">
-                        <i class="bi bi-arrow-left"></i> Kembali
+                        Kembali
                     </button>
-                    <button type="submit" id="actualSubmitButton" class="btn btn-primary" style="font-weight: 700;">
-                        <i class="bi bi-check2-circle"></i> Simpan Laporan
+                    <button type="submit" id="actualSubmitButton" class="btn btn-primary" style="font-weight: 700; padding: 0.55rem 1.25rem;">
+                        Simpan Laporan
                     </button>
                 </div>
             </div>
@@ -544,6 +553,9 @@
     }
 
     let cameraStream = null;
+    let verificationMode = 'touch';
+    let touchSignatureDataUrl = '';
+    let stampSignatureDataUrl = '';
 
     function initSignaturePad() {
         sigCanvas = document.getElementById('signatureCanvas');
@@ -556,10 +568,11 @@
 
         function getPos(e) {
             const rect = sigCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const scaleX = sigCanvas.width / rect.width;
-            const scaleY = sigCanvas.height / rect.height;
+            const touch = (e.touches && e.touches[0]) ? e.touches[0] : ((e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e);
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            const scaleX = rect.width > 0 ? (sigCanvas.width / rect.width) : 1;
+            const scaleY = rect.height > 0 ? (sigCanvas.height / rect.height) : 1;
             return {
                 x: (clientX - rect.left) * scaleX,
                 y: (clientY - rect.top) * scaleY
@@ -585,7 +598,8 @@
             if (isDrawing) {
                 isDrawing = false;
                 if (verificationMode === 'touch') {
-                    document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                    touchSignatureDataUrl = sigCanvas.toDataURL('image/png');
+                    document.getElementById('signatureUrlInput').value = touchSignatureDataUrl;
                     updateSigBadge(true);
                 }
                 saveActualDraft();
@@ -614,7 +628,8 @@
             if (isDrawing) {
                 isDrawing = false;
                 if (verificationMode === 'touch') {
-                    document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                    touchSignatureDataUrl = sigCanvas.toDataURL('image/png');
+                    document.getElementById('signatureUrlInput').value = touchSignatureDataUrl;
                     updateSigBadge(true);
                 }
                 saveActualDraft();
@@ -622,7 +637,27 @@
         }, { passive: false });
     }
 
-    let verificationMode = 'touch';
+    function resizeSignatureCanvas() {
+        if (!sigCanvas || !sigCtx) return;
+        const rect = sigCanvas.getBoundingClientRect();
+        if (rect.width > 0 && Math.abs(sigCanvas.width - Math.round(rect.width)) > 2) {
+            const currentData = touchSignatureDataUrl || document.getElementById('signatureUrlInput')?.value;
+            sigCanvas.width = Math.round(rect.width);
+            sigCanvas.height = 120;
+            sigCtx.strokeStyle = '#0f172a';
+            sigCtx.lineWidth = 2.5;
+            sigCtx.lineCap = 'round';
+            sigCtx.lineJoin = 'round';
+            if (currentData && currentData.startsWith('data:')) {
+                const img = new Image();
+                img.onload = () => {
+                    sigCtx.drawImage(img, 0, 0);
+                    setSigPlaceholderVisible(false);
+                };
+                img.src = currentData;
+            }
+        }
+    }
 
     function switchVerificationMode(mode) {
         verificationMode = mode;
@@ -639,19 +674,14 @@
 
             tabStamp.style.background = 'transparent';
             tabStamp.style.color = 'var(--text-muted)';
-            tabStamp.style.fontWeight = '400';
+            tabStamp.style.fontWeight = '500';
             tabStamp.style.boxShadow = 'none';
 
             panelTouch.style.display = 'block';
             panelStamp.style.display = 'none';
 
-            // Sync touch signature if canvas has content
-            const badge = document.getElementById('sigBadgeRecorded');
-            if (badge && badge.style.display === 'inline-flex' && sigCanvas) {
-                document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
-            } else {
-                document.getElementById('signatureUrlInput').value = '';
-            }
+            document.getElementById('signatureUrlInput').value = touchSignatureDataUrl || '';
+            setTimeout(resizeSignatureCanvas, 50);
         } else {
             tabStamp.style.background = 'white';
             tabStamp.style.color = 'var(--primary)';
@@ -660,19 +690,13 @@
 
             tabTouch.style.background = 'transparent';
             tabTouch.style.color = 'var(--text-muted)';
-            tabTouch.style.fontWeight = '400';
+            tabTouch.style.fontWeight = '500';
             tabTouch.style.boxShadow = 'none';
 
             panelTouch.style.display = 'none';
             panelStamp.style.display = 'block';
 
-            // Sync stamp preview if available
-            const stampImg = document.getElementById('stampPreviewImg');
-            if (stampImg && stampImg.src && stampImg.src.startsWith('data:')) {
-                document.getElementById('signatureUrlInput').value = stampImg.src;
-            } else {
-                document.getElementById('signatureUrlInput').value = '';
-            }
+            document.getElementById('signatureUrlInput').value = stampSignatureDataUrl || '';
         }
         saveActualDraft();
     }
@@ -684,17 +708,28 @@
 
     function updateSigBadge(hasContent) {
         const badge = document.getElementById('sigBadgeRecorded');
-        if (badge) badge.style.display = hasContent ? 'inline-flex' : 'none';
+        if (badge) badge.style.display = hasContent ? 'inline' : 'none';
     }
 
     function clearSignature() {
         if (!sigCanvas || !sigCtx) return;
         sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        touchSignatureDataUrl = '';
         if (verificationMode === 'touch') {
             document.getElementById('signatureUrlInput').value = '';
         }
         setSigPlaceholderVisible(true);
         updateSigBadge(false);
+        saveActualDraft();
+    }
+
+    function clearPhoto() {
+        document.getElementById('photoUrlInput').value = '';
+        document.getElementById('photoPreviewContainer').style.display = 'none';
+        document.getElementById('photoPreviewImg').src = '';
+        document.getElementById('photoFileName').innerText = '';
+        const fileInput = document.getElementById('photoFileInput');
+        if (fileInput) fileInput.value = '';
         saveActualDraft();
     }
 
@@ -704,10 +739,11 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const dataUrl = e.target.result;
+                stampSignatureDataUrl = dataUrl;
                 document.getElementById('signatureUrlInput').value = dataUrl;
                 document.getElementById('stampPreviewImg').src = dataUrl;
                 document.getElementById('stampFileName').innerText = file.name;
-                document.getElementById('stampPreviewContainer').style.display = 'inline-flex';
+                document.getElementById('stampPreviewContainer').style.display = 'flex';
                 saveActualDraft();
                 window.showToast('Foto stempel/paraf fisik berhasil disimpan.', 'success');
             };
@@ -721,6 +757,7 @@
         document.getElementById('stampPreviewImg').src = '';
         document.getElementById('stampFileName').innerText = '';
         document.getElementById('stampPreviewContainer').style.display = 'none';
+        stampSignatureDataUrl = '';
         if (verificationMode === 'stamp') {
             document.getElementById('signatureUrlInput').value = '';
         }
@@ -764,7 +801,7 @@
         const wrap = document.getElementById('cameraViewfinderWrap');
         if (wrap) wrap.style.display = 'none';
         const btnText = document.getElementById('liveCameraBtnText');
-        if (btnText) btnText.innerText = 'Buka Kamera Langsung';
+        if (btnText) btnText.innerText = 'Buka Kamera';
         const video = document.getElementById('cameraVideo');
         if (video) video.srcObject = null;
     }
@@ -947,6 +984,7 @@
 
             if (draft.signature_url) {
                 document.getElementById('signatureUrlInput').value = draft.signature_url;
+                touchSignatureDataUrl = draft.signature_url;
                 const img = new Image();
                 img.onload = () => {
                     if (sigCtx && sigCanvas) {
@@ -1318,6 +1356,10 @@
         const l2 = document.getElementById('stepLine2');
         if (l1) l1.style.background = currentActualStep > 1 ? 'var(--success)' : 'var(--border)';
         if (l2) l2.style.background = currentActualStep > 2 ? 'var(--success)' : 'var(--border)';
+
+        if (currentActualStep === 3) {
+            setTimeout(resizeSignatureCanvas, 60);
+        }
     }
 
     function openActualModal(planId, fallbackDoctorId = null) {
