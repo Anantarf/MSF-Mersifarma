@@ -182,28 +182,71 @@
                 <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Wajib menyertakan bukti foto di tempat praktik dokter.</small>
             </div>
 
-            <!-- 4. Tanda Tangan Digital Dokter -->
+            <!-- 4. Verifikasi & Bukti Kunjungan Dokter (Tanda Tangan / Stempel Resmi) -->
             <div style="margin-bottom: 1.25rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary);">Tanda Tangan Dokter</label>
-                    <div style="display: flex; gap: 0.35rem;">
-                        <button type="button" class="btn btn-outline" style="min-height: 28px; padding: 0.15rem 0.5rem; font-size: 0.75rem;" onclick="clearSignature()">
-                            Hapus
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); display: block;">Verifikasi Bukti Kunjungan Dokter</label>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Pilih metode validasi otentik di lokasi faskes</span>
+                    </div>
+                    <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 0.2rem; border-radius: 0.375rem; border: 1px solid var(--border);">
+                        <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="switchVerificationMode('touch')">
+                            <i class="bi bi-pen"></i> Tanda Tangan Layar
                         </button>
-                        <button type="button" class="btn btn-outline" style="min-height: 28px; padding: 0.15rem 0.5rem; font-size: 0.75rem;" onclick="useSampleSignature()">
-                            + Contoh TTD
+                        <button type="button" id="tabSignStamp" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 0.25rem; background: transparent; color: var(--text-muted);" onclick="switchVerificationMode('stamp')">
+                            <i class="bi bi-patch-check"></i> Foto Stempel / Resep
                         </button>
                     </div>
                 </div>
+
                 <input type="hidden" id="signatureUrlInput" required>
-                <div style="border: 1px solid var(--border); border-radius: 0.5rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
-                    <canvas id="signatureCanvas" width="500" height="130" style="width: 100%; height: 130px; display: block; border-radius: 0.375rem; cursor: crosshair; background: #fafafa;"></canvas>
-                    <div id="sigPlaceholder" style="position: absolute; bottom: 18px; left: 18px; right: 18px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; transition: opacity 0.2s ease;">
-                        <span style="font-size: 0.725rem; color: #94a3b8; font-weight: 500;">Tanda tangan dokter di atas garis ini</span>
-                        <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">✕</span>
+
+                <!-- Panel 1: Tanda Tangan Layar Sentuh Langsung -->
+                <div id="panelSignTouch">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <div id="sigBadgeRecorded" style="display: none; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; color: var(--success); background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 0.25rem;">
+                            <i class="bi bi-check-circle-fill"></i> Tanda Tangan Terisi
+                        </div>
+                        <div style="margin-left: auto;">
+                            <button type="button" class="btn btn-outline" style="min-height: 28px; padding: 0.15rem 0.55rem; font-size: 0.75rem;" onclick="clearSignature()">
+                                <i class="bi bi-eraser"></i> Bersihkan Kanvas
+                            </button>
+                        </div>
                     </div>
+                    <div style="border: 1px solid var(--border); border-radius: 0.5rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
+                        <canvas id="signatureCanvas" width="500" height="130" style="width: 100%; height: 130px; display: block; border-radius: 0.375rem; cursor: crosshair; background: #fafafa;"></canvas>
+                        <div id="sigPlaceholder" style="position: absolute; bottom: 18px; left: 18px; right: 18px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; transition: opacity 0.2s ease;">
+                            <span style="font-size: 0.725rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di atas garis ini</span>
+                            <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">✕</span>
+                        </div>
+                    </div>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Goreskan jari dokter langsung di layar sentuh perangkat.</small>
                 </div>
-                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Dokter menandatangani langsung di kanvas dengan jari atau mouse.</small>
+
+                <!-- Panel 2: Foto Stempel Basah / Paraf Resep Fisik Dokter -->
+                <div id="panelSignStamp" style="display: none;">
+                    <div style="border: 1px dashed var(--border-strong); border-radius: 0.5rem; padding: 1rem; background: #fafafa; text-align: center;">
+                        <p style="font-size: 0.825rem; color: var(--secondary); font-weight: 600; margin-bottom: 0.25rem;">
+                            Dokter Berhalangan Menyentuh Layar?
+                        </p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); max-width: 440px; margin: 0 auto 0.75rem auto; line-height: 1.4;">
+                            Unggah foto stempel basah klinik atau paraf fisik dokter pada lembar resep/kunjungan resmi sebagai bukti audit asli.
+                        </p>
+                        <div style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <label class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; cursor: pointer; gap: 0.35rem;">
+                                <i class="bi bi-camera" style="font-size: 1rem; color: var(--primary);"></i>
+                                <span>Pilih / Foto Stempel Fisik</span>
+                                <input type="file" id="stampFileInput" accept="image/*" style="display: none;" onchange="handleStampFile(this)">
+                            </label>
+                            <div id="stampPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.25rem 0.5rem;">
+                                <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 36px; height: 36px; object-fit: cover; border-radius: 0.25rem;">
+                                <span id="stampFileName" style="font-size: 0.75rem; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                <button type="button" onclick="clearStampFile()" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.95rem; font-weight: bold;" title="Hapus foto stempel">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Foto dokumen stempel fisik akan disimpan sebagai bukti audit verifikasi.</small>
+                </div>
             </div>
 
             <!-- 5. Produk Detailing Farmasi -->
@@ -427,7 +470,10 @@
         window.addEventListener('mouseup', () => {
             if (isDrawing) {
                 isDrawing = false;
-                document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                if (verificationMode === 'touch') {
+                    document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                    updateSigBadge(true);
+                }
                 saveActualDraft();
             }
         });
@@ -453,10 +499,68 @@
             e.preventDefault();
             if (isDrawing) {
                 isDrawing = false;
-                document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                if (verificationMode === 'touch') {
+                    document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+                    updateSigBadge(true);
+                }
                 saveActualDraft();
             }
         }, { passive: false });
+    }
+
+    let verificationMode = 'touch';
+
+    function switchVerificationMode(mode) {
+        verificationMode = mode;
+        const tabTouch = document.getElementById('tabSignTouch');
+        const tabStamp = document.getElementById('tabSignStamp');
+        const panelTouch = document.getElementById('panelSignTouch');
+        const panelStamp = document.getElementById('panelSignStamp');
+
+        if (mode === 'touch') {
+            tabTouch.style.background = 'white';
+            tabTouch.style.color = 'var(--primary)';
+            tabTouch.style.fontWeight = '600';
+            tabTouch.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+
+            tabStamp.style.background = 'transparent';
+            tabStamp.style.color = 'var(--text-muted)';
+            tabStamp.style.fontWeight = '400';
+            tabStamp.style.boxShadow = 'none';
+
+            panelTouch.style.display = 'block';
+            panelStamp.style.display = 'none';
+
+            // Sync touch signature if canvas has content
+            const badge = document.getElementById('sigBadgeRecorded');
+            if (badge && badge.style.display === 'inline-flex' && sigCanvas) {
+                document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+            } else {
+                document.getElementById('signatureUrlInput').value = '';
+            }
+        } else {
+            tabStamp.style.background = 'white';
+            tabStamp.style.color = 'var(--primary)';
+            tabStamp.style.fontWeight = '600';
+            tabStamp.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+
+            tabTouch.style.background = 'transparent';
+            tabTouch.style.color = 'var(--text-muted)';
+            tabTouch.style.fontWeight = '400';
+            tabTouch.style.boxShadow = 'none';
+
+            panelTouch.style.display = 'none';
+            panelStamp.style.display = 'block';
+
+            // Sync stamp preview if available
+            const stampImg = document.getElementById('stampPreviewImg');
+            if (stampImg && stampImg.src && stampImg.src.startsWith('data:')) {
+                document.getElementById('signatureUrlInput').value = stampImg.src;
+            } else {
+                document.getElementById('signatureUrlInput').value = '';
+            }
+        }
+        saveActualDraft();
     }
 
     function setSigPlaceholderVisible(visible) {
@@ -464,29 +568,48 @@
         if (el) el.style.opacity = visible ? '1' : '0';
     }
 
+    function updateSigBadge(hasContent) {
+        const badge = document.getElementById('sigBadgeRecorded');
+        if (badge) badge.style.display = hasContent ? 'inline-flex' : 'none';
+    }
+
     function clearSignature() {
         if (!sigCanvas || !sigCtx) return;
         sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-        document.getElementById('signatureUrlInput').value = '';
+        if (verificationMode === 'touch') {
+            document.getElementById('signatureUrlInput').value = '';
+        }
         setSigPlaceholderVisible(true);
+        updateSigBadge(false);
         saveActualDraft();
     }
 
-    function useSampleSignature() {
-        if (!sigCanvas || !sigCtx) return;
-        clearSignature();
-        setSigPlaceholderVisible(false);
-        sigCtx.beginPath();
-        sigCtx.moveTo(60, 80);
-        sigCtx.bezierCurveTo(90, 30, 140, 40, 180, 85);
-        sigCtx.bezierCurveTo(200, 110, 230, 60, 280, 75);
-        sigCtx.bezierCurveTo(310, 85, 340, 95, 400, 50);
-        sigCtx.stroke();
-        sigCtx.beginPath();
-        sigCtx.moveTo(120, 95);
-        sigCtx.lineTo(360, 95);
-        sigCtx.stroke();
-        document.getElementById('signatureUrlInput').value = sigCanvas.toDataURL('image/png');
+    function handleStampFile(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                document.getElementById('signatureUrlInput').value = dataUrl;
+                document.getElementById('stampPreviewImg').src = dataUrl;
+                document.getElementById('stampFileName').innerText = file.name;
+                document.getElementById('stampPreviewContainer').style.display = 'inline-flex';
+                saveActualDraft();
+                window.showToast('Foto stempel/paraf fisik berhasil disimpan.', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function clearStampFile() {
+        const fileInput = document.getElementById('stampFileInput');
+        if (fileInput) fileInput.value = '';
+        document.getElementById('stampPreviewImg').src = '';
+        document.getElementById('stampFileName').innerText = '';
+        document.getElementById('stampPreviewContainer').style.display = 'none';
+        if (verificationMode === 'stamp') {
+            document.getElementById('signatureUrlInput').value = '';
+        }
         saveActualDraft();
     }
 
@@ -918,6 +1041,8 @@
         document.getElementById('photoFileInput').value = '';
 
         clearSignature();
+        clearStampFile();
+        switchVerificationMode('touch');
 
         document.getElementById('visitReasonInput').value = '';
         document.getElementById('actualModalError').style.display = 'none';
@@ -940,14 +1065,14 @@
 
         const photoUrl = document.getElementById('photoUrlInput').value.trim();
         if (!photoUrl) {
-            errorEl.innerText = 'Foto kunjungan wajib diambil atau diunggah.';
+            errorEl.innerText = 'Foto kunjungan di lokasi klinik/praktik dokter wajib diambil atau diunggah.';
             errorEl.style.display = 'block';
             return;
         }
 
         const signatureUrl = document.getElementById('signatureUrlInput').value.trim();
         if (!signatureUrl) {
-            errorEl.innerText = 'Tanda tangan dokter wajib diisi di kanvas.';
+            errorEl.innerText = 'Bukti verifikasi dokter (tanda tangan layar sentuh atau foto stempel fisik resmi) wajib diisi.';
             errorEl.style.display = 'block';
             return;
         }
