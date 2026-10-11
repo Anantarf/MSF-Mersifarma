@@ -197,15 +197,15 @@
                     <label for="visitReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
                         Alasan Kunjungan (Opsional)
                     </label>
-                    <textarea id="visitReasonInput" rows="2" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
+                    <textarea id="visitReasonInput" rows="5" style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem; line-height: 1.5; resize: vertical;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
                 </div>
 
                 <!-- Step 1 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
-                    <div id="draftStatusBadge" style="font-size: 0.75rem; color: var(--text-muted); display: none; align-items: center; gap: 0.35rem;">
-                        <i class="bi bi-clock-history" style="color: var(--primary);"></i>
-                        <span>Draf lokal tersimpan</span>
-                        <button type="button" onclick="clearActualDraft(true)" style="background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.75rem; padding: 0; margin-left: 0.25rem;">Hapus</button>
+                    <div>
+                        <button type="button" onclick="resetActualForm()" class="btn btn-outline btn-sm" style="color: var(--text-muted); border-color: var(--border); font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;" title="Kosongkan seluruh isian formulir">
+                            <i class="bi bi-eraser"></i> Hapus Isian
+                        </button>
                     </div>
                     <div style="display: flex; gap: 0.5rem; margin-left: auto;">
                         <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
@@ -859,18 +859,62 @@
     }
 
     function updateDraftBadge() {
-        const badge = document.getElementById('draftStatusBadge');
-        if (!badge) return;
-        const raw = localStorage.getItem('msf_actual_draft');
-        badge.style.display = raw ? 'inline-flex' : 'none';
+        // Indikator draf ditiadakan sesuai preferensi clean UI
     }
 
     function clearActualDraft(showNotice = false) {
         localStorage.removeItem('msf_actual_draft');
-        updateDraftBadge();
         if (showNotice) {
-            window.showToast('Draf kunjungan lokal telah dihapus.', 'info');
+            window.showToast('Isian formulir telah dikosongkan.', 'info');
         }
+    }
+
+    function resetActualForm() {
+        clearActualDraft(false);
+
+        const planId = document.getElementById('actualPlanId').value;
+        if (!planId) {
+            const docSel = document.getElementById('actualDoctorSelect');
+            if (docSel) docSel.selectedIndex = 0;
+        }
+
+        const dateInput = document.getElementById('actualDateInput');
+        if (dateInput) {
+            dateInput.value = todayString();
+            syncActualDateDisplay();
+        }
+
+        const checkIn = document.getElementById('checkInInput');
+        if (checkIn) checkIn.value = '08.30';
+
+        const checkOut = document.getElementById('checkOutInput');
+        if (checkOut) checkOut.value = '09.00';
+
+        const reason = document.getElementById('visitReasonInput');
+        if (reason) reason.value = '';
+
+        // Reset pilihan produk di Step 2
+        document.querySelectorAll('#productPicker input[name="product_ids"]').forEach(input => {
+            input.checked = false;
+        });
+
+        // Reset foto di Step 3
+        document.getElementById('photoUrlInput').value = '';
+        document.getElementById('photoPreviewContainer').style.display = 'none';
+        document.getElementById('photoPreviewImg').src = '';
+        document.getElementById('photoFileName').innerText = '';
+        const photoFile = document.getElementById('photoFileInput');
+        if (photoFile) photoFile.value = '';
+
+        // Reset tanda tangan / stempel di Step 3
+        clearSignature();
+        clearStampFile();
+
+        // Kembali ke Langkah 1
+        currentActualStep = 1;
+        renderStepView();
+
+        window.showToast('Seluruh isian formulir berhasil dikosongkan.', 'info');
     }
 
     function restoreActualDraft(planId) {
@@ -917,9 +961,6 @@
                 };
                 img.src = draft.signature_url;
             }
-
-            updateDraftBadge();
-            window.showToast('Draf kunjungan tersimpan dipulihkan.', 'info', 2000);
         } catch (e) {
             console.warn('Failed to parse draft:', e);
         }
