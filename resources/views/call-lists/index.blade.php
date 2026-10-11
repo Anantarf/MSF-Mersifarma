@@ -834,7 +834,7 @@
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; max-height: 150px; overflow-y: auto;">
                         ${cl.approval_history.map(h => `
                             <div style="padding: 0.4rem; background: #f1f5f9; border-radius: 0.25rem;">
-                                <div><strong>${escapeHtml(h.actor_name)}</strong> melakukan <code>${escapeHtml(h.event)}</code> (${new Date(h.created_at).toLocaleString('id-ID')})</div>
+                                <div><strong>${escapeHtml(h.actor_name)}</strong> melakukan <code>${escapeHtml(h.event)}</code> (${window.formatDateTimeIndonesia(h.created_at)})</div>
                                 ${h.reason ? `<div style="color: #64748b; margin-top: 0.2rem;">Catatan: <em>"${escapeHtml(h.reason)}"</em></div>` : ''}
                             </div>
                         `).join('')}

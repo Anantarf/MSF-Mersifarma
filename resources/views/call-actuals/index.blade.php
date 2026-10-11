@@ -159,19 +159,22 @@
                 </div>
 
                 <!-- 2. Tanggal & Jam Kunjungan -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem;">
                     <div>
                         <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Tanggal Kunjungan</label>
                         <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
                     <div>
-                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
-                        <input type="time" id="checkInInput" required value="08:30" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in (00.00 - 23.59 WIB)</label>
+                        <input type="time" id="checkInInput" required value="08:30" step="60" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
                     <div>
-                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
-                        <input type="time" id="checkOutInput" required value="09:00" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out (00.00 - 23.59 WIB)</label>
+                        <input type="time" id="checkOutInput" required value="09:00" step="60" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1.15rem;">
+                    Format waktu 24 jam Indonesia (00.00 - 23.59 WIB). Contoh: 08.30 atau 14.15.
                 </div>
 
                 <!-- 3. Alasan Kunjungan (jika di luar rencana) -->
@@ -479,6 +482,31 @@
         ];
         const monthName = monthNames[monthNum - 1] || parts[1];
         return `${day} ${monthName} ${year}`;
+    }
+
+    function formatWaktuIndonesia(timeOrDate) {
+        if (!timeOrDate) return '-';
+        if (timeOrDate instanceof Date) {
+            const h = String(timeOrDate.getHours()).padStart(2, '0');
+            const m = String(timeOrDate.getMinutes()).padStart(2, '0');
+            return `${h}.${m} WIB`;
+        }
+        if (typeof timeOrDate === 'string') {
+            const trimmed = timeOrDate.trim();
+            const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/);
+            if (timeMatch) {
+                const h = timeMatch[1].padStart(2, '0');
+                const m = timeMatch[2];
+                return `${h}.${m} WIB`;
+            }
+            const d = new Date(trimmed);
+            if (!isNaN(d.getTime())) {
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return `${h}.${m} WIB`;
+            }
+        }
+        return String(timeOrDate);
     }
 
     let cameraStream = null;
@@ -992,7 +1020,7 @@
             return `
                 <tr>
                     <td style="white-space: nowrap;">
-                        <strong style="color: var(--primary); font-size: 0.95rem;">${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB</strong>
+                        <strong style="color: var(--primary); font-size: 0.95rem;">${formatWaktuIndonesia(plan.planned_time)}</strong>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">Hari Ini</div>
                     </td>
                     <td style="white-space: nowrap;">
@@ -1035,9 +1063,11 @@
 
             let timeHtml = '';
             if (actual.check_in && actual.check_out) {
-                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${actual.check_in.substring(0, 5)} - ${actual.check_out.substring(0, 5)} WIB</div>`;
+                const inTime = formatWaktuIndonesia(actual.check_in).replace(' WIB', '');
+                const outTime = formatWaktuIndonesia(actual.check_out);
+                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${inTime} - ${outTime}</div>`;
             } else if (actual.check_in) {
-                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${actual.check_in.substring(0, 5)} WIB</div>`;
+                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${formatWaktuIndonesia(actual.check_in)}</div>`;
             }
 
             return `
@@ -1301,7 +1331,7 @@
         document.getElementById('activeSessionDoctorDetail').innerText = `${activeSession.doctor_specialization || 'Spesialis Umum'} - ${activeSession.doctor_address || '-'}`;
 
         const checkInDate = new Date(activeSession.check_in_at);
-        document.getElementById('activeSessionCheckInTime').innerText = checkInDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        document.getElementById('activeSessionCheckInTime').innerText = formatWaktuIndonesia(checkInDate);
 
         const checkoutWrap = document.getElementById('activeSessionCheckOutWrap');
         const btnCheckout = document.getElementById('btnSessionCheckout');
@@ -1309,7 +1339,7 @@
 
         if (activeSession.check_out_at) {
             const checkOutDate = new Date(activeSession.check_out_at);
-            document.getElementById('activeSessionCheckOutTime').innerText = checkOutDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+            document.getElementById('activeSessionCheckOutTime').innerText = formatWaktuIndonesia(checkOutDate);
             checkoutWrap.style.display = 'inline';
             btnCheckout.style.display = 'none';
             btnContinue.style.display = 'inline-block';

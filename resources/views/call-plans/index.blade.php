@@ -130,10 +130,13 @@
             <!-- 4. Jam Rencana Kunjungan -->
             <div style="margin-bottom: 1.5rem;">
                 <label for="plannedTimeInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Jam Rencana Kunjungan (WIB):
+                    Jam Rencana Kunjungan (00.00 - 23.59 WIB):
                 </label>
-                <input type="time" id="plannedTimeInput" required value="09:00"
+                <input type="time" id="plannedTimeInput" required value="09:00" step="60"
                        style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                <small style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                    Format waktu 24 jam Indonesia (00.00 - 23.59 WIB). Contoh: 09.00 atau 14.30.
+                </small>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
@@ -266,6 +269,31 @@
         }[char]));
     }
 
+    function formatWaktuIndonesia(timeOrDate) {
+        if (!timeOrDate) return '-';
+        if (timeOrDate instanceof Date) {
+            const h = String(timeOrDate.getHours()).padStart(2, '0');
+            const m = String(timeOrDate.getMinutes()).padStart(2, '0');
+            return `${h}.${m} WIB`;
+        }
+        if (typeof timeOrDate === 'string') {
+            const trimmed = timeOrDate.trim();
+            const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/);
+            if (timeMatch) {
+                const h = timeMatch[1].padStart(2, '0');
+                const m = timeMatch[2];
+                return `${h}.${m} WIB`;
+            }
+            const d = new Date(trimmed);
+            if (!isNaN(d.getTime())) {
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return `${h}.${m} WIB`;
+            }
+        }
+        return String(timeOrDate);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadPlans();
         loadApprovedCallLists();
@@ -355,7 +383,7 @@
 
             const dateObj = new Date(plan.plan_date + 'T' + plan.planned_time);
             const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-            const timeStr = plan.planned_time.substring(0, 5) + ' WIB';
+            const timeStr = formatWaktuIndonesia(plan.planned_time);
 
             return `
                 <tr>

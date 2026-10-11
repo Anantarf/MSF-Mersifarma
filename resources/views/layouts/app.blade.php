@@ -984,6 +984,45 @@
             return html;
         };
 
+        // Standar Format Waktu Indonesia 24 Jam: 00.00 - 23.59 WIB (No AM/PM)
+        window.formatWaktuIndonesia = function(timeOrDate) {
+            if (!timeOrDate) return '-';
+            if (timeOrDate instanceof Date) {
+                const h = String(timeOrDate.getHours()).padStart(2, '0');
+                const m = String(timeOrDate.getMinutes()).padStart(2, '0');
+                return `${h}.${m} WIB`;
+            }
+            if (typeof timeOrDate === 'string') {
+                const trimmed = timeOrDate.trim();
+                const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/);
+                if (timeMatch) {
+                    const h = timeMatch[1].padStart(2, '0');
+                    const m = timeMatch[2];
+                    return `${h}.${m} WIB`;
+                }
+                const d = new Date(trimmed);
+                if (!isNaN(d.getTime())) {
+                    const h = String(d.getHours()).padStart(2, '0');
+                    const m = String(d.getMinutes()).padStart(2, '0');
+                    return `${h}.${m} WIB`;
+                }
+            }
+            return String(timeOrDate);
+        };
+
+        window.formatDateTimeIndonesia = function(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const day = d.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const month = monthNames[d.getMonth()];
+            const year = d.getFullYear();
+            const h = String(d.getHours()).padStart(2, '0');
+            const m = String(d.getMinutes()).padStart(2, '0');
+            return `${day} ${month} ${year}, ${h}.${m} WIB`;
+        };
+
         // Native Network Status Listeners (Efficient & Friendly)
         window.addEventListener('online', () => {
             window.showToast('Koneksi internet terhubung kembali.', 'info', 3000);
