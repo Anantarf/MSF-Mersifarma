@@ -7,8 +7,8 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call Plan)</small></h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Jadwal Kunjungan</h1>
+            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Plan : Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">
@@ -21,29 +21,29 @@
     <div id="planStatusAlert" style="display: none;" class="alert"></div>
 
     <!-- Filter Bar -->
-    <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
-        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
-            <label for="filterDateInput" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
-                Filter Tanggal:
+    <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.85rem; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center;">
+            <label for="filterDateInput" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
+                Tanggal:
             </label>
             <input type="date" id="filterDateInput" onchange="applyFilters()"
-                   style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;">
-            <div style="display: flex; gap: 0.35rem;">
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('all')">Semua</button>
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('today')">Hari Ini</button>
-                <button type="button" class="btn btn-outline" style="min-height: 36px; padding: 0.25rem 0.65rem; font-size: 0.8rem;" onclick="setQuickDate('tomorrow')">Besok</button>
+                   style="padding: 0.35rem 0.55rem; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 0.825rem; min-height: 36px;">
+            <div style="display: flex; gap: 0.25rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="setQuickDate('all')">Semua</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setQuickDate('today')">Hari Ini</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setQuickDate('tomorrow')">Besok</button>
             </div>
         </div>
 
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-            <label for="filterStatusSelect" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+        <div style="display: flex; gap: 0.65rem; align-items: center;">
+            <label for="filterStatusSelect" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
                 Status:
             </label>
             <select id="filterStatusSelect" onchange="applyFilters()"
-                    style="padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem;">
+                    style="padding: 0.35rem 0.55rem; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 0.825rem; min-height: 36px;">
                 <option value="">Semua Status</option>
-                <option value="scheduled">Dijadwalkan (Scheduled)</option>
-                <option value="completed">Selesai Dikunjungi (Completed)</option>
+                <option value="scheduled">Dijadwalkan</option>
+                <option value="completed">Selesai Dikunjungi</option>
             </select>
         </div>
     </div>

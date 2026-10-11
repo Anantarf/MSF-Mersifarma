@@ -7,8 +7,8 @@
     <!-- Header Section -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Target Dokter <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call List)</small></h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Perencanaan target sasaran dokter bulanan dan alur persetujuan atasan langsung.</p>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Target Dokter</h1>
+            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call List Bulanan : Perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
@@ -64,46 +64,46 @@
     @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
     <div id="reviewContainer" style="display: none; flex-direction: column; gap: 1rem;">
         <!-- Widget Ringkasan Monitoring Wilayah (Read-Only) -->
-        <div id="monitoringSummaryCard" style="display: none; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div id="monitoringSummaryCard" style="display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.15rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
                 <div>
-                    <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.15rem;">
-                        Ringkasan Monitoring Wilayah
+                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.1rem;">
+                        Monitoring Pengajuan Wilayah
                     </h4>
-                    <p style="font-size: 0.8125rem; color: var(--text-muted); margin: 0;">
-                        Pantauan pengajuan target dokter dari tim bawahan langsung Anda.
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+                        Rekapitulasi target dokter dari tim bawahan langsung pada periode terpilih.
                     </p>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="summaryMonthSelect" style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Periode:</label>
-                    <input type="month" id="summaryMonthSelect" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.8125rem; min-height: 36px;" onchange="loadManagerSummary()">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label for="summaryMonthSelect" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Periode:</label>
+                    <input type="month" id="summaryMonthSelect" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; min-height: 34px;" onchange="loadManagerSummary()">
                 </div>
             </div>
 
-            <!-- Metric Stat Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
-                <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; text-align: center;">
-                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Tim Bawahan</div>
-                    <div id="statTotalSubordinates" style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">0</div>
+            <!-- Integrated Enterprise Metric Strip -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); border: 1px solid var(--border); border-radius: 5px; background: #f8fafc; overflow: hidden; margin-bottom: 0.85rem;">
+                <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border);">
+                    <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Tim Bawahan</div>
+                    <div id="statTotalSubordinates" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">0</div>
                 </div>
-                <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; text-align: center;">
-                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Dokter Sasaran</div>
-                    <div id="statTotalDoctors" style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); margin-top: 0.25rem;">0</div>
+                <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border);">
+                    <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Dokter Sasaran</div>
+                    <div id="statTotalDoctors" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">0</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.75rem; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #166534; font-weight: 600; text-transform: uppercase;">Disetujui</div>
-                    <div id="statApproved" style="font-size: 1.35rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">0</div>
+                <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border); background: #ecfdf5;">
+                    <div style="font-size: 0.6875rem; color: #065f46; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Disetujui</div>
+                    <div id="statApproved" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #047857; margin-top: 0.15rem;">0</div>
                 </div>
-                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.75rem; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Menunggu Review</div>
-                    <div id="statPending" style="font-size: 1.35rem; font-weight: 800; color: #b45309; margin-top: 0.25rem;">0</div>
+                <div style="padding: 0.65rem 0.85rem; background: #fffbeb;">
+                    <div style="font-size: 0.6875rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Menunggu Review</div>
+                    <div id="statPending" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #b45309; margin-top: 0.15rem;">0</div>
                 </div>
             </div>
 
             <!-- Subordinates Progress Breakdown -->
-            <div style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
-                <div style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">Capaian Pengajuan per Anggota Tim:</div>
-                <div id="subordinatesPillContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+            <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;">Status Anggota Tim:</div>
+                <div id="subordinatesPillContainer" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
             </div>
         </div>
 
@@ -563,26 +563,22 @@
                 const pillContainer = document.getElementById('subordinatesPillContainer');
                 if (data.subordinates_detail && data.subordinates_detail.length) {
                     pillContainer.innerHTML = data.subordinates_detail.map(sub => {
-                        let badgeBg = '#f1f5f9';
-                        let badgeColor = '#475569';
+                        let statusClass = 'status-draft';
                         let label = 'Belum Ajukan';
                         if (sub.status === 'approved') {
-                            badgeBg = '#dcfce7';
-                            badgeColor = '#15803d';
-                            label = `${sub.doctor_count} Dokter (Disetujui)`;
+                            statusClass = 'status-approved';
+                            label = `${sub.doctor_count} Dokter Disetujui`;
                         } else if (sub.status === 'pending_approval') {
-                            badgeBg = '#fef3c7';
-                            badgeColor = '#b45309';
-                            label = `${sub.doctor_count} Dokter (Menunggu)`;
+                            statusClass = 'status-pending';
+                            label = `${sub.doctor_count} Dokter Menunggu`;
                         } else if (sub.status === 'draft') {
-                            badgeBg = '#fee2e2';
-                            badgeColor = '#b91c1c';
+                            statusClass = 'status-rejected';
                             label = 'Perlu Revisi';
                         }
                         return `
-                            <div style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(0,0,0,0.06); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <div class="status-badge ${statusClass}" style="font-size: 0.75rem; padding: 0.25rem 0.55rem;">
                                 <span>${escapeHtml(sub.name)}</span>
-                                <span style="opacity: 0.75;">&bull;</span>
+                                <span style="opacity: 0.5;">:</span>
                                 <span>${label}</span>
                             </div>
                         `;

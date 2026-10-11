@@ -7,8 +7,8 @@
     <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--secondary);">Pelaksanaan Kunjungan <small style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Call Actual)</small></h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Pelaksanaan Kunjungan</h1>
+            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Actual : Pelaporan kunjungan lapangan dengan bukti foto dan tanda tangan digital dokter.</p>
         </div>
         <button type="button" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 600;" onclick="openActualModal(null)">
             + Kunjungan di Luar Rencana
@@ -18,19 +18,19 @@
     <div id="actualStatusAlert" style="display: none;" class="alert"></div>
 
     <!-- Section 0: Kunjungan Sedang Berlangsung (Active Session P1) -->
-    <section id="activeSessionSection" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 1.25rem 1.5rem;">
+    <section id="activeSessionSection" style="display: none; background: #ffffff; border: 1px solid var(--border); border-left: 4px solid var(--success); border-radius: 6px; padding: 1.15rem 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <div style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; font-weight: 700; color: var(--success); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block;"></span>
                     Kunjungan Sedang Berlangsung (Server Check-in)
                 </div>
-                <h3 id="activeSessionDoctorName" style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin: 0 0 0.25rem 0;">-</h3>
-                <p id="activeSessionDoctorDetail" style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">-</p>
-                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #166534; font-weight: 600;">
-                    Waktu Check-in: <span id="activeSessionCheckInTime">-</span>
-                    <span id="activeSessionCheckOutWrap" style="display: none; margin-left: 0.75rem; color: #0284c7;">
-                        | Check-out: <span id="activeSessionCheckOutTime">-</span>
+                <h3 id="activeSessionDoctorName" style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin: 0 0 0.15rem 0;">-</h3>
+                <p id="activeSessionDoctorDetail" style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">-</p>
+                <div style="margin-top: 0.4rem; font-size: 0.775rem; color: var(--text-main);">
+                    <span style="color: var(--text-muted);">Check-in:</span> <strong id="activeSessionCheckInTime" class="tabular-nums">-</strong>
+                    <span id="activeSessionCheckOutWrap" style="display: none; margin-left: 0.65rem;">
+                        | <span style="color: var(--text-muted);">Check-out:</span> <strong id="activeSessionCheckOutTime" class="tabular-nums">-</strong>
                     </span>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                 <button type="button" id="btnSessionContinue" class="btn btn-primary" style="display: none;" onclick="openActualModalFromSession()">
                     Lanjutkan Pengisian Laporan
                 </button>
-                <button type="button" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5;" onclick="openCancelSessionModal()">
+                <button type="button" class="btn btn-outline" style="color: var(--danger); border-color: #fecdd3;" onclick="openCancelSessionModal()">
                     Batalkan Kunjungan
                 </button>
             </div>

@@ -298,9 +298,9 @@
         gap: 0.45rem;
         background: #ffffff;
         color: var(--secondary);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-strong);
         padding: 0.45rem 0.85rem;
-        border-radius: 9999px;
+        border-radius: 6px;
         font-size: 0.78rem;
         font-weight: 700;
         box-shadow: 0 4px 14px rgba(12, 35, 64, 0.25);
@@ -309,7 +309,7 @@
     }
 
     .floating-demo-trigger:hover {
-        transform: translateY(-2px);
+        transform: translateY(-1px);
         box-shadow: 0 6px 18px rgba(12, 35, 64, 0.3) !important;
     }
 
