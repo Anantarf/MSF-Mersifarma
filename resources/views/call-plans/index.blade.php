@@ -105,7 +105,7 @@
             <!-- 2. Pilih Target Dokter dari Call List Terpilih -->
             <div style="margin-bottom: 1rem;">
                 <label for="doctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    <i class="bi bi-heart-pulse" style="color: var(--primary); margin-right: 0.25rem;"></i>Target Dokter
+                    <i class="bi bi-person-circle" style="color: var(--primary); margin-right: 0.25rem;"></i>Target Dokter
                 </label>
                 <select id="doctorSelect" required disabled onchange="onDoctorChange()"
                         style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
