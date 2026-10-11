@@ -54,9 +54,7 @@
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Jadwal Kunjungan Hari Ini</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Jadwal terencana (Planned Visit) diprioritaskan utama untuk efisiensi MR.</p>
         </div>
-        <div id="todayPlansLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
-            Memuat jadwal hari ini...
-        </div>
+        <div id="todayPlansLoading" style="padding: 0.25rem 0;"></div>
         <div id="todayPlansTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
                 <thead>
@@ -84,9 +82,7 @@
             <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">Riwayat Kunjungan Selesai</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted);">Daftar kunjungan yang telah berhasil dilaporkan dan terverifikasi.</p>
         </div>
-        <div id="actualsLoading" style="padding: 2.5rem; color: var(--text-muted); text-align: center; background: white; border: 1px solid var(--border); border-radius: 8px;">
-            Memuat riwayat kunjungan...
-        </div>
+        <div id="actualsLoading" style="padding: 0.25rem 0;"></div>
         <div id="actualsTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
                 <thead>
@@ -194,6 +190,10 @@
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
                     Produk Detailing yang Dipresentasikan (Minimal 1 Produk):
                 </label>
+                <div class="modal-filter-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="productSearchInput" class="modal-filter-input" placeholder="Cari nama produk atau kategori farmasi..." oninput="filterProductPicker(this.value)">
+                </div>
                 <div id="productPicker" style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 170px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; background: #fafafa;">
                     Memuat produk...
                 </div>
@@ -470,11 +470,7 @@
     }
 
     function showActualAlert(message, type = 'success') {
-        const alertEl = document.getElementById('actualStatusAlert');
-        alertEl.className = `alert alert-${type}`;
-        alertEl.innerText = message;
-        alertEl.style.display = 'block';
-        setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+        window.showToast(message, type);
     }
 
     async function loadDoctors() {
@@ -493,7 +489,10 @@
 
     async function loadTodayPlans() {
         const loading = document.getElementById('todayPlansLoading');
-        loading.style.display = 'block';
+        if (loading) {
+            loading.innerHTML = window.renderTableSkeleton(2);
+            loading.style.display = 'block';
+        }
         try {
             const res = await window.apiFetch(`/api/call-plans?date=${todayString()}&status=scheduled`);
             const result = await res.json();
@@ -506,7 +505,10 @@
 
     async function loadActuals() {
         const loading = document.getElementById('actualsLoading');
-        loading.style.display = 'block';
+        if (loading) {
+            loading.innerHTML = window.renderTableSkeleton(3);
+            loading.style.display = 'block';
+        }
         try {
             const res = await window.apiFetch('/api/call-actuals');
             const result = await res.json();
@@ -546,6 +548,15 @@
                 </div>
             </label>
         `).join('');
+    }
+
+    function filterProductPicker(keyword) {
+        const term = String(keyword || '').toLowerCase().trim();
+        const labels = document.querySelectorAll('#productPicker label');
+        labels.forEach(label => {
+            const text = label.innerText.toLowerCase();
+            label.style.display = text.includes(term) ? 'flex' : 'none';
+        });
     }
 
     function renderTodayPlans() {

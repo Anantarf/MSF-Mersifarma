@@ -654,10 +654,176 @@
                 margin-bottom: 60px;
             }
         }
+
+        /* Global Floating Toast System */
+        .toast-container {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+            max-width: 380px;
+            width: calc(100vw - 2rem);
+        }
+
+        .toast {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-main);
+            transform: translateY(-8px);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toast.toast-show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.toast-hide {
+            transform: translateY(-12px);
+            opacity: 0;
+        }
+
+        .toast-icon {
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success);
+        }
+        .toast-success .toast-icon {
+            color: var(--success);
+        }
+
+        .toast-danger, .toast-error {
+            border-left: 4px solid var(--danger);
+        }
+        .toast-danger .toast-icon, .toast-error .toast-icon {
+            color: var(--danger);
+        }
+
+        .toast-warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .toast-warning .toast-icon {
+            color: #f59e0b;
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--primary);
+        }
+        .toast-info .toast-icon {
+            color: var(--primary);
+        }
+
+        .toast-message {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.15rem;
+            padding: 0.1rem;
+            line-height: 1;
+            transition: color 0.15s ease;
+        }
+
+        .toast-close:hover {
+            color: var(--text-main);
+        }
+
+        @media (max-width: 640px) {
+            .toast-container {
+                top: auto;
+                bottom: 4.5rem;
+                right: 1rem;
+                left: 1rem;
+                width: auto;
+            }
+        }
+
+        /* Skeleton Shimmer Loading */
+        .skeleton-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1.25rem 1rem;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .skeleton-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .skeleton-box {
+            height: 16px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Modal Quick Search Filter */
+        .modal-filter-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.65rem;
+        }
+
+        .modal-filter-wrap i {
+            position: absolute;
+            left: 0.75rem;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .modal-filter-input {
+            width: 100%;
+            padding: 0.45rem 0.75rem 0.45rem 2.15rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 5px;
+            font-size: 0.825rem;
+            transition: all 0.15s ease;
+        }
+
+        .modal-filter-input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px rgba(12, 77, 161, 0.15) !important;
+        }
     </style>
     @stack('styles')
 </head>
 <body>
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
     @auth
     <header>
         <div class="nav-container">
@@ -750,6 +916,72 @@
                 ...(options.headers || {})
             };
             return fetch(url, options);
+        };
+
+        // Global Toast Notification Helper
+        window.showToast = function(message, type = 'success', duration = 3500) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const safeType = ['success', 'danger', 'error', 'warning', 'info'].includes(type) ? type : 'info';
+            toast.className = `toast toast-${safeType}`;
+
+            let icon = 'bi-check-circle-fill';
+            if (safeType === 'danger' || safeType === 'error') icon = 'bi-x-circle-fill';
+            else if (safeType === 'warning') icon = 'bi-exclamation-triangle-fill';
+            else if (safeType === 'info') icon = 'bi-info-circle-fill';
+
+            toast.innerHTML = `
+                <i class="bi ${icon} toast-icon"></i>
+                <div class="toast-message">${escapeHtmlToast(message)}</div>
+                <button type="button" class="toast-close" aria-label="Tutup">&times;</button>
+            `;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('toast-show');
+            });
+
+            const closeBtn = toast.querySelector('.toast-close');
+            let timeoutId;
+
+            const removeToast = () => {
+                clearTimeout(timeoutId);
+                toast.classList.remove('toast-show');
+                toast.classList.add('toast-hide');
+                setTimeout(() => toast.remove(), 250);
+            };
+
+            closeBtn.addEventListener('click', removeToast);
+            timeoutId = setTimeout(removeToast, duration);
+        };
+
+        function escapeHtmlToast(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Global Table Skeleton Generator Helper
+        window.renderTableSkeleton = function(rows = 3) {
+            let html = '<div class="skeleton-wrap">';
+            for (let i = 0; i < rows; i++) {
+                html += `
+                    <div class="skeleton-row">
+                        <div class="skeleton-box" style="width: 25%;"></div>
+                        <div class="skeleton-box" style="width: 35%;"></div>
+                        <div class="skeleton-box" style="width: 20%;"></div>
+                        <div class="skeleton-box" style="width: 20%;"></div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            return html;
         };
     </script>
     @stack('scripts')

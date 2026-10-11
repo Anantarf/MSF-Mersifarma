@@ -50,9 +50,7 @@
 
     <!-- Plan List Container -->
     <div id="planListContainer" style="display: flex; flex-direction: column; gap: 1rem;">
-        <div id="loadingPlans" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-            Memuat jadwal kunjungan...
-        </div>
+        <div id="loadingPlans" style="padding: 0.25rem 0;"></div>
 
         <div id="planTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
@@ -281,11 +279,7 @@
     });
 
     function showAlert(message, type = 'success') {
-        const alertEl = document.getElementById('planStatusAlert');
-        alertEl.className = `alert alert-${type}`;
-        alertEl.innerText = message;
-        alertEl.style.display = 'block';
-        setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+        window.showToast(message, type);
     }
 
     function applyFilters() {
@@ -309,6 +303,7 @@
 
     async function loadPlans() {
         const loading = document.getElementById('loadingPlans');
+        loading.innerHTML = window.renderTableSkeleton(3);
         loading.style.display = 'block';
 
         const filterDate = document.getElementById('filterDateInput').value;

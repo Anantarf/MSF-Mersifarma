@@ -34,9 +34,7 @@
 
     <!-- Container Tab 1: My Call Lists -->
     <div id="myListsContainer" style="display: flex; flex-direction: column; gap: 1rem;">
-        <div id="loadingMyLists" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-            Memuat daftar Call List...
-        </div>
+        <div id="loadingMyLists" style="padding: 0.25rem 0;"></div>
         <div id="myListsTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
                 <thead>
@@ -107,9 +105,7 @@
             </div>
         </div>
 
-        <div id="loadingReview" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-            Memuat antrean pengajuan...
-        </div>
+        <div id="loadingReview" style="padding: 0.25rem 0;"></div>
         <div id="reviewTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
                 <thead>
@@ -153,9 +149,9 @@
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
                     Pilih Dokter Target dari MCL (Minimal 1 Dokter):
                 </label>
-                <div style="margin-bottom: 0.5rem;">
-                    <input type="text" id="doctorSearchInput" placeholder="Cari nama atau spesialisasi dokter..." oninput="filterDoctorPicker(this.value)"
-                           style="width: 100%; padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;">
+                <div class="modal-filter-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="doctorSearchInput" class="modal-filter-input" placeholder="Cari nama atau spesialisasi dokter..." oninput="filterDoctorPicker(this.value)">
                 </div>
                 <div id="doctorPickerList" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: #fafafa;">
                     <span style="font-size: 0.85rem; color: var(--text-muted);">Memuat daftar dokter...</span>
@@ -345,11 +341,7 @@
         return ['draft', 'approved', 'rejected'].includes(status) ? status : 'draft';
     }
     function showAlert(message, type = 'success') {
-        const alertEl = document.getElementById('statusAlert');
-        alertEl.className = `alert alert-${type}`;
-        alertEl.innerText = message;
-        alertEl.style.display = 'block';
-        setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+        window.showToast(message, type);
     }
 
     function switchTab(tab) {
@@ -412,7 +404,11 @@
     }
 
     async function loadMyCallLists() {
-        document.getElementById('loadingMyLists').style.display = 'block';
+        const loadingEl = document.getElementById('loadingMyLists');
+        if (loadingEl) {
+            loadingEl.innerHTML = window.renderTableSkeleton(3);
+            loadingEl.style.display = 'block';
+        }
         try {
             const res = await window.apiFetch('/api/call-lists');
             const result = await res.json();
@@ -496,8 +492,10 @@
     }
 
     async function loadReviewCallLists() {
-        if (!document.getElementById('loadingReview')) return;
-        document.getElementById('loadingReview').style.display = 'block';
+        const loadingEl = document.getElementById('loadingReview');
+        if (!loadingEl) return;
+        loadingEl.innerHTML = window.renderTableSkeleton(3);
+        loadingEl.style.display = 'block';
         try {
             const res = await window.apiFetch('/api/call-lists?mode=review');
             const result = await res.json();
