@@ -1025,6 +1025,46 @@
         `).join('');
     }
 
+    function getProductDosageForm(product) {
+        if (product.dosage_form && !product.dosage_form.includes('Sediaan')) {
+            return product.dosage_form;
+        }
+        const cat = (product.category || '').toLowerCase();
+        const name = (product.name || '').toLowerCase();
+
+        if (cat.includes('sirup') || name.includes('expectorant') || name.includes('syrup') || name.includes('60ml') || name.includes('ml')) return 'Sirup';
+        if (cat.includes('krim') || name.includes('krim') || name.includes('cream') || name.includes('salep') || name.includes('10g')) return 'Krim';
+        if (cat.includes('kapsul') || name.includes('kapsul') || name.includes('capsule')) return 'Kapsul';
+        if (cat.includes('kaplet') || name.includes('kaplet') || name.includes('clav')) return 'Kaplet';
+        if (cat.includes('tablet') || name.includes('tropic') || name.includes('tablet')) return 'Tablet';
+        if (cat.includes('injeksi') || name.includes('inj')) return 'Injeksi';
+        return 'Tablet';
+    }
+
+    function getProductDescription(product) {
+        const rawCat = (product.category || '').trim();
+        if (!rawCat) return 'Obat Farmasi Mersifarma';
+
+        let desc = rawCat.replace(/^(Tablet|Kapsul|Sirup|Krim|Kaplet|Sediaan)\s+/i, '');
+
+        if (product.name && product.name.includes('Mersicort')) {
+            return 'Krim Anti-inflamasi Topikal';
+        }
+        if (product.name && product.name.includes('Mersiclav')) {
+            return 'Antibiotik Amoxicillin-Clavulanate';
+        }
+        if (product.name && product.name.includes('Mersidryl')) {
+            return 'Ekspektoran Batuk & Flu';
+        }
+        if (product.name && product.name.includes('Mersitropic')) {
+            return 'Neurotropik & Vitamin Saraf';
+        }
+        if (product.name && product.name.includes('Mersizol')) {
+            return 'Anti-tukak Lambung (Omeprazole PPI)';
+        }
+        return desc || rawCat;
+    }
+
     function renderProductPicker() {
         const picker = document.getElementById('productPicker');
         if (!picker) return;
@@ -1032,18 +1072,27 @@
             picker.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Produk belum tersedia.</span>';
             return;
         }
-        picker.innerHTML = products.map((product) => `
-            <label style="display: flex; gap: 0.5rem; align-items: flex-start; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; font-size: 0.85rem; cursor: pointer; transition: background 0.15s ease;">
-                <input type="checkbox" name="product_ids" value="${product.id}" onchange="saveActualDraft()" style="margin-top: 0.2rem;">
-                <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <strong>${escapeHtml(product.name)}</strong>
-                        <span style="font-size: 0.7rem; font-weight: 600; color: var(--primary); background: var(--primary-light); padding: 0.1rem 0.4rem; border-radius: 0.25rem;">${escapeHtml(product.category || 'Farmasi')}</span>
+        picker.innerHTML = products.map((product) => {
+            const form = getProductDosageForm(product);
+            const desc = getProductDescription(product);
+
+            return `
+                <label style="display: flex; gap: 0.65rem; align-items: flex-start; background: #ffffff; border: 1px solid var(--border); border-radius: 0.45rem; padding: 0.6rem 0.75rem; font-size: 0.85rem; cursor: pointer; transition: all 0.15s ease; position: relative;">
+                    <input type="checkbox" name="product_ids" value="${product.id}" onchange="saveActualDraft()" style="margin-top: 0.25rem; accent-color: var(--primary);">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                            <strong style="color: var(--secondary); font-size: 0.875rem; font-weight: 600;">${escapeHtml(product.name)}</strong>
+                            <span style="font-size: 0.7rem; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #bae6fd; padding: 0.12rem 0.5rem; border-radius: 9999px; white-space: nowrap;">
+                                ${escapeHtml(form)}
+                            </span>
+                        </div>
+                        <div style="color: #64748b; font-size: 0.775rem; margin-top: 0.25rem; line-height: 1.35;">
+                            ${escapeHtml(desc)}
+                        </div>
                     </div>
-                    <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(product.dosage_form || 'Sediaan Tablet/Kapsul')}</small>
-                </div>
-            </label>
-        `).join('');
+                </label>
+            `;
+        }).join('');
     }
 
     function filterProductPicker(keyword) {
