@@ -154,18 +154,13 @@
                 <!-- 2. Tanggal Kunjungan -->
                 <div style="margin-bottom: 1rem;">
                     <label for="actualDateDisplay" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                        <i class="bi bi-calendar-event" style="color: var(--primary); margin-right: 0.25rem;"></i>Tanggal Kunjungan
+                        Tanggal Kunjungan
                     </label>
                     <div style="position: relative; display: flex; align-items: center;">
                         <input type="text" id="actualDateDisplay" readonly placeholder="Pilih tanggal kunjungan"
                                onclick="openActualDatePicker()"
-                               style="width: 100%; padding: 0.55rem 2.5rem 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; background: var(--surface); cursor: pointer; font-weight: 500; color: var(--secondary);"
+                               style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; background: var(--surface); cursor: pointer; font-weight: 500; color: var(--secondary);"
                                title="Klik untuk memilih tanggal">
-                        <button type="button" onclick="openActualDatePicker()" 
-                                style="position: absolute; right: 0.5rem; background: none; border: none; color: var(--primary); cursor: pointer; padding: 0.25rem 0.4rem; font-size: 1.1rem; display: flex; align-items: center;"
-                                title="Buka Kalender" aria-label="Buka Kalender">
-                            <i class="bi bi-calendar3"></i>
-                        </button>
                         <input type="date" id="actualDateInput" required
                                style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; bottom: 0; left: 0;"
                                onchange="syncActualDateDisplay()">
@@ -176,7 +171,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.15rem;">
                     <div>
                         <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                            <i class="bi bi-clock" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Check-in
+                            Jam Check-in
                         </label>
                         <input type="text" id="checkInInput" required value="08.30" maxlength="5" inputmode="numeric" placeholder="08.30"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
@@ -184,7 +179,7 @@
                     </div>
                     <div>
                         <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                            <i class="bi bi-clock-history" style="color: var(--primary); margin-right: 0.25rem;"></i>Jam Check-out
+                            Jam Check-out
                         </label>
                         <input type="text" id="checkOutInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
