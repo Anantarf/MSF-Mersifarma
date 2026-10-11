@@ -114,172 +114,224 @@
             <button type="button" class="close-btn" onclick="closeActualModal()">&times;</button>
         </div>
 
-        <div id="actualModalError" style="display: none;" class="alert alert-danger"></div>
+        <div id="actualModalError" style="display: none; margin-bottom: 0.85rem;" class="alert alert-danger"></div>
+
+        <!-- 3-STEP PROGRESS STEPPER -->
+        <div class="stepper-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.15rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+            <!-- Step 1 -->
+            <div id="stepIndicator1" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(1)">
+                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">1</span>
+                <div>
+                    <div style="font-size: 0.775rem; font-weight: 700; color: var(--primary);">Dokter & Waktu</div>
+                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Konteks</small>
+                </div>
+            </div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine1"></div>
+            <!-- Step 2 -->
+            <div id="stepIndicator2" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(2)">
+                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">2</span>
+                <div>
+                    <div style="font-size: 0.775rem; font-weight: 500; color: var(--text-muted);">Detailing Produk</div>
+                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Min. 1 Item</small>
+                </div>
+            </div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine2"></div>
+            <!-- Step 3 -->
+            <div id="stepIndicator3" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(3)">
+                <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">3</span>
+                <div>
+                    <div style="font-size: 0.775rem; font-weight: 500; color: var(--text-muted);">Bukti Verifikasi</div>
+                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Foto & Validasi</small>
+                </div>
+            </div>
+        </div>
 
         <form id="actualForm" onsubmit="submitActual(event)">
             <input type="hidden" id="actualPlanId">
             <input type="hidden" id="actualSessionId">
 
-            <!-- 1. Pilihan Dokter -->
-            <div style="margin-bottom: 1rem;">
-                <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Target Dokter (MCL)</label>
-                <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
-            </div>
-
-            <!-- 2. Tanggal & Jam Kunjungan -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
-                <div>
-                    <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Tanggal Kunjungan</label>
-                    <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
-                </div>
-                <div>
-                    <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
-                    <input type="time" id="checkInInput" required value="08:30" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
-                </div>
-                <div>
-                    <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
-                    <input type="time" id="checkOutInput" required value="09:00" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
-                </div>
-            </div>
-
-            <!-- 3. Bukti Foto Kunjungan -->
-            <div style="margin-bottom: 1.25rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary);">Foto Kunjungan di Lokasi</label>
-                    <button type="button" class="btn btn-outline" style="min-height: 28px; padding: 0.15rem 0.5rem; font-size: 0.75rem;" onclick="useSamplePhoto()">
-                        + Contoh Foto Klinik
-                    </button>
-                </div>
-                <input type="hidden" id="photoUrlInput" required>
-                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; gap: 0.35rem;" onclick="toggleLiveCamera()">
-                        <i class="bi bi-camera-video" style="font-size: 1rem; color: var(--primary);"></i>
-                        <span id="liveCameraBtnText">Buka Kamera Langsung</span>
-                    </button>
-                    <label class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; cursor: pointer; gap: 0.35rem;">
-                        <i class="bi bi-image" style="font-size: 1rem; color: var(--primary);"></i>
-                        <span>Pilih Berkas Foto</span>
-                        <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="handlePhotoFile(this)">
-                    </label>
-                    <div id="photoPreviewContainer" style="display: none; align-items: center; gap: 0.5rem;">
-                        <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 38px; height: 38px; object-fit: cover; border-radius: 0.375rem; border: 1px solid var(--border);">
-                        <span id="photoFileName" style="font-size: 0.75rem; color: var(--text-muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                    </div>
+            <!-- ================= STEP 1: DOKTER & WAKTU ================= -->
+            <div id="stepSection1">
+                <!-- 1. Pilihan Dokter -->
+                <div style="margin-bottom: 1rem;">
+                    <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Target Dokter (MCL)</label>
+                    <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
                 </div>
 
-                <!-- Live Camera Viewfinder -->
-                <div id="cameraViewfinderWrap" style="display: none; margin-top: 0.65rem; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: #0f172a; position: relative;">
-                    <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 220px; object-fit: cover; display: block;"></video>
-                    <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 0.5rem; padding: 0.4rem; background: linear-gradient(transparent, rgba(15,23,42,0.85));">
-                        <button type="button" class="btn btn-primary" style="font-size: 0.775rem; padding: 0.3rem 0.75rem;" onclick="capturePhotoFromCamera()">
-                            <i class="bi bi-camera"></i> Ambil Foto Sekarang
-                        </button>
-                        <button type="button" class="btn btn-outline" style="font-size: 0.775rem; padding: 0.3rem 0.65rem; background: #ffffff; color: var(--secondary);" onclick="stopLiveCamera()">
-                            Tutup Kamera
-                        </button>
-                    </div>
-                </div>
-                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Wajib menyertakan bukti foto di tempat praktik dokter.</small>
-            </div>
-
-            <!-- 4. Verifikasi & Bukti Kunjungan Dokter (Tanda Tangan / Stempel Resmi) -->
-            <div style="margin-bottom: 1.25rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                <!-- 2. Tanggal & Jam Kunjungan -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
                     <div>
-                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); display: block;">Verifikasi Bukti Kunjungan Dokter</label>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Pilih metode validasi otentik di lokasi faskes</span>
+                        <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Tanggal Kunjungan</label>
+                        <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
-                    <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 0.2rem; border-radius: 0.375rem; border: 1px solid var(--border);">
-                        <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="switchVerificationMode('touch')">
-                            <i class="bi bi-pen"></i> Tanda Tangan Layar
-                        </button>
-                        <button type="button" id="tabSignStamp" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 0.25rem; background: transparent; color: var(--text-muted);" onclick="switchVerificationMode('stamp')">
-                            <i class="bi bi-patch-check"></i> Foto Stempel / Resep
-                        </button>
+                    <div>
+                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
+                        <input type="time" id="checkInInput" required value="08:30" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                    </div>
+                    <div>
+                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
+                        <input type="time" id="checkOutInput" required value="09:00" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
                 </div>
 
-                <input type="hidden" id="signatureUrlInput" required>
+                <!-- 3. Alasan Kunjungan (jika di luar rencana) -->
+                <div id="visitReasonWrap" style="margin-bottom: 1.15rem; display: none;">
+                    <label for="visitReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                        Alasan Kunjungan di Luar Rencana (Opsional):
+                    </label>
+                    <textarea id="visitReasonInput" rows="2" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
+                </div>
 
-                <!-- Panel 1: Tanda Tangan Layar Sentuh Langsung -->
-                <div id="panelSignTouch">
+                <!-- Step 1 Footer Navigation -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
+                    <div id="draftStatusBadge" style="font-size: 0.75rem; color: var(--text-muted); display: none; align-items: center; gap: 0.35rem;">
+                        <i class="bi bi-clock-history" style="color: var(--primary);"></i>
+                        <span>Draf lokal tersimpan</span>
+                        <button type="button" onclick="clearActualDraft(true)" style="background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.75rem; padding: 0; margin-left: 0.25rem;">Hapus</button>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+                        <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
+                        <button type="button" class="btn btn-primary" onclick="goToActualStep(2)">
+                            Lanjut: Detailing Produk <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= STEP 2: DETAILING PRODUK ================= -->
+            <div id="stepSection2" style="display: none;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--secondary);">
+                        Produk Detailing yang Dipresentasikan
+                    </label>
+                    <p style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        Pilih minimal satu item produk obat terapi farmasi yang dipresentasikan kepada dokter.
+                    </p>
+                    <div class="modal-filter-wrap" style="margin-bottom: 0.5rem;">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="productSearchInput" class="modal-filter-input" placeholder="Cari nama produk atau kategori obat..." oninput="filterProductPicker(this.value)">
+                    </div>
+                    <div id="productPicker" style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; background: #fafafa;">
+                        Memuat produk...
+                    </div>
+                </div>
+
+                <!-- Step 2 Footer Navigation -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline" onclick="goToActualStep(1)">
+                        <i class="bi bi-arrow-left"></i> Kembali: Dokter & Waktu
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="goToActualStep(3)">
+                        Lanjut: Bukti Verifikasi <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= STEP 3: BUKTI & VERIFIKASI ================= -->
+            <div id="stepSection3" style="display: none;">
+                <!-- 1. Foto Kunjungan -->
+                <div style="margin-bottom: 1.15rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <div id="sigBadgeRecorded" style="display: none; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; color: var(--success); background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 0.25rem;">
-                            <i class="bi bi-check-circle-fill"></i> Tanda Tangan Terisi
+                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">1. Foto Bukti di Lokasi</label>
+                        <button type="button" class="btn btn-outline" style="min-height: 26px; padding: 0.1rem 0.45rem; font-size: 0.725rem;" onclick="useSamplePhoto()">
+                            + Contoh Foto Klinik
+                        </button>
+                    </div>
+                    <input type="hidden" id="photoUrlInput" required>
+
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; gap: 0.35rem;" onclick="toggleLiveCamera()">
+                            <i class="bi bi-camera-video" style="font-size: 0.95rem; color: var(--primary);"></i>
+                            <span id="liveCameraBtnText">Buka Kamera Langsung</span>
+                        </button>
+                        <label class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; cursor: pointer; gap: 0.35rem;">
+                            <i class="bi bi-image" style="font-size: 0.95rem; color: var(--primary);"></i>
+                            <span>Pilih Berkas Foto</span>
+                            <input type="file" id="photoFileInput" accept="image/*" style="display: none;" onchange="handlePhotoFile(this)">
+                        </label>
+                        <div id="photoPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.2rem 0.5rem;">
+                            <img id="photoPreviewImg" src="" alt="Pratinjau Foto" style="width: 32px; height: 32px; object-fit: cover; border-radius: 0.25rem;">
+                            <span id="photoFileName" style="font-size: 0.725rem; color: var(--text-muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                         </div>
-                        <div style="margin-left: auto;">
-                            <button type="button" class="btn btn-outline" style="min-height: 28px; padding: 0.15rem 0.55rem; font-size: 0.75rem;" onclick="clearSignature()">
-                                <i class="bi bi-eraser"></i> Bersihkan Kanvas
+                    </div>
+
+                    <!-- Live Camera Viewfinder -->
+                    <div id="cameraViewfinderWrap" style="display: none; margin-top: 0.65rem; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: #0f172a; position: relative;">
+                        <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 200px; object-fit: cover; display: block;"></video>
+                        <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 0.5rem; padding: 0.4rem; background: linear-gradient(transparent, rgba(15,23,42,0.85));">
+                            <button type="button" class="btn btn-primary" style="font-size: 0.775rem; padding: 0.3rem 0.75rem;" onclick="capturePhotoFromCamera()">
+                                <i class="bi bi-camera"></i> Ambil Foto Sekarang
+                            </button>
+                            <button type="button" class="btn btn-outline" style="font-size: 0.775rem; padding: 0.3rem 0.65rem; background: #ffffff; color: var(--secondary);" onclick="stopLiveCamera()">
+                                Tutup Kamera
                             </button>
                         </div>
                     </div>
-                    <div style="border: 1px solid var(--border); border-radius: 0.5rem; background: #ffffff; padding: 0.25rem; touch-action: none; position: relative;">
-                        <canvas id="signatureCanvas" width="500" height="130" style="width: 100%; height: 130px; display: block; border-radius: 0.375rem; cursor: crosshair; background: #fafafa;"></canvas>
-                        <div id="sigPlaceholder" style="position: absolute; bottom: 18px; left: 18px; right: 18px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; transition: opacity 0.2s ease;">
-                            <span style="font-size: 0.725rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di atas garis ini</span>
-                            <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">✕</span>
-                        </div>
-                    </div>
-                    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Goreskan jari dokter langsung di layar sentuh perangkat.</small>
                 </div>
 
-                <!-- Panel 2: Foto Stempel Basah / Paraf Resep Fisik Dokter -->
-                <div id="panelSignStamp" style="display: none;">
-                    <div style="border: 1px dashed var(--border-strong); border-radius: 0.5rem; padding: 1rem; background: #fafafa; text-align: center;">
-                        <p style="font-size: 0.825rem; color: var(--secondary); font-weight: 600; margin-bottom: 0.25rem;">
-                            Dokter Berhalangan Menyentuh Layar?
-                        </p>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); max-width: 440px; margin: 0 auto 0.75rem auto; line-height: 1.4;">
-                            Unggah foto stempel basah klinik atau paraf fisik dokter pada lembar resep/kunjungan resmi sebagai bukti audit asli.
-                        </p>
-                        <div style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                            <label class="btn btn-outline" style="min-height: 38px; font-size: 0.8rem; cursor: pointer; gap: 0.35rem;">
-                                <i class="bi bi-camera" style="font-size: 1rem; color: var(--primary);"></i>
-                                <span>Pilih / Foto Stempel Fisik</span>
-                                <input type="file" id="stampFileInput" accept="image/*" style="display: none;" onchange="handleStampFile(this)">
-                            </label>
-                            <div id="stampPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.25rem 0.5rem;">
-                                <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 36px; height: 36px; object-fit: cover; border-radius: 0.25rem;">
-                                <span id="stampFileName" style="font-size: 0.75rem; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                <button type="button" onclick="clearStampFile()" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.95rem; font-weight: bold;" title="Hapus foto stempel">&times;</button>
+                <!-- 2. Verifikasi Bukti Dokter -->
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">2. Verifikasi Bukti Dokter</label>
+                        <div style="display: flex; gap: 0.25rem; background: #e2e8f0; padding: 0.15rem; border-radius: 0.375rem;">
+                            <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600;" onclick="switchVerificationMode('touch')">
+                                <i class="bi bi-pen"></i> Tanda Tangan Layar
+                            </button>
+                            <button type="button" id="tabSignStamp" class="btn btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; border-radius: 0.25rem; background: transparent; color: var(--text-muted);" onclick="switchVerificationMode('stamp')">
+                                <i class="bi bi-patch-check"></i> Foto Stempel / Resep
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="signatureUrlInput" required>
+
+                    <!-- Panel 1: Tanda Tangan Layar Sentuh -->
+                    <div id="panelSignTouch">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <div id="sigBadgeRecorded" style="display: none; align-items: center; gap: 0.35rem; font-size: 0.725rem; font-weight: 600; color: var(--success); background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.1rem 0.45rem; border-radius: 0.25rem;">
+                                <i class="bi bi-check-circle-fill"></i> Tanda Tangan Terisi
+                            </div>
+                            <button type="button" class="btn btn-outline" style="min-height: 26px; padding: 0.1rem 0.45rem; font-size: 0.725rem; margin-left: auto;" onclick="clearSignature()">
+                                <i class="bi bi-eraser"></i> Bersihkan Kanvas
+                            </button>
+                        </div>
+                        <div style="border: 1px solid var(--border); border-radius: 0.375rem; background: #ffffff; padding: 0.2rem; touch-action: none; position: relative;">
+                            <canvas id="signatureCanvas" width="500" height="110" style="width: 100%; height: 110px; display: block; border-radius: 0.25rem; cursor: crosshair; background: #fafafa;"></canvas>
+                            <div id="sigPlaceholder" style="position: absolute; bottom: 14px; left: 14px; right: 14px; pointer-events: none; border-bottom: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 2px; transition: opacity 0.2s ease;">
+                                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 500;">Dokter menandatangani langsung di atas garis ini</span>
+                                <span style="font-size: 0.7rem; color: #cbd5e1; font-weight: 700;">✕</span>
                             </div>
                         </div>
                     </div>
-                    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">Foto dokumen stempel fisik akan disimpan sebagai bukti audit verifikasi.</small>
-                </div>
-            </div>
 
-            <!-- 5. Produk Detailing Farmasi -->
-            <div style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                    Produk Detailing yang Dipresentasikan (Minimal 1 Produk):
-                </label>
-                <div class="modal-filter-wrap">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="productSearchInput" class="modal-filter-input" placeholder="Cari nama produk atau kategori farmasi..." oninput="filterProductPicker(this.value)">
+                    <!-- Panel 2: Foto Stempel Basah / Paraf Resep Fisik -->
+                    <div id="panelSignStamp" style="display: none; text-align: center; border: 1px dashed var(--border-strong); border-radius: 0.375rem; padding: 0.75rem; background: white;">
+                        <p style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                            Unggah foto stempel basah klinik atau paraf fisik dokter pada lembar resep/kunjungan.
+                        </p>
+                        <div style="display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <label class="btn btn-outline" style="min-height: 36px; font-size: 0.775rem; cursor: pointer; gap: 0.35rem;">
+                                <i class="bi bi-camera" style="font-size: 0.95rem; color: var(--primary);"></i>
+                                <span>Pilih / Foto Stempel Fisik</span>
+                                <input type="file" id="stampFileInput" accept="image/*" style="display: none;" onchange="handleStampFile(this)">
+                            </label>
+                            <div id="stampPreviewContainer" style="display: none; align-items: center; gap: 0.5rem; background: white; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.2rem 0.5rem;">
+                                <img id="stampPreviewImg" src="" alt="Pratinjau Stempel" style="width: 30px; height: 30px; object-fit: cover; border-radius: 0.25rem;">
+                                <span id="stampFileName" style="font-size: 0.725rem; color: var(--text-muted); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                <button type="button" onclick="clearStampFile()" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem;" title="Hapus foto stempel">&times;</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div id="productPicker" style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 170px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; background: #fafafa;">
-                    Memuat produk...
-                </div>
-            </div>
 
-            <!-- 6. Alasan Kunjungan di Luar Rencana -->
-            <div id="visitReasonWrap" style="margin-bottom: 1.25rem; display: none;">
-                <label for="visitReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                    Alasan Kunjungan di Luar Rencana (Opsional):
-                </label>
-                <textarea id="visitReasonInput" rows="2" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                <div id="draftStatusBadge" style="font-size: 0.75rem; color: var(--text-muted); display: none; align-items: center; gap: 0.35rem;">
-                    <i class="bi bi-clock-history" style="color: var(--primary);"></i>
-                    <span>Draf tersimpan lokal</span>
-                    <button type="button" onclick="clearActualDraft(true)" style="background: none; border: none; color: var(--danger); text-decoration: underline; cursor: pointer; font-size: 0.75rem; padding: 0; margin-left: 0.25rem;">Hapus Draf</button>
-                </div>
-                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-left: auto;">
-                    <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
-                    <button type="submit" id="actualSubmitButton" class="btn btn-primary">Simpan Laporan</button>
+                <!-- Step 3 Footer Navigation -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline" onclick="goToActualStep(2)">
+                        <i class="bi bi-arrow-left"></i> Kembali: Detailing
+                    </button>
+                    <button type="submit" id="actualSubmitButton" class="btn btn-primary" style="font-weight: 700;">
+                        <i class="bi bi-check2-circle"></i> Simpan Laporan Kunjungan
+                    </button>
                 </div>
             </div>
         </form>
@@ -1021,6 +1073,94 @@
         }).join('');
     }
 
+    let currentActualStep = 1;
+
+    function goToActualStep(step) {
+        const errEl = document.getElementById('actualModalError');
+        errEl.style.display = 'none';
+
+        // Validasi saat ingin maju dari Step 1 ke Step 2 atau 3
+        if (step > 1 && currentActualStep === 1) {
+            const docId = document.getElementById('actualDoctorSelect')?.value;
+            const date = document.getElementById('actualDateInput')?.value;
+            const checkIn = document.getElementById('checkInInput')?.value;
+            const checkOut = document.getElementById('checkOutInput')?.value;
+
+            if (!docId) {
+                errEl.innerText = 'Silakan pilih Target Dokter (MCL) terlebih dahulu.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (!date || !checkIn || !checkOut) {
+                errEl.innerText = 'Tanggal, Jam Check-in, dan Jam Check-out wajib diisi.';
+                errEl.style.display = 'block';
+                return;
+            }
+        }
+
+        // Validasi saat ingin maju dari Step 2 ke Step 3
+        if (step > 2) {
+            const productIds = Array.from(document.querySelectorAll('#productPicker input[name="product_ids"]:checked'));
+            if (!productIds.length) {
+                errEl.innerText = 'Pilih minimal satu produk obat farmasi yang dipresentasikan ke dokter.';
+                errEl.style.display = 'block';
+                return;
+            }
+        }
+
+        currentActualStep = step;
+        renderStepView();
+    }
+
+    function renderStepView() {
+        const s1 = document.getElementById('stepSection1');
+        const s2 = document.getElementById('stepSection2');
+        const s3 = document.getElementById('stepSection3');
+        if (!s1 || !s2 || !s3) return;
+
+        s1.style.display = currentActualStep === 1 ? 'block' : 'none';
+        s2.style.display = currentActualStep === 2 ? 'block' : 'none';
+        s3.style.display = currentActualStep === 3 ? 'block' : 'none';
+
+        for (let i = 1; i <= 3; i++) {
+            const item = document.getElementById(`stepIndicator${i}`);
+            if (!item) continue;
+            const num = item.querySelector('.step-num');
+            const title = item.querySelector('div > div');
+
+            if (i < currentActualStep) {
+                num.style.background = 'var(--success)';
+                num.style.color = 'white';
+                num.innerHTML = '✓';
+                if (title) {
+                    title.style.color = 'var(--secondary)';
+                    title.style.fontWeight = '700';
+                }
+            } else if (i === currentActualStep) {
+                num.style.background = 'var(--primary)';
+                num.style.color = 'white';
+                num.innerHTML = i;
+                if (title) {
+                    title.style.color = 'var(--primary)';
+                    title.style.fontWeight = '700';
+                }
+            } else {
+                num.style.background = '#e2e8f0';
+                num.style.color = '#64748b';
+                num.innerHTML = i;
+                if (title) {
+                    title.style.color = 'var(--text-muted)';
+                    title.style.fontWeight = '500';
+                }
+            }
+        }
+
+        const l1 = document.getElementById('stepLine1');
+        const l2 = document.getElementById('stepLine2');
+        if (l1) l1.style.background = currentActualStep > 1 ? 'var(--success)' : 'var(--border)';
+        if (l2) l2.style.background = currentActualStep > 2 ? 'var(--success)' : 'var(--border)';
+    }
+
     function openActualModal(planId, fallbackDoctorId = null) {
         const plan = planId ? todayPlans.find((item) => item.id === planId) : null;
         document.getElementById('actualPlanId').value = plan ? plan.id : (planId || '');
@@ -1046,6 +1186,10 @@
 
         document.getElementById('visitReasonInput').value = '';
         document.getElementById('actualModalError').style.display = 'none';
+
+        currentActualStep = 1;
+        renderStepView();
+
         document.getElementById('actualModal').style.display = 'flex';
 
         updateDraftBadge();
@@ -1054,6 +1198,7 @@
 
     function closeActualModal() {
         stopLiveCamera();
+        currentActualStep = 1;
         document.getElementById('actualModal').style.display = 'none';
     }
 
