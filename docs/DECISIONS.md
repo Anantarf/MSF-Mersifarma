@@ -58,11 +58,11 @@
 - Tidak ada offline mode/GPS/photo content verification/insentif calculations.
 - Generated indexes, composite FK, CHECK dan transaksi **belum diverifikasi di MySQL** sampai implementasi.
 
-### ADR-029: Role-Based Supervisory Context & Quick Demo Switching
+### ADR-029: Role-Based Supervisory Context & Clean Role Isolation
 - Date: 2026-10-11
 - Status: Accepted
-- Problem: Akun manajer (DM/RSM/MM) masih melihat tombol buat target dokter, jadwal, dan kunjungan yang tidak sesuai peran manajerial di lapangan. Selain itu, penguji studi kasus harus bolak-balik logout untuk menguji alur multi-role.
-- Decision: Batasi pembuatan Call List, Call Plan, dan Call Actual pada antarmuka (UI) hanya untuk Medical Representative (MR). Untuk manajer (DM, RSM, MM), sembunyikan seluruh tombol buat target/jadwal/kunjungan, buka langsung tab Persetujuan Masuk (Review) secara default, hindari banner tutorial berlebihan agar UI tetap bersih dan profesional, dan sediakan switch akun demo cepat di navbar.
+- Problem: Akun manajer (DM/RSM/MM) masih melihat tombol buat target dokter, jadwal, dan kunjungan yang tidak sesuai peran manajerial di lapangan.
+- Decision: Batasi pembuatan Call List, Call Plan, dan Call Actual pada antarmuka (UI) hanya untuk Medical Representative (MR). Untuk manajer (DM, RSM, MM), sembunyikan seluruh tombol buat target/jadwal/kunjungan, buka langsung tab Persetujuan Masuk (Review) secara default, dan pertahankan UI enterprise yang bersih tanpa widget/banner berlebihan. Pilihan akun demo tetap terpusat di halaman Login.
 - Source of requirement: Business reality / UX
 - API/DB/UX impact: Backend API tetap utuh; Blade UI sepenuhnya mencerminkan peran operasional lapangan tanpa membingungkan manajer.
 - Risks/trade-offs: Tidak ada.
