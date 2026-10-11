@@ -95,7 +95,7 @@
                     <div id="statApproved" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #047857; margin-top: 0.15rem;">0</div>
                 </div>
                 <div style="padding: 0.65rem 0.85rem; background: #fffbeb;">
-                    <div style="font-size: 0.6875rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Menunggu Review</div>
+                    <div style="font-size: 0.6875rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Menunggu Persetujuan</div>
                     <div id="statPending" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #b45309; margin-top: 0.15rem;">0</div>
                 </div>
             </div>
@@ -457,7 +457,7 @@
         if (tableWrap) tableWrap.style.display = 'block';
         tbody.innerHTML = myCallLists.map(cl => {
             let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
-            let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+            let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Persetujuan' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
             if (cl.status === 'draft' && cl.is_rejected_revision) {
                 statusClass = 'status-rejected';
                 statusLabel = 'Perlu Revisi (Ditolak)';
@@ -539,7 +539,7 @@
                     <strong>${cl.doctor_count} Target Dokter</strong>
                 </td>
                 <td>
-                    <span class="status-badge status-pending">Menunggu Review</span>
+                    <span class="status-badge status-pending">Menunggu Persetujuan</span>
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
                     <div style="display: inline-flex; gap: 0.35rem;">
@@ -587,7 +587,7 @@
                             statusText = 'Disetujui';
                         } else if (sub.status === 'pending_approval') {
                             statusTheme = 'status-pending';
-                            statusText = 'Menunggu Review';
+                            statusText = 'Menunggu Persetujuan';
                         } else if (sub.status === 'draft') {
                             statusTheme = 'status-draft';
                             statusText = 'Perlu Revisi';

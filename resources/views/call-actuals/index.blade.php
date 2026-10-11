@@ -568,7 +568,7 @@
             if (isThisPlanActive) {
                 actionHtml = `
                     <span class="status-badge status-scheduled" style="padding: 0.35rem 0.65rem;">
-                        ● Sedang Dikunjungi
+                        ● Sedang Berlangsung
                     </span>
                 `;
             } else if (hasOtherSession) {
@@ -627,10 +627,10 @@
             let visitTypeLabel = 'Terencana';
             let visitBadgeClass = 'status-approved';
             if (actual.visit_type === 'unplanned') {
-                visitTypeLabel = 'Unplanned Target';
+                visitTypeLabel = 'Di Luar Rencana';
                 visitBadgeClass = 'status-scheduled';
             } else if (actual.visit_type === 'non_target') {
-                visitTypeLabel = 'Non-Target Dokter';
+                visitTypeLabel = 'Non-Target';
                 visitBadgeClass = 'status-draft';
             }
 
@@ -677,7 +677,7 @@
     function openActualModal(planId, fallbackDoctorId = null) {
         const plan = planId ? todayPlans.find((item) => item.id === planId) : null;
         document.getElementById('actualPlanId').value = plan ? plan.id : (planId || '');
-        document.getElementById('actualModalTitle').innerText = (plan || planId) ? 'Catat Planned Visit' : 'Catat Kunjungan di Luar Rencana';
+        document.getElementById('actualModalTitle').innerText = (plan || planId) ? 'Laporan Kunjungan Terencana' : 'Laporan Kunjungan di Luar Rencana';
         document.getElementById('actualDateInput').value = todayString();
         document.getElementById('visitReasonWrap').style.display = (plan || planId) ? 'none' : 'block';
         document.getElementById('actualDoctorSelect').disabled = !!(plan || planId);

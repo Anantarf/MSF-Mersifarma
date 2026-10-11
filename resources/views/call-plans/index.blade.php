@@ -42,8 +42,8 @@
             <select id="filterStatusSelect" onchange="applyFilters()"
                     style="padding: 0.35rem 0.55rem; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 0.825rem; min-height: 36px;">
                 <option value="">Semua Status</option>
-                <option value="scheduled">Dijadwalkan</option>
-                <option value="completed">Selesai Dikunjungi</option>
+                <option value="scheduled">Terjadwal</option>
+                <option value="completed">Selesai</option>
             </select>
         </div>
     </div>
@@ -351,8 +351,8 @@
         tbody.innerHTML = currentPlans.map(plan => {
             const isCompleted = plan.status === 'completed';
             const isCancelled = plan.status === 'cancelled';
-            let statusLabel = 'Dijadwalkan';
-            if (isCompleted) statusLabel = 'Selesai Dikunjungi';
+            let statusLabel = 'Terjadwal';
+            if (isCompleted) statusLabel = 'Selesai';
             if (isCancelled) statusLabel = 'Dibatalkan';
 
             const safeStatus = ['scheduled', 'completed', 'cancelled'].includes(plan.status) ? plan.status : 'scheduled';
