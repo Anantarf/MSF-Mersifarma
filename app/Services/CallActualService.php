@@ -26,6 +26,19 @@ class CallActualService
 
         $this->ensureRequiredEvidence($data);
 
+        $productIds = collect($data['products'])->map(fn ($id) => (int) $id)->unique()->values();
+        $this->ensureProductsExist($productIds);
+
+        $sessionId = ! empty($data['visit_session_id']) ? (int) $data['visit_session_id'] : null;
+        if ($sessionId) {
+            return $this->recordSessionBacked($mr, $data, $sessionId, $productIds);
+        }
+
+        return $this->recordManualDirect($mr, $data, $productIds);
+    }
+
+    private function recordManualDirect(User $mr, array $data, Collection $productIds): CallActual
+    {
         $visitDate = Carbon::createFromFormat('Y-m-d', $data['visit_date'])->toDateString();
         $checkIn = $this->combineVisitDateAndTime($visitDate, $data['check_in']);
         $checkOut = $this->combineVisitDateAndTime($visitDate, $data['check_out']);
@@ -40,33 +53,11 @@ class CallActualService
             }
         }
 
-        $productIds = collect($data['products'])->map(fn ($id) => (int) $id)->unique()->values();
-        $this->ensureProductsExist($productIds);
-
         return DB::transaction(function () use ($mr, $data, $visitDate, $checkIn, $checkOut, $productIds) {
             $doctorId = (int) $data['doctor_id'];
             MasterCustomer::whereKey($doctorId)->lockForUpdate()->firstOrFail();
 
-            $sessionId = ! empty($data['visit_session_id']) ? (int) $data['visit_session_id'] : null;
-            $session = null;
-
-            if ($sessionId) {
-                $session = VisitSession::whereKey($sessionId)->lockForUpdate()->first();
-                if (! $session || $session->mr_id !== $mr->id) {
-                    throw new AccessDeniedHttpException('Anda tidak memiliki akses ke sesi kunjungan ini.');
-                }
-                if ($session->status !== 'in_progress') {
-                    throw new HttpException(422, 'Sesi kunjungan tidak dalam status in_progress.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
-                }
-                if ($session->doctor_id !== $doctorId) {
-                    throw new HttpException(422, 'Dokter payload tidak sesuai dengan sesi kunjungan.', null, ['X-Error-Code' => 'DOCTOR_PLAN_MISMATCH']);
-                }
-                if ($session->plan_id && empty($data['plan_id'])) {
-                    $data['plan_id'] = $session->plan_id;
-                }
-            }
-
-            $this->ensureNoActiveSession($doctorId, $visitDate, $sessionId);
+            $this->ensureNoActiveSession($doctorId, $visitDate);
             $this->ensureNoExistingActual($mr, $doctorId, $visitDate);
 
             $plan = null;
@@ -82,11 +73,11 @@ class CallActualService
             $actual = CallActual::create([
                 'mr_id' => $mr->id,
                 'plan_id' => $plan?->id,
-                'visit_session_id' => $session?->id,
+                'visit_session_id' => null,
                 'doctor_id' => $doctorId,
                 'visit_date' => $visitDate,
-                'check_in_at' => $session?->check_in_at ?? $checkIn,
-                'check_out_at' => $session?->check_out_at ?? $checkOut,
+                'check_in_at' => $checkIn,
+                'check_out_at' => $checkOut,
                 'visit_type' => $visitType,
                 'photo_url' => trim($data['photo_url']),
                 'signature_url' => trim($data['signature_url']),
@@ -96,13 +87,81 @@ class CallActualService
 
             $actual->products()->sync($productIds->all());
 
-            if ($session) {
-                $session->update([
-                    'status' => 'completed',
-                    'completed_at' => Carbon::now(),
-                    'check_out_at' => $session->check_out_at ?? $checkOut,
-                ]);
+            if ($plan) {
+                $plan->update(['status' => 'completed']);
             }
+
+            return $actual->load(['doctor', 'products', 'plan']);
+        });
+    }
+
+    private function recordSessionBacked(User $mr, array $data, int $sessionId, Collection $productIds): CallActual
+    {
+        foreach (['plan_id', 'doctor_id', 'visit_date', 'check_in', 'check_out'] as $field) {
+            if (array_key_exists($field, $data)) {
+                throw new HttpException(422, 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', null, ['X-Error-Code' => 'SESSION_PAYLOAD_MISMATCH']);
+            }
+        }
+
+        $sessionIdentity = VisitSession::whereKey($sessionId)->firstOrFail();
+
+        return DB::transaction(function () use ($mr, $data, $sessionIdentity, $productIds) {
+            MasterCustomer::whereKey($sessionIdentity->doctor_id)->lockForUpdate()->firstOrFail();
+
+            $session = VisitSession::whereKey($sessionIdentity->id)->lockForUpdate()->firstOrFail();
+            if ($session->mr_id !== $mr->id) {
+                throw new AccessDeniedHttpException('Anda tidak memiliki akses ke sesi kunjungan ini.');
+            }
+
+            if ($session->status !== 'in_progress') {
+                throw new HttpException(422, 'Sesi kunjungan tidak dalam status in_progress.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
+            }
+
+            if (! $session->check_out_at) {
+                throw new HttpException(422, 'Sesi kunjungan harus check-out sebelum laporan diselesaikan.', null, ['X-Error-Code' => 'SESSION_CHECKOUT_REQUIRED']);
+            }
+
+            $doctorId = $session->doctor_id;
+            $visitDate = Carbon::parse($session->visit_date)->toDateString();
+            $checkIn = Carbon::parse($session->check_in_at);
+            $checkOut = Carbon::parse($session->check_out_at);
+
+            if ($checkOut->lessThanOrEqualTo($checkIn)) {
+                throw new HttpException(422, 'Check-out harus setelah check-in.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            }
+
+            $this->ensureNoActiveSession($doctorId, $visitDate, $session->id);
+            $this->ensureNoExistingActual($mr, $doctorId, $visitDate);
+
+            $plan = null;
+            if ($session->plan_id) {
+                $plan = $this->validatePlannedActual($mr, $session->plan_id, $doctorId, $visitDate, $data['deviation_reason'] ?? null);
+                $visitType = 'planned';
+            } else {
+                $visitType = $this->classifyWithoutPlan($mr, $doctorId, $visitDate, $checkIn);
+            }
+
+            $actual = CallActual::create([
+                'mr_id' => $mr->id,
+                'plan_id' => $plan?->id,
+                'visit_session_id' => $session->id,
+                'doctor_id' => $doctorId,
+                'visit_date' => $visitDate,
+                'check_in_at' => $checkIn,
+                'check_out_at' => $checkOut,
+                'visit_type' => $visitType,
+                'photo_url' => trim($data['photo_url']),
+                'signature_url' => trim($data['signature_url']),
+                'visit_reason' => $data['visit_reason'] ?? null,
+                'deviation_reason' => $data['deviation_reason'] ?? null,
+            ]);
+
+            $actual->products()->sync($productIds->all());
+
+            $session->update([
+                'status' => 'completed',
+                'completed_at' => Carbon::now(),
+            ]);
 
             if ($plan) {
                 $plan->update(['status' => 'completed']);

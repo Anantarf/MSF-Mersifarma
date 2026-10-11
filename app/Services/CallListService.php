@@ -196,4 +196,69 @@ class CallListService
             return $lockedList->fresh(['doctors', 'approvalLogs', 'owner', 'assignedApprover']);
         });
     }
+
+    /**
+     * Menghitung rangkuman monitoring manajerial (read-only) untuk atasan (DM, RSM, MM).
+     */
+    public function getManagerialSummary(User $manager, ?string $periodMonth = null): array
+    {
+        $normalizedDate = $periodMonth
+            ? Carbon::createFromFormat('Y-m', $periodMonth)->startOfMonth()->format('Y-m-d')
+            : Carbon::now()->startOfMonth()->format('Y-m-d');
+
+        // Ambil bawahan langsung berdasarkan relasi hierarki manager_id
+        $subordinates = User::where('manager_id', $manager->id)->get();
+        $subordinateIds = $subordinates->pluck('id');
+
+        if ($subordinateIds->isEmpty()) {
+            return [
+                'period_month' => $normalizedDate,
+                'total_subordinates' => 0,
+                'submitted_count' => 0,
+                'approved_count' => 0,
+                'pending_count' => 0,
+                'revision_count' => 0,
+                'total_target_doctors' => 0,
+                'subordinates_detail' => [],
+            ];
+        }
+
+        // Ambil Call Lists milik bawahan langsung pada periode yang diminta
+        $callLists = CallList::with(['doctors', 'owner'])
+            ->whereIn('owner_id', $subordinateIds)
+            ->where('period_month', $normalizedDate)
+            ->get();
+
+        $submittedCount = $callLists->count();
+        $approvedCount = $callLists->where('status', 'approved')->count();
+        $pendingCount = $callLists->where('status', 'pending_approval')->count();
+        $revisionCount = $callLists->where('status', 'draft')->count();
+
+        // Kumpulkan dokter unik yang ditargetkan di seluruh distrik/wilayah ini
+        $uniqueDoctorIds = $callLists->flatMap(fn ($cl) => $cl->doctors->pluck('id'))->unique();
+
+        $subordinatesDetail = $subordinates->map(function ($sub) use ($callLists) {
+            $cl = $callLists->firstWhere('owner_id', $sub->id);
+
+            return [
+                'id' => $sub->id,
+                'name' => $sub->name,
+                'role' => $sub->role,
+                'has_submitted' => ! is_null($cl),
+                'status' => $cl?->status ?? 'not_submitted',
+                'doctor_count' => $cl ? $cl->doctors->count() : 0,
+            ];
+        });
+
+        return [
+            'period_month' => $normalizedDate,
+            'total_subordinates' => $subordinates->count(),
+            'submitted_count' => $submittedCount,
+            'approved_count' => $approvedCount,
+            'pending_count' => $pendingCount,
+            'revision_count' => $revisionCount,
+            'total_target_doctors' => $uniqueDoctorIds->count(),
+            'subordinates_detail' => $subordinatesDetail->values()->all(),
+        ];
+    }
 }

@@ -253,4 +253,26 @@ class CallListApiController extends Controller
             ],
         ]);
     }
+
+    /**
+     * GET /api/call-lists/summary
+     * Rangkuman monitoring manajerial (read-only) untuk atasan (DM, RSM, MM).
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (! in_array($user->role, ['dm', 'rsm', 'mm'])) {
+            throw new AccessDeniedHttpException('Hanya peran manajerial yang dapat mengakses ringkasan monitoring.');
+        }
+
+        $periodMonth = $request->query('period_month');
+        $summary = $this->callListService->getManagerialSummary($user, $periodMonth);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ringkasan monitoring manajerial berhasil diambil.',
+            'data' => $summary,
+        ]);
+    }
 }

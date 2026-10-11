@@ -34,6 +34,8 @@ class VisitSessionService
         $today = Carbon::now()->toDateString();
 
         return DB::transaction(function () use ($mr, $planId, $doctorId, $today) {
+            $this->autoExpireStaleSessions($mr);
+
             $plan = null;
 
             if (! empty($planId)) {
@@ -143,10 +145,29 @@ class VisitSessionService
     }
 
     /**
+     * Secara otomatis membatalkan sesi lawas yang tertinggal dari hari sebelumnya (KISS Auto-Expire).
+     */
+    public function autoExpireStaleSessions(User $mr): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        VisitSession::where('mr_id', $mr->id)
+            ->where('status', 'in_progress')
+            ->where('visit_date', '<', $today)
+            ->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => 'Sesi kedaluwarsa otomatis karena pergantian hari operasional.',
+                'cancelled_at' => Carbon::now(),
+            ]);
+    }
+
+    /**
      * Mengambil sesi kunjungan MR yang saat ini sedang aktif (in_progress).
      */
     public function getActiveSession(User $mr): ?VisitSession
     {
+        $this->autoExpireStaleSessions($mr);
+
         return VisitSession::with(['doctor', 'plan'])
             ->where('mr_id', $mr->id)
             ->where('status', 'in_progress')

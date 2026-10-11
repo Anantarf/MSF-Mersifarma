@@ -670,20 +670,26 @@
         try {
             const planId = document.getElementById('actualPlanId').value;
             const sessionId = document.getElementById('actualSessionId').value;
+            const payload = {
+                photo_url: photoUrl,
+                signature_url: signatureUrl,
+                products: productIds,
+                visit_reason: planId ? null : (document.getElementById('visitReasonInput').value.trim() || null)
+            };
+
+            if (sessionId) {
+                payload.visit_session_id = parseInt(sessionId);
+            } else {
+                payload.plan_id = planId ? parseInt(planId) : null;
+                payload.doctor_id = parseInt(document.getElementById('actualDoctorSelect').value);
+                payload.visit_date = document.getElementById('actualDateInput').value;
+                payload.check_in = document.getElementById('checkInInput').value;
+                payload.check_out = document.getElementById('checkOutInput').value;
+            }
+
             const res = await window.apiFetch('/api/call-actuals', {
                 method: 'POST',
-                body: JSON.stringify({
-                    plan_id: planId ? parseInt(planId) : null,
-                    visit_session_id: sessionId ? parseInt(sessionId) : null,
-                    doctor_id: parseInt(document.getElementById('actualDoctorSelect').value),
-                    visit_date: document.getElementById('actualDateInput').value,
-                    check_in: document.getElementById('checkInInput').value,
-                    check_out: document.getElementById('checkOutInput').value,
-                    photo_url: photoUrl,
-                    signature_url: signatureUrl,
-                    products: productIds,
-                    visit_reason: planId ? null : (document.getElementById('visitReasonInput').value.trim() || null)
-                })
+                body: JSON.stringify(payload)
             });
             const result = await res.json();
             if (result.success) {

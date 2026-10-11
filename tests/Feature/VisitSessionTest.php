@@ -65,7 +65,7 @@ class VisitSessionTest extends TestCase
     public function test_mr_can_start_visit_session_from_scheduled_plan(): void
     {
         $response = $this->actingAs($this->mr)
-            ->postJson('/api/visit-sessions/start', [
+            ->postJson('/api/visit-sessions', [
                 'plan_id' => $this->plan->id,
             ]);
 
@@ -99,7 +99,7 @@ class VisitSessionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->mr)
-            ->postJson('/api/visit-sessions/start', [
+            ->postJson('/api/visit-sessions', [
                 'plan_id' => $this->plan->id,
             ]);
 
@@ -127,7 +127,7 @@ class VisitSessionTest extends TestCase
         $doctor2 = MasterCustomer::where('id', '!=', $this->doctor->id)->firstOrFail();
 
         $response = $this->actingAs($this->mr)
-            ->postJson('/api/visit-sessions/start', [
+            ->postJson('/api/visit-sessions', [
                 'doctor_id' => $doctor2->id,
             ]);
 
@@ -149,7 +149,7 @@ class VisitSessionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->mr)
-            ->postJson("/api/visit-sessions/{$session->id}/checkout");
+            ->postJson("/api/visit-sessions/{$session->id}/check-out");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -176,7 +176,7 @@ class VisitSessionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->mr)
-            ->postJson("/api/visit-sessions/{$session->id}/cancel", [
+            ->patchJson("/api/visit-sessions/{$session->id}/cancel", [
                 'reason' => 'Dokter ada operasi darurat sehingga kunjungan dibatalkan',
             ]);
 
@@ -208,12 +208,7 @@ class VisitSessionTest extends TestCase
 
         $response = $this->actingAs($this->mr)
             ->postJson('/api/call-actuals', [
-                'plan_id' => $this->plan->id,
                 'visit_session_id' => $session->id,
-                'doctor_id' => $this->doctor->id,
-                'visit_date' => Carbon::now()->toDateString(),
-                'check_in' => '09:00',
-                'check_out' => '09:30',
                 'photo_url' => 'https://storage.mersi.com/photos/session1.jpg',
                 'signature_url' => 'https://storage.mersi.com/signatures/session1.png',
                 'products' => [$this->product->id],
@@ -229,5 +224,127 @@ class VisitSessionTest extends TestCase
         // Plan status must become completed
         $this->plan->refresh();
         $this->assertEquals('completed', $this->plan->status);
+    }
+
+    public function test_cannot_start_session_from_plan_outside_plan_date(): void
+    {
+        $futurePlan = CallPlan::create([
+            'call_list_id' => $this->plan->call_list_id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor->id,
+            'plan_date' => Carbon::now()->addDay()->toDateString(),
+            'planned_time' => '13:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->postJson('/api/visit-sessions', [
+                'plan_id' => $futurePlan->id,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'VALIDATION_FAILED',
+            ]);
+
+        $this->assertDatabaseMissing('visit_sessions', [
+            'plan_id' => $futurePlan->id,
+            'status' => 'in_progress',
+        ]);
+    }
+
+    public function test_session_backed_actual_requires_checkout_before_completion(): void
+    {
+        $session = VisitSession::create([
+            'mr_id' => $this->mr->id,
+            'plan_id' => $this->plan->id,
+            'doctor_id' => $this->doctor->id,
+            'visit_date' => Carbon::now()->toDateString(),
+            'check_in_at' => Carbon::now()->subMinutes(30),
+            'status' => 'in_progress',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->postJson('/api/call-actuals', [
+                'visit_session_id' => $session->id,
+                'photo_url' => 'https://storage.mersi.com/photos/session-no-checkout.jpg',
+                'signature_url' => 'https://storage.mersi.com/signatures/session-no-checkout.png',
+                'products' => [$this->product->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'SESSION_CHECKOUT_REQUIRED',
+            ]);
+
+        $this->assertDatabaseMissing('call_actuals', [
+            'visit_session_id' => $session->id,
+        ]);
+    }
+
+    public function test_session_backed_actual_rejects_manual_identity_or_time_payload(): void
+    {
+        $session = VisitSession::create([
+            'mr_id' => $this->mr->id,
+            'plan_id' => $this->plan->id,
+            'doctor_id' => $this->doctor->id,
+            'visit_date' => Carbon::now()->toDateString(),
+            'check_in_at' => Carbon::now()->subMinutes(30),
+            'check_out_at' => Carbon::now()->subMinutes(5),
+            'status' => 'in_progress',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->postJson('/api/call-actuals', [
+                'visit_session_id' => $session->id,
+                'plan_id' => $this->plan->id,
+                'photo_url' => 'https://storage.mersi.com/photos/session-mixed.jpg',
+                'signature_url' => 'https://storage.mersi.com/signatures/session-mixed.png',
+                'products' => [$this->product->id],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'SESSION_PAYLOAD_MISMATCH',
+            ]);
+
+        $this->assertDatabaseMissing('call_actuals', [
+            'visit_session_id' => $session->id,
+        ]);
+    }
+
+    public function test_stale_session_from_previous_day_is_automatically_expired(): void
+    {
+        $yesterday = Carbon::now()->subDay()->toDateString();
+
+        $staleSession = VisitSession::create([
+            'mr_id' => $this->mr->id,
+            'plan_id' => null,
+            'doctor_id' => $this->doctor->id,
+            'visit_date' => $yesterday,
+            'check_in_at' => Carbon::now()->subDay()->setTime(14, 0, 0),
+            'status' => 'in_progress',
+        ]);
+
+        // 1. Saat getActiveSession dipanggil hari ini, sesi kemarin otomatis kedaluwarsa
+        $responseActive = $this->actingAs($this->mr)->getJson('/api/visit-sessions/active');
+        $responseActive->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => null,
+            ]);
+
+        $staleSession->refresh();
+        $this->assertEquals('cancelled', $staleSession->status);
+        $this->assertStringContainsString('kedaluwarsa otomatis', $staleSession->cancellation_reason);
+
+        // 2. MR tidak terkunci dan dapat langsung memulai sesi baru hari ini
+        $responseStart = $this->actingAs($this->mr)->postJson('/api/visit-sessions', [
+            'plan_id' => $this->plan->id,
+        ]);
+        $responseStart->assertStatus(201);
     }
 }

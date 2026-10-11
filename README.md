@@ -2,7 +2,7 @@
 
 > **Studi Kasus:** Junior Software Engineer — Mobile Sales Force Application  
 > **Baseline Desain:** v1.5 (Dokumentasi lengkap di folder [`docs/`](docs/))  
-> **Status Delivery:** **P0 Lengkap & Terverifikasi 100%** (8 Endpoint API Wajib, 3 Halaman Antarmuka Web Mobile-First, Proteksi Anti-Duplikasi MySQL InnoDB, Validasi Bukti Kunjungan, dan 5 Skenario Uji Manual PDF Lolos).
+> **Status Delivery:** **P0 + P1 Lengkap & Terverifikasi 100%** (8 Endpoint API Wajib + 6 Endpoint P1 Operasional, 3 Halaman Web Mobile-First, Proteksi Anti-Duplikasi MySQL InnoDB, Auto-Expire Sesi Basi, Widget Monitoring Manajerial, dan 58 Skenario Uji Otomatis Lolos).
 
 ---
 
@@ -11,9 +11,9 @@
 Mobile Sales Force (MSF) adalah aplikasi web terintegrasi yang dirancang untuk mendukung kegiatan operasional lapangan **Medical Representative (MR)** serta alur persetujuan bertingkat tunggal (*single-level direct manager*) oleh **District Manager (DM)**, **Regional Sales Manager (RSM)**, dan **Medical/Marketing Manager (MM)**.
 
 Sistem mengimplementasikan tiga modul utama:
-1. **Target Dokter (Call List):** Pengusulan target dokter bulanan dari Master Customer List (MCL). Alur persetujuan ditujukan kepada atasan langsung. Penolakan mengembalikan status ke Draft dengan catatan revisi tersimpan di jejak audit.
-2. **Jadwal Kunjungan (Call Plan):** Penjadwalan tanggal dan jam kunjungan harian. Wajib bersumber dari Call List yang telah disetujui (*Approved*), dokter anggota list, dan tanggal dalam bulan periode list. Dilengkapi proteksi bentrok jadwal dokter/hari secara global.
-3. **Realisasi Kunjungan (Call Actual):** Pelaporan bukti kunjungan lapangan dengan bukti foto, tanda tangan digital dokter, dan detailing produk farmasi. Mendukung kunjungan terencana (*Planned*) dan kunjungan di luar rencana (*Without Plan* yang otomatis diklasifikasikan backend menjadi *Unplanned* atau *Non Target*). Proteksi ketat mencegah duplikasi kunjungan dokter di hari yang sama lintas MR.
+1. **Target Dokter (Call List):** Pengusulan target dokter bulanan dari Master Customer List (MCL). Alur persetujuan ditujukan kepada atasan langsung. Penolakan mengembalikan status ke Draft dengan catatan revisi tersimpan di jejak audit. Dilengkapi **Widget Ringkasan Monitoring Wilayah (Read-Only)** untuk atasan (DM/RSM/MM).
+2. **Jadwal Kunjungan (Call Plan):** Penjadwalan tanggal dan jam kunjungan harian. Wajib bersumber dari Call List yang telah disetujui (*Approved*), dokter anggota list, dan tanggal dalam bulan periode list. Dilengkapi proteksi bentrok jadwal dokter/hari secara global, fitur pembatalan jadwal ber-alasan, dan live availability checker.
+3. **Realisasi Kunjungan (Call Actual):** Pelaporan bukti kunjungan lapangan dengan bukti foto, tanda tangan digital dokter, dan detailing produk farmasi. Mendukung kunjungan terencana (*Planned*) dan kunjungan di luar rencana (*Without Plan* yang otomatis diklasifikasikan backend menjadi *Unplanned* atau *Non Target*). Mendukung alur Persisted Visit Session (Server Check-in/Check-out) dengan fitur auto-expire sesi basi yang ramah lapangan.
 
 ### Spesifikasi Teknologi Aktual
 * **Backend:** PHP 8.2.12, Laravel Framework 11.57.0 (Arsitektur Service Layer, Form Requests, Strict Exceptions)
@@ -71,10 +71,7 @@ Arsitektur detail dapat dipelajari pada [docs/DESIGN.md](docs/DESIGN.md) dan [do
    ```bash
    php artisan migrate:fresh --seed
    ```
-   Jalankan juga seeder skenario demo untuk mengisi data transaksi November 2026:
-   ```bash
-   php artisan db:seed --class=DemoScenarioSeeder
-   ```
+   Seluruh data demo transaksi (Call List approved/pending/revision, Call Plans terjadwal/selesai/dibatalkan, dan riwayat Call Actual planned/unplanned/non-target) sudah terisi otomatis melalui `DemoScenarioSeeder`.
 
 6. **Jalankan Server Lokal:**
    ```bash
@@ -99,8 +96,9 @@ Seluruh akun pengujian menggunakan data sintetis dengan kata sandi default: **`p
 
 ---
 
-## 4. Status Implementasi 8 Endpoint API Wajib (P0)
+## 4. Status Implementasi Endpoint API (P0 & P1)
 
+### A. 8 Endpoint API Wajib (P0)
 Sesuai dokumen kontrak [docs/API_CONTRACT.md](docs/API_CONTRACT.md), seluruh 8 endpoint wajib telah selesai diimplementasikan dan diverifikasi:
 
 | No | Method | Endpoint | Fungsi Domain | Status Implementasi |
@@ -114,11 +112,18 @@ Sesuai dokumen kontrak [docs/API_CONTRACT.md](docs/API_CONTRACT.md), seluruh 8 e
 | 7 | `POST` | `/api/call-actuals` | Mencatat realisasi kunjungan (Planned maupun Without Plan) | ✅ **SELESAI (PASS)** |
 | 8 | `GET` | `/api/call-actuals` | Mengambil riwayat realisasi kunjungan milik MR login | ✅ **SELESAI (PASS)** |
 
-### Endpoint Pendukung yang Tersedia
-* `GET /api/csrf-token` — Helper pengambilan token CSRF untuk Postman / cURL.
-* `GET /api/doctors` — Master Customer List (MCL) picker dokter.
-* `GET /api/products` — Master produk farmasi untuk detailing (Mersibion 5000, Mersikol, Mersidryl, dll).
-* `POST /api/call-lists/{id}/submit` — Mengajukan draft Call List ke atasan langsung.
+### B. Endpoint P1 & Operasional Pendukung
+* `POST /api/visit-sessions` atau `/api/visit-sessions/start` &mdash; Memulai sesi kunjungan (server check-in timestamp).
+* `GET /api/visit-sessions/active` &mdash; Mengambil sesi kunjungan MR yang sedang berlangsung (dengan auto-expire sesi basi).
+* `POST /api/visit-sessions/{id}/checkout` &mdash; Mencatat waktu selesai kunjungan (server check-out timestamp).
+* `POST /api/visit-sessions/{id}/cancel` &mdash; Membatalkan sesi kunjungan aktif dengan alasan pembatalan.
+* `PATCH /api/call-plans/{id}/cancel` &mdash; Membatalkan jadwal kunjungan dengan alasan dan membebaskan slot dokter.
+* `GET /api/doctors/{id}/availability` &mdash; Mengecek kalender ketersediaan dokter tanpa membocorkan privasi rekan kerja.
+* `GET /api/call-lists/summary` &mdash; Widget ringkasan monitoring manajerial (read-only) untuk atasan (DM/RSM/MM).
+* `GET /api/csrf-token` &mdash; Helper pengambilan token CSRF untuk Postman / cURL.
+* `GET /api/doctors` &mdash; Master Customer List (MCL) picker dokter.
+* `GET /api/products` &mdash; Master produk farmasi untuk detailing (Mersibion 5000, Mersikol, Mersidryl, dll).
+* `POST /api/call-lists/{id}/submit` &mdash; Mengajukan draft Call List ke atasan langsung.
 
 ---
 
@@ -142,14 +147,15 @@ php artisan test
 **Hasil Eksekusi:**
 ```text
    PASS  Tests\Unit\ExampleTest (1 test)
-   PASS  Tests\Feature\AuthAndDatabaseTest (10 tests)
-   PASS  Tests\Feature\CallListTest (7 tests)
-   PASS  Tests\Feature\CallPlanTest (7 tests)
+   PASS  Tests\Feature\AuthAndDatabaseTest (13 tests)
+   PASS  Tests\Feature\CallListTest (9 tests)
+   PASS  Tests\Feature\CallPlanTest (14 tests)
    PASS  Tests\Feature\CallActualTest (10 tests)
+   PASS  Tests\Feature\VisitSessionTest (10 tests)
    PASS  Tests\Feature\ExampleTest (1 test)
 
-  Tests:    36 passed (137 assertions)
-  Duration: 3.39s
+  Tests:    58 passed (205 assertions)
+  Duration: 4.72s
 ```
 
 ---
@@ -157,11 +163,12 @@ php artisan test
 ## 6. Asumsi Bisnis & Batasan Desain
 
 Berdasarkan dokumen arsitektur [docs/DECISIONS.md](docs/DECISIONS.md):
-1. **Single-Level Direct Approval:** Persetujuan dilakukan tepat satu tingkat ke atas (`MR -> DM`, `DM -> RSM`, `RSM -> MM`). Atasan tingkat yang lebih tinggi tidak dapat membypass persetujuan manajer langsung (ADR-004).
+1. **Single-Level Direct Approval vs. Managerial Monitoring:** Persetujuan Call List bersifat satu tingkat (*single-level final approval*: `MR -> DM`, `DM -> RSM`, `RSM -> MM`). Begitu DM menyetujui Call List MR, keputusan tersebut sudah final dan MR langsung berhak membuat Call Plan tanpa perlu approval berantai ke RSM/MM. Untuk atasan tingkat lebih tinggi, disediakan **Widget Ringkasan Monitoring Wilayah (Read-Only)** untuk memantau capaian tim tanpa membebani proses operasional (ADR-004).
 2. **Rejection to Draft:** Penolakan mengembalikan status Call List ke `draft` agar bawahan dapat merevisi dan mengajukan kembali, dengan seluruh catatan alasan tersimpan dalam riwayat audit (ADR-005).
 3. **Pencatatan Tanpa Rencana (Without Plan):** Direct API mendukung `plan_id = null` tanpa mewajibkan alasan kunjungan. Backend secara otomatis menentukan tipe kunjungan: `unplanned` jika dokter terdaftar pada Call List yang sudah disetujui sebelum check-in, dan `non_target` jika dokter tidak terdaftar pada Call List sasaran (ADR-011).
 4. **Anti-Duplikasi Kunjungan:** Enforced pada level database via unique composite index `(doctor_id, visit_date)` pada tabel `call_actuals` dan row-level locking `FOR UPDATE` pada tabel `master_customers` untuk mencegah *race condition* (ADR-010).
-5. **Privasi Antar-MR:** Pada respons penolakan duplikasi (409), sistem hanya menampilkan ID record jika milik pengguna sendiri (`owned_by_me: true`). Jika milik MR lain, tidak ada ID, foto, atau tanda tangan yang dibocorkan (ADR-014).
+5. **KISS Auto-Expire Sesi Basi:** Sesi kunjungan aktif yang tertinggal dari hari kemarin otomatis kedaluwarsa dan ditutup saat MR berinteraksi dengan sistem di hari baru, mencegah MR terkunci tanpa membutuhkan daemon background cron eksternal.
+6. **Privasi Antar-MR:** Pada respons penolakan duplikasi (409) dan availability check, sistem tidak membocorkan nama MR lain, foto, produk, maupun tanda tangan digital rekan kerja (ADR-014).
 
 ---
 

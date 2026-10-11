@@ -21,6 +21,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/call-lists', [CallListApiController::class, 'store']);
     Route::get('/call-lists', [CallListApiController::class, 'index']);
+    Route::get('/call-lists/summary', [CallListApiController::class, 'summary']);
     Route::get('/call-lists/{id}', [CallListApiController::class, 'show']);
     Route::patch('/call-lists/{id}/approve', [CallListApiController::class, 'approve']);
 

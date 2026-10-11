@@ -21,7 +21,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $loginInput = $request->input('username') ?? $request->input('email') ?? $request->input('login');
+        $loginInput = trim((string) ($request->input('username') ?? $request->input('email') ?? $request->input('login') ?? ''));
 
         $request->merge([
             'login' => $loginInput,
@@ -35,26 +35,22 @@ class AuthController extends Controller
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        $resolvedEmail = $loginInput;
-        if (! str_contains($loginInput, '@')) {
-            $user = User::where('username', $loginInput)
-                ->orWhere('email', $loginInput.'@mersi.com')
-                ->orWhere('name', 'LIKE', $loginInput.'%')
+        $loginLookup = Str::lower($loginInput);
+        $user = str_contains($loginLookup, '@')
+            ? User::where('email', $loginLookup)->first()
+            : User::where('username', $loginLookup)
+                ->orWhere('email', $loginLookup.'@mersi.com')
                 ->first();
 
-            if ($user) {
-                $resolvedEmail = $user->email;
-            } else {
-                $resolvedEmail = $loginInput.'@mersi.com';
-            }
-        }
+        $resolvedEmail = $user?->email ?? (str_contains($loginLookup, '@') ? $loginLookup : $loginLookup.'@mersi.com');
 
         $credentials = [
             'email' => $resolvedEmail,
             'password' => $request->input('password'),
         ];
 
-        $throttleKey = Str::transliterate(Str::lower($loginInput).'|'.$request->ip());
+        $throttleIdentity = $user ? 'user:'.$user->id : $loginLookup;
+        $throttleKey = Str::transliterate($throttleIdentity.'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);

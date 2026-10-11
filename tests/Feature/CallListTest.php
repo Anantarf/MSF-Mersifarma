@@ -277,4 +277,35 @@ class CallListTest extends TestCase
         $this->actingAs($this->mr2)->getJson("/api/call-lists/{$callListId}")
             ->assertStatus(403);
     }
+
+    public function test_manager_can_access_managerial_monitoring_summary(): void
+    {
+        // DM Joko mengakses ringkasan monitoring bawahannya
+        $response = $this->actingAs($this->dm)->getJson('/api/call-lists/summary');
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'period_month',
+                    'total_subordinates',
+                    'submitted_count',
+                    'approved_count',
+                    'pending_count',
+                    'revision_count',
+                    'total_target_doctors',
+                    'subordinates_detail',
+                ],
+            ]);
+
+        // DM Joko membawahi minimal 2 MR (Rudi dan Ahmad)
+        $this->assertGreaterThanOrEqual(2, $response->json('data.total_subordinates'));
+    }
+
+    public function test_non_manager_cannot_access_managerial_monitoring_summary(): void
+    {
+        // MR Rudi dilarang mengakses ringkasan monitoring manajerial
+        $response = $this->actingAs($this->mr)->getJson('/api/call-lists/summary');
+        $response->assertStatus(403);
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\MasterCustomer;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthAndDatabaseTest extends TestCase
@@ -57,6 +58,44 @@ class AuthAndDatabaseTest extends TestCase
                         'role' => 'mr',
                     ],
                 ],
+            ]);
+    }
+
+    public function test_login_with_name_prefix_is_rejected(): void
+    {
+        $response = $this->postJson('/api/auth/login', [
+            'username' => 'Rudi',
+            'password' => 'password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'INVALID_CREDENTIALS',
+            ]);
+
+        $this->assertGuest();
+    }
+
+    public function test_login_rate_limit_is_shared_between_username_and_email_alias(): void
+    {
+        $user = User::where('email', 'mr@mersi.com')->firstOrFail();
+        RateLimiter::clear('user:'.$user->id.'|127.0.0.1');
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/auth/login', [
+                'username' => 'mr',
+                'password' => 'wrong-password',
+            ])->assertStatus(422);
+        }
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'mr@mersi.com',
+            'password' => 'wrong-password',
+        ])->assertStatus(429)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'TOO_MANY_ATTEMPTS',
             ]);
     }
 

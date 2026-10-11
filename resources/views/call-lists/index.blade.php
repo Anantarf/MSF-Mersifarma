@@ -63,6 +63,50 @@
     <!-- Container Tab 2: Manager Review Queue -->
     @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
     <div id="reviewContainer" style="display: none; flex-direction: column; gap: 1rem;">
+        <!-- Widget Ringkasan Monitoring Wilayah (Read-Only) -->
+        <div id="monitoringSummaryCard" style="display: none; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.15rem;">
+                        Ringkasan Monitoring Wilayah
+                    </h4>
+                    <p style="font-size: 0.8125rem; color: var(--text-muted); margin: 0;">
+                        Pantauan pengajuan target dokter dari tim bawahan langsung Anda.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="summaryMonthSelect" style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Periode:</label>
+                    <input type="month" id="summaryMonthSelect" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.8125rem; min-height: 36px;" onchange="loadManagerSummary()">
+                </div>
+            </div>
+
+            <!-- Metric Stat Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; text-align: center;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Tim Bawahan</div>
+                    <div id="statTotalSubordinates" style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">0</div>
+                </div>
+                <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; text-align: center;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Dokter Sasaran</div>
+                    <div id="statTotalDoctors" style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); margin-top: 0.25rem;">0</div>
+                </div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.75rem; text-align: center;">
+                    <div style="font-size: 0.75rem; color: #166534; font-weight: 600; text-transform: uppercase;">Disetujui</div>
+                    <div id="statApproved" style="font-size: 1.35rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">0</div>
+                </div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.75rem; text-align: center;">
+                    <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Menunggu Review</div>
+                    <div id="statPending" style="font-size: 1.35rem; font-weight: 800; color: #b45309; margin-top: 0.25rem;">0</div>
+                </div>
+            </div>
+
+            <!-- Subordinates Progress Breakdown -->
+            <div style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <div style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">Capaian Pengajuan per Anggota Tim:</div>
+                <div id="subordinatesPillContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+            </div>
+        </div>
+
         <div id="loadingReview" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
             Memuat antrean pengajuan...
         </div>
@@ -277,6 +321,7 @@
         loadMyCallLists();
         if (['dm', 'rsm', 'mm'].includes(currentUserRole)) {
             loadReviewCallLists();
+            loadManagerSummary();
         }
         // Default month: bulan depan
         const now = new Date();
@@ -323,6 +368,7 @@
             document.getElementById('tabReview').classList.add('active');
             document.getElementById('myListsContainer').style.display = 'none';
             document.getElementById('reviewContainer').style.display = 'flex';
+            loadManagerSummary();
         }
     }
 
@@ -488,6 +534,66 @@
                 </td>
             </tr>
         `).join('');
+    }
+
+    async function loadManagerSummary() {
+        const summaryCard = document.getElementById('monitoringSummaryCard');
+        if (!summaryCard) return;
+
+        let month = document.getElementById('summaryMonthSelect')?.value;
+        let url = '/api/call-lists/summary';
+        if (month) {
+            url += `?period_month=${encodeURIComponent(month)}`;
+        }
+
+        try {
+            const res = await window.apiFetch(url);
+            const result = await res.json();
+            if (result.success && result.data) {
+                const data = result.data;
+                summaryCard.style.display = 'block';
+                if (!month && data.period_month) {
+                    document.getElementById('summaryMonthSelect').value = data.period_month.substring(0, 7);
+                }
+                document.getElementById('statTotalSubordinates').innerText = data.total_subordinates;
+                document.getElementById('statTotalDoctors').innerText = data.total_target_doctors;
+                document.getElementById('statApproved').innerText = `${data.approved_count} / ${data.total_subordinates}`;
+                document.getElementById('statPending').innerText = data.pending_count;
+
+                const pillContainer = document.getElementById('subordinatesPillContainer');
+                if (data.subordinates_detail && data.subordinates_detail.length) {
+                    pillContainer.innerHTML = data.subordinates_detail.map(sub => {
+                        let badgeBg = '#f1f5f9';
+                        let badgeColor = '#475569';
+                        let label = 'Belum Ajukan';
+                        if (sub.status === 'approved') {
+                            badgeBg = '#dcfce7';
+                            badgeColor = '#15803d';
+                            label = `${sub.doctor_count} Dokter (Disetujui)`;
+                        } else if (sub.status === 'pending_approval') {
+                            badgeBg = '#fef3c7';
+                            badgeColor = '#b45309';
+                            label = `${sub.doctor_count} Dokter (Menunggu)`;
+                        } else if (sub.status === 'draft') {
+                            badgeBg = '#fee2e2';
+                            badgeColor = '#b91c1c';
+                            label = 'Perlu Revisi';
+                        }
+                        return `
+                            <div style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(0,0,0,0.06); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <span>${escapeHtml(sub.name)}</span>
+                                <span style="opacity: 0.75;">&bull;</span>
+                                <span>${label}</span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    pillContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Tidak ada anggota tim terdaftar.</span>';
+                }
+            }
+        } catch (err) {
+            console.error('Gagal mengambil ringkasan monitoring manajerial', err);
+        }
     }
 
     function openCreateModal() {
