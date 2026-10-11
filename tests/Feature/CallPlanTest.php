@@ -467,4 +467,96 @@ class CallPlanTest extends TestCase
         $response->assertJsonMissing(['mr_id' => $this->mr->id]);
         $response->assertJsonMissing(['mr_name' => $this->mr->name]);
     }
+
+    public function test_stale_call_plan_past_plan_date_is_automatically_expired_on_get_plans(): void
+    {
+        $pastDate = Carbon::yesterday('Asia/Jakarta')->toDateString();
+
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => $pastDate,
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)->getJson('/api/call-plans');
+
+        $response->assertStatus(200);
+
+        $this->assertEquals('expired', $plan->fresh()->status);
+        $this->assertTrue($plan->fresh()->isExpired());
+    }
+
+    public function test_artisan_command_msf_expire_plans_expires_stale_plans(): void
+    {
+        $pastDate = Carbon::yesterday('Asia/Jakarta')->toDateString();
+
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => $pastDate,
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $this->artisan('msf:expire-plans')
+            ->expectsOutputToContain('Expired 1 stale call plan(s).')
+            ->assertSuccessful();
+
+        $this->assertEquals('expired', $plan->fresh()->status);
+    }
+
+    public function test_expired_plan_frees_up_slot_and_doctor_can_be_rescheduled(): void
+    {
+        $currentMonth = Carbon::today('Asia/Jakarta')->format('Y-m');
+        $callList = CallList::firstOrCreate(
+            [
+                'owner_id' => $this->mr->id,
+                'period_month' => "{$currentMonth}-01",
+            ],
+            [
+                'status' => 'approved',
+                'assigned_approver_id' => $this->dm->id,
+                'approved_at' => Carbon::now(),
+            ]
+        );
+        $callList->status = 'approved';
+        $callList->save();
+        $callList->doctors()->syncWithoutDetaching([$this->doctor1->id]);
+
+        $pastDate = Carbon::yesterday('Asia/Jakarta')->toDateString();
+        $plan = CallPlan::create([
+            'call_list_id' => $callList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => $pastDate,
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        // Jalankan expiry
+        $this->artisan('msf:expire-plans')->assertSuccessful();
+        $this->assertEquals('expired', $plan->fresh()->status);
+
+        // Buat jadwal baru untuk dokter yang sama di tanggal hari ini
+        $todayDate = Carbon::today('Asia/Jakarta')->toDateString();
+        $response = $this->actingAs($this->mr)
+            ->postJson('/api/call-plans', [
+                'call_list_id' => $callList->id,
+                'doctor_id' => $this->doctor1->id,
+                'plan_date' => $todayDate,
+                'planned_time' => '11:00:00',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'status' => 'scheduled',
+                ],
+            ]);
+    }
 }

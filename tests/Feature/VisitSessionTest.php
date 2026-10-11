@@ -50,6 +50,11 @@ class VisitSessionTest extends TestCase
                 'approved_at' => Carbon::now(),
             ]
         );
+        $callList->update([
+            'status' => 'approved',
+            'assigned_approver_id' => $this->dm->id,
+            'approved_at' => Carbon::now(),
+        ]);
         $callList->doctors()->syncWithoutDetaching([$this->doctor->id]);
 
         $this->plan = CallPlan::create([

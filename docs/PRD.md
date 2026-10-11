@@ -1,26 +1,34 @@
-# PRD — Mobile Sales Force (MSF)
+# PRD - Mobile Sales Force (MSF)
 
-> **Versi:** 1.6 (baseline bisnis v1.5 + pemetaan terminologi UI v1.6)  
-> **Status:** Spesifikasi final untuk mulai implementasi; aplikasi belum dibuat atau diuji.  
-> **Sumber utama:** dokumen studi kasus MSF PT Mersifarma.  
-> **Revisi yang digabung:** PRD v1.2/v1.3, Logic Flow v1.4, Operational UX v1.5.
+> **Versi:** 1.8 (Konsolidasi Peran Manajerial, Hierarki Wilayah, dan Tata Kelola Kunjungan)  
+> **Status:** Spesifikasi baseline v1.8; P0 telah diimplementasikan dan diverifikasi (60 tests pass).  
+> **Sumber utama:** Dokumen studi kasus MSF PT Mersifarma dan dokumen konsolidasi `MSF_Change_Impact_v1.8_Proposal.md`.  
+> **Revisi yang digabung:** PRD v1.2/v1.3, Logic Flow v1.4, Operational UX v1.5, UI Label v1.6, Operational Correction v1.7, Consolidation Proposal v1.8.
 
 ## 1. Ringkasan produk
 
-MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat target dokter bulanan, merencanakan kunjungan, dan menyampaikan realisasi kunjungan dengan bukti foto, tanda tangan, serta produk yang didetailkan. Manager melakukan approval terhadap **Call List** bawahannya dalam satu tingkat hierarki.
+MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat target dokter bulanan, merencanakan kunjungan, dan menyampaikan realisasi kunjungan dengan bukti foto, tanda tangan, serta produk yang didetailkan. Manager melakukan approval terhadap **Call List** bawahannya dalam satu tingkat hierarki langsung.
 
-**Tiga fitur/domain inti:** Call List, Call Plan, Call Actual. **Tiga halaman utama di UI:** Target Dokter (Call List Bulanan), Jadwal Kunjungan (Call Plan), Pelaksanaan Kunjungan (Call Actual). Tidak perlu membuat dashboard, modul reporting/insentif, atau halaman Unplanned terpisah untuk memenuhi studi kasus.
+**Struktur Peran Strategis ke Operasional (v1.8):**
+1. **MM:** Menentukan fokus produk dan target spesialisasi kampanye 3 bulanan (bukan kuota MR individu), serta menyetujui Call List manajerial RSM.
+2. **RSM:** Menerjemahkan fokus produk menjadi arahan dokter prioritas regional, serta menyetujui Call List manajerial DM.
+3. **DM:** Menetapkan arahan dokter prioritas bulanan tingkat distrik sebagai arahan non-eksklusif (bukan kuota kaku), serta menyetujui Call List MR bawahannya.
+4. **MR:** Memilih dokter target dari MCL secara mandiri, menentukan jumlah targetnya sendiri, menyusun jadwal kunjungan (Call Plan), dan mengeksekusi kunjungan (Call Actual).
+
+**Tiga fitur/domain inti:** Call List, Call Plan, Call Actual. **Tiga halaman utama di UI:** Target Dokter (Call List Bulanan), Jadwal Kunjungan (Call Plan), Pelaksanaan Kunjungan (Call Actual). Tidak perlu membuat dashboard terpisah atau modul reporting berlebih untuk memenuhi studi kasus.
 
 ## 2. Aktor dan wewenang
 
 | Role | Aktivitas | Larangan |
 |---|---|---|
-| MR | Buat/edit/submit Call List, buat Plan, catat Actual milik sendiri | Approve List sendiri, ubah Actual milik MR lain |
-| DM | Approve/reject Call List MR **bawahan langsung** | Approve List MR di luar bawahan; melewati jenjang |
-| RSM | Approve/reject Call List DM **bawahan langsung** | Approve langsung List MR |
-| MM | Approve/reject Call List RSM **bawahan langsung** | Approve langsung List MR/DM |
+| MR | Buat/edit/submit Call List mandiri, buat Plan, catat Actual milik sendiri | Approve List sendiri, ubah Actual milik MR lain |
+| DM | Tetapkan arahan prioritas distrik; approve/reject Call List MR **bawahan langsung**; pantau riwayat actual tim | Approve List MR di luar bawahan; membatasi kuota MR secara kaku |
+| RSM | Tetapkan arahan prioritas regional; approve/reject Call List DM **bawahan langsung**; pantau actual regional | Approve langsung List MR; melewati jenjang DM |
+| MM | Tetapkan kampanye produk 3 bulanan; approve/reject Call List RSM **bawahan langsung**; pantau cakupan nasional | Approve langsung List MR/DM; intervensi kuota harian |
 
-**Asumsi demonstrasi:** DM dan RSM boleh membuat Call List pribadi agar aturan DM→RSM dan RSM→MM dapat ditunjukkan; pembuatan Call Plan dan Actual melalui UI difokuskan pada MR. Manager terhubung melalui `users.manager_id`, bukan hanya pengecekan string `role`.
+**Prinsip Invariant Approval:** Approval Call List tetap mutlak **Satu Tingkat Langsung (Single-Level)**: MR -> DM, DM -> RSM, RSM -> MM. Tidak pernah ada rantai persetujuan 3 tingkat untuk satu Call List milik MR. Begitu DM menyetujui Call List MR, MR dapat langsung membuat Call Plan tanpa menunggu keputusan RSM atau MM.
+
+**Asumsi Call List Manajerial:** Call List yang diajukan DM ke RSM atau RSM ke MM berfungsi sebagai ringkasan target wilayah bulanan untuk mendemonstrasikan otorisasi berjenjang studi kasus, bukan daftar dokter yang akan dikunjungi secara pribadi oleh manajer. Manager terhubung melalui `users.manager_id`, bukan hanya pengecekan string `role`.
 
 ## 3. Kebutuhan fungsional
 
@@ -46,6 +54,8 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 - `CP-05`: Tolak Plan jika sudah ada Actual final untuk dokter/tanggal sama.
 - `CP-06`: Status Planned: Scheduled; menjadi Completed ketika Actual terkait selesai; Cancelled dengan alasan melalui fitur pendukung (P1).
 - `CP-07`: Plan yang terhalang Actual lain **tidak otomatis Completed**; UI boleh menampilkan *Tidak Dapat Direalisasikan* sebagai indikator turunan.
+- `CP-08`: Plan berstatus `scheduled` yang melewati akhir hari (Asia/Jakarta) tanpa record Actual otomatis bertransisi menjadi `expired` (Tidak Terlaksana) melalui scheduled job. Dokter yang plan-nya expired tetap tercatat di histori dan dapat dijadwalkan kembali pada tanggal lain dalam bulan yang sama jika masih ada di Call List Approved.
+- `CP-09`: Planned Actual mencocokkan tanggal yang sama persis dengan tanggal Plan (`visit_date == plan_date`). Jika tanggal kunjungan bergeser, MR menjadwalkan ulang Plan atau menggunakan jalur Kunjungan di Luar Rencana (`plan_id = null`).
 
 ### 3.3 Call Actual (P0)
 
@@ -63,8 +73,9 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 - `CA-10`: Actual tanpa Plan tidak membuat Plan baru atau menyelesaikan Plan lain secara otomatis.
 - `CA-11`: Completion bersifat atomic: Actual, relasi produk, dan update status Plan/Session terkait berhasil seluruhnya atau rollback.
 - `CA-12`: Actual final immutable pada MVP.
+- `CA-13`: Produk yang dicatat pada Actual adalah produk yang benar-benar dipresentasikan MR saat visit (minimal 1 produk). Rekomendasi produk berbasis spesialisasi dokter merupakan arahan non-blokir di UI dan tidak boleh otomatis dicatat sebagai detailing tanpa pilihan MR.
 
-**Asumsi tambahan yang harus dicantumkan README:** Planned Actual dapat bergeser tanggal hanya di dalam bulan Call List dan memerlukan `deviation_reason`; timestamp tidak boleh berada di masa depan. Jika MR mempunyai Plan Scheduled lain untuk dokter yang sama tepat di tanggal aktual, frontend/Planned flow mengarahkan ke Plan yang benar. Ini **tidak** menghapus jalur `plan_id = null`.
+**Asumsi tambahan yang harus dicantumkan README:** Planned Actual mencocokkan tanggal yang sama dengan Plan. Jika jadwal bergeser, MR membatalkan Plan lama dengan alasan atau membuat Plan baru; jika mendesak, MR menggunakan jalur `plan_id = null`. Timestamp tidak boleh berada di masa depan. Jalur `plan_id = null` selalu legal dan tidak mengharuskan adanya Approved List.
 
 ## 4. UX yang disetujui (v1.5; label v1.6, operational correction v1.7)
 
@@ -107,6 +118,8 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 | `in_progress` | Sedang Berlangsung |
 | `completed` | Selesai |
 | `cancelled` | Dibatalkan |
+| `expired` | Tidak Terlaksana |
+| *derived* (dokter di Approved List tanpa Plan aktif) | Belum Dijadwalkan |
 
 **Aturan tampilan:**
 

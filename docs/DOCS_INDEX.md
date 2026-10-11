@@ -59,11 +59,12 @@ Dokumen dapat disimpan dalam `/docs` jika IDE/agent diperintahkan membaca `/docs
 
 - [x] Business/technical baseline v1.5 + terminology v1.6 + operational UX v1.7 tersusun.
 - [x] HTTP contract, DB, dan test plan tersusun.
-- [ ] Laravel project dibuat.
-- [ ] MySQL migration dijalankan.
-- [ ] 8 API wajib diimplementasikan.
-- [ ] 3 halaman berfungsi.
-- [ ] 5 manual test PDF dijalankan, PASS/FAIL dan evidence dicatat.
-- [ ] README aplikasi final + demo disiapkan.
+- [x] Laravel project dibuat.
+- [x] MySQL migration dijalankan.
+- [x] 8 API wajib diimplementasikan.
+- [x] 3 halaman berfungsi secara responsif.
+- [x] 5 manual test PDF + 60 automated tests dijalankan, 100% PASS dan evidence dicatat.
+- [x] README aplikasi final + panduan demo disiapkan.
+- [x] Proposal Konsolidasi v1.8 (Peran Manajerial, Wilayah, Tata Kelola Kunjungan) diadopsi ke ADR-031 hingga ADR-034.
 
-**Catatan:** Perubahan v1.6–v1.7 hanya pemetaan label dan perilaku presentasi UI, tanpa perubahan database atau kontrak API. Ini adalah paket dokumentasi final **untuk mulai coding**, bukan klaim aplikasi selesai.
+**Catatan:** Baseline P0 telah terverifikasi penuh dan stabil. Proposal v1.8 memberikan penyelarasan peran manajerial dan alur lanjutan (P1) tanpa merusak 8 endpoint wajib PDF dan invariant sistem yang telah berjalan.

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 
 class User extends Authenticatable
 {
@@ -103,6 +104,44 @@ class User extends Authenticatable
     public function isMm(): bool
     {
         return $this->role === 'mm';
+    }
+
+    public function getSubordinateMrUsers(): Collection
+    {
+        if ($this->role === 'mr') {
+            return collect([$this]);
+        }
+
+        if ($this->role === 'dm') {
+            return self::where('role', 'mr')
+                ->where('manager_id', $this->id)
+                ->orderBy('name')
+                ->get();
+        }
+
+        if ($this->role === 'rsm') {
+            $dmIds = self::where('role', 'dm')
+                ->where('manager_id', $this->id)
+                ->pluck('id');
+
+            return self::where('role', 'mr')
+                ->whereIn('manager_id', $dmIds)
+                ->orderBy('name')
+                ->get();
+        }
+
+        if ($this->role === 'mm') {
+            return self::where('role', 'mr')
+                ->orderBy('name')
+                ->get();
+        }
+
+        return collect();
+    }
+
+    public function getSubordinateMrIds(): array
+    {
+        return $this->getSubordinateMrUsers()->pluck('id')->all();
     }
 
     public function getRoleSubtitleAttribute(): string

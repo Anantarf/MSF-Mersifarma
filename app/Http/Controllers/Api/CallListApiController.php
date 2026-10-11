@@ -73,6 +73,14 @@ class CallListApiController extends Controller
                     'is_rejected_revision' => $isRejectedRevision,
                     'latest_rejection_reason' => $isRejectedRevision ? $latestLog->reason : null,
                     'doctor_count' => $cl->doctors->count(),
+                    'doctors' => $cl->doctors->map(function ($d) {
+                        return [
+                            'id' => $d->id,
+                            'name' => $d->name,
+                            'specialization' => $d->specialization,
+                            'address' => $d->address,
+                        ];
+                    })->values(),
                     'assigned_approver_id' => $cl->assigned_approver_id,
                     'assigned_approver_name' => $cl->assignedApprover ? $cl->assignedApprover->name : null,
                     'submitted_at' => $cl->submitted_at ? $cl->submitted_at->toIso8601String() : null,

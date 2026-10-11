@@ -1,22 +1,28 @@
-# DESIGN.md — Mobile Sales Force (MSF)
+# DESIGN.md - Mobile Sales Force (MSF)
 
-> **Status:** Design baseline v1.5 + UI label amendment v1.6 · **Implementasi:** belum dimulai · **Bahasa:** Indonesia  
-> **Acuan:** studi kasus Software Engineer MSF; baseline bisnis/teknis v1.5 dan penegasan label UI v1.6 pada PRD, TDD, dan AGENTS; API Contract v1.0; Database Constraint Specification v1.0.  
+> **Status:** Design baseline v1.8 (Konsolidasi Peran Manajerial, Hierarki Wilayah, dan Tata Kelola Kunjungan) · **Implementasi:** P0 telah selesai dan terverifikasi 100% automated tests · **Bahasa:** Indonesia  
+> **Acuan:** studi kasus Software Engineer MSF PT Mersifarma; dokumen proposal `MSF_Change_Impact_v1.8_Proposal.md`; API Contract v1.0; Database Constraint Specification v1.0; ADR-001 hingga ADR-034.  
 > **Kegunaan dokumen:** spesifikasi teknis induk untuk implementasi, code review, testing, dan demo. `README.md` tetap digunakan untuk instruksi instalasi dan laporan hasil pengujian.
 
 ## 1. Ringkasan desain
 
-MSF mendukung tiga proses utama: **Call List** (target bulanan), **Call Plan** (jadwal dari target yang disetujui), dan **Call Actual** (realisasi kunjungan). Alur operasional dirancang **Planned-first**: jadwal hari ini dan sesi kunjungan yang sedang berlangsung langsung terlihat di halaman Call Actual. Terdapat satu pilihan sekunder **Kunjungan di Luar Rencana**, yang diklasifikasikan oleh server menjadi **Unplanned** atau **Non Target**.
+MSF mendukung tiga proses utama: **Call List** (target bulanan), **Call Plan** (jadwal dari target yang disetujui), dan **Call Actual** (realisasi kunjungan). Alur operasional dirancang **Planned-first**: jadwal hari ini dan riwayat kunjungan langsung terlihat di halaman Call Actual. Terdapat satu pilihan sekunder **Kunjungan di Luar Rencana**, yang diklasifikasikan oleh server menjadi **Unplanned** atau **Non Target**.
 
-Prinsip: **pengalaman MR sederhana, validasi backend ketat**. Kunjungan tanpa Plan tetap sah (`plan_id = null`) agar sesuai kontrak studi kasus. Seluruh jenis kunjungan wajib memenuhi bukti foto, tanda tangan, minimal satu produk, dan keunikan Actual **global per dokter per tanggal**.
+**Penyelarasan Strategis ke Operasional (v1.8):**
+- **Marketing Manager (MM):** Menetapkan kampanye 3 bulanan (produk fokus dan sasaran spesialisasi), mengevaluasi cakupan nasional, dan menyetujui Call List manajerial RSM.
+- **Regional Sales Manager (RSM):** Menerjemahkan fokus kampanye menjadi arahan prioritas dokter regional, memantau distrik, dan menyetujui Call List manajerial DM.
+- **District Manager (DM):** Menetapkan arahan prioritas dokter bulanan di distrik sebagai panduan non-eksklusif (bukan pembatas kaku), menyetujui Call List MR bawahannya, dan memantau riwayat actual tim.
+- **Medical Representative (MR):** Memilih dokter target dari MCL secara mandiri, menentukan kuota targetnya sendiri, membuat jadwal (Call Plan), dan melaksanakan kunjungan (Call Actual) serta mencatat produk yang benar-benar didetailkan.
+
+Prinsip: **pengalaman MR sederhana, validasi backend ketat**. Kunjungan tanpa Plan tetap sah (`plan_id = null`) agar sesuai kontrak studi kasus. Seluruh jenis kunjungan wajib memenuhi bukti foto, tanda tangan, minimal satu produk riil, dan keunikan Actual **global per dokter per tanggal**.
 
 ### 1.1 Prioritas
 
 | Prioritas | Cakupan | Keputusan |
 |---|---|---|
-| **P0 — wajib** | 8 endpoint studi kasus, master data + migration/seed, Call List + approval, Call Plan, Call Actual termasuk `plan_id=null`, 3 halaman responsif, input check-in/out, loading/error, 5 tes manual, README | Harus selesai lebih dahulu |
-| **P1 — setelah P0 stabil** | Visit Session persisten, Resume, Check-out waktu server, Save Draft, Cancel/Recovery, advanced Schedule Deviation UX dan conflict UX, automated tests kritis | Tidak boleh menghalangi Direct API P0 |
-| **P2 — opsional** | Dashboard tambahan, copy daftar bulan lalu, offline sync, GPS, deployment, reminder otomatis | Tidak menjadi dependency MVP |
+| **P0 - wajib** | 8 endpoint studi kasus, master data + migration/seed, Call List + approval, Call Plan, Call Actual termasuk `plan_id=null`, 3 halaman responsif, input check-in/out, loading/error, 5 tes manual, README | Telah selesai & terverifikasi (60 tests pass) |
+| **P1 - setelah P0 stabil** | Status Plan Expired/Tidak Terlaksana, pengetatan tanggal Plan, filter wilayah MCL, Visit Session persisten/recovery, Handover Plan intra-distrik | Tidak boleh merusak baseline P0 |
+| **P2 - opsional** | Form CRUD campaign produk 3 bulan, modul reporting insentif, GPS, deployment | Tidak menjadi dependency MVP |
 
 **Sumber requirement:** aturan dan deliverable wajib berasal dari studi kasus; P1 dan kebijakan operasional yang tidak disebut secara eksplisit merupakan **asumsi desain**, bukan syarat baru dari pemberi kasus. Seluruh asumsi yang diimplementasikan harus diringkas di `README.md`.
 
@@ -49,14 +55,16 @@ flowchart TD
 
 | Aktor | Hak utama | Batasan |
 |---|---|---|
-| **MR** | Buat/edit/submit Call List; buat Plan; catat Actual miliknya | Tidak approve sendiri, tidak menggunakan Plan MR lain |
-| **DM** | Approve/Reject Call List MR bawahan langsung | Bukan semua MR; memiliki Call List pribadi **hanya menurut asumsi** untuk mendemonstrasikan hierarchy |
-| **RSM** | Approve/Reject Call List DM bawahan langsung | Tidak dapat melompati DM untuk approve List MR; dapat membuat Call List pribadi sebagai asumsi |
-| **MM** | Approve/Reject Call List RSM bawahan langsung | Tidak membuat Plan/Actual |
+| **MR** | Buat/edit/submit Call List mandiri; buat Plan; catat Actual miliknya | Tidak approve sendiri, tidak menggunakan Plan MR lain |
+| **DM** | Tetapkan arahan prioritas distrik; Approve/Reject Call List MR bawahan langsung; pantau riwayat actual tim | Bukan semua MR; arahan dokter prioritas bersifat non-eksklusif (tidak mengunci target MR) |
+| **RSM** | Tetapkan prioritas regional; Approve/Reject Call List DM bawahan langsung | Tidak dapat melompati DM untuk approve List MR |
+| **MM** | Tetapkan kampanye produk 3 bulanan; Approve/Reject Call List RSM bawahan langsung | Tidak membuat Plan/Actual; tidak menetapkan kuota harian MR |
 
-`users.manager_id` menjadi hubungan otoritas langsung. Saat submit pertama, `assigned_approver_id` disimpan sebagai snapshot; setelah reject lalu resubmit tetap diarahkan kepada approver yang sama dalam siklus itu. Apabila hubungan organisasi berubah di tengah siklus, reassignment adalah di luar scope MVP dan harus dinyatakan sebagai keterbatasan.
+`users.manager_id` menjadi hubungan otoritas langsung. Saat submit pertama, `assigned_approver_id` disimpan sebagai snapshot; setelah reject lalu resubmit tetap diarahkan kepada approver yang sama dalam siklus itu.
 
-**Data scoping:** `GET /api/call-lists`, `GET /api/call-plans`, dan `GET /api/call-actuals` membatasi hasil ke pengguna login. Detail Call List bisa dibaca owner atau assigned approver yang sah. Approval Inbox adalah query terpisah yang hanya menampilkan pengajuan dialamatkan kepada manajer tersebut. Informasi konflik dokter boleh ditampilkan lintas MR **tanpa** identitas sensitif atau bukti kunjungan MR lain.
+**Prinsip Invariant One-Level Approval:** Approval Call List bersifat mutlak satu tingkat langsung per pengaju: MR -> DM, DM -> RSM, RSM -> MM. Keputusan DM menyetujui Call List MR langsung menjadikan list tersebut `approved` dan MR dapat langsung menyusun Call Plan tanpa menunggu persetujuan berantai dari RSM atau MM. Call List yang diajukan DM dan RSM berfungsi sebagai ringkasan target wilayah bulanan untuk mendemonstrasikan otorisasi manajerial PDF.
+
+**Data scoping:** `GET /api/call-lists`, `GET /api/call-plans`, dan `GET /api/call-actuals` membatasi hasil ke pengguna login (untuk MR). Untuk akun manajer (DM/RSM/MM), `GET /api/call-actuals` memperluas data untuk memuat riwayat kunjungan bawahan langsung sesuai hierarki supervisi untuk keperluan audit dan monitoring. Informasi konflik dokter boleh ditampilkan lintas MR **tanpa** identitas sensitif atau bukti kunjungan MR lain.
 
 ## 4. Model domain dan ERD
 
@@ -71,7 +79,7 @@ flowchart TD
 | `call_lists` | `id`, `owner_id`, `period_month`, `status`, `assigned_approver_id`, `submitted_at`, `approved_at` | unique `(owner_id, period_month)` |
 | `call_list_doctors` | `call_list_id`, `doctor_id` | composite PK `(call_list_id, doctor_id)` |
 | `call_list_approval_logs` | `id`, `call_list_id`, `actor_id`, `event`, `event_origin`, `from_status`, `to_status`, `reason`, `created_at` | append-only; origin `user_action`/`system_transition` |
-| `call_plans` | `id`, `call_list_id`, `mr_id`, `doctor_id`, `plan_date`, `planned_time`, `status`, cancellation metadata | unique bersyarat dokter/tanggal selama non-Cancelled |
+| `call_plans` | `id`, `call_list_id`, `mr_id`, `doctor_id`, `plan_date`, `planned_time`, `status`, cancellation metadata | status `scheduled`, `completed`, `cancelled`, `expired`; unique dokter/tanggal selama status aktif |
 | `visit_sessions` **(P1)** | `id`, `mr_id`, `plan_id?`, `doctor_id`, `visit_date`, `check_in_at`, `check_out_at?`, `status`, `draft_payload`, `draft_revision`, cancellation metadata | active session uniqueness; timestamp server |
 | `call_actuals` | `id`, `mr_id`, `plan_id?`, `visit_session_id?`, `doctor_id`, `visit_date`, `check_in_at`, `check_out_at`, `photo_url`, `signature_url`, `visit_type`, `visit_reason?`, `deviation_reason?`, `completed_at` | unique `(doctor_id,visit_date)`, unique nullable Plan dan Session |
 | `call_actual_products` | `call_actual_id`, `product_id` | composite PK; minimal satu produk melalui service + transaksi |

@@ -163,7 +163,7 @@ class DatabaseSeeder extends Seeder
             Product::firstOrCreate(['id' => $prod['id']], $prod);
         }
 
-        // 5. Demo Scenarios (Call List Approved, Audit Logs, Call Plans)
-        $this->call(DemoScenarioSeeder::class);
+        // 5. Demo Scenarios (Dapat dijalankan opsional dengan: php artisan db:seed --class=DemoScenarioSeeder)
+        // $this->call(DemoScenarioSeeder::class);
     }
 }

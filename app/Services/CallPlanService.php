@@ -123,10 +123,35 @@ class CallPlanService
     }
 
     /**
+     * Mengubah status Plan yang lewat tanggal operasional tanpa Actual menjadi 'expired' (Tidak Terlaksana).
+     *
+     * Invariants:
+     * 1. Plan masih berstatus 'scheduled'.
+     * 2. plan_date < hari ini (Asia/Jakarta).
+     * 3. Belum memiliki CallActual yang merealisasikan.
+     */
+    public function expireStalePlans(?User $mr = null): int
+    {
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
+
+        $query = CallPlan::where('status', CallPlan::STATUS_SCHEDULED)
+            ->where('plan_date', '<', $today)
+            ->whereDoesntHave('callActual');
+
+        if ($mr) {
+            $query->where('mr_id', $mr->id);
+        }
+
+        return $query->update(['status' => CallPlan::STATUS_EXPIRED]);
+    }
+
+    /**
      * Mengambil daftar Call Plan milik MR login dengan filter opsional.
      */
     public function getPlans(User $mr, ?string $date = null, ?string $status = null): Collection
     {
+        $this->expireStalePlans($mr);
+
         $query = CallPlan::with(['doctor', 'callList'])
             ->where('mr_id', $mr->id);
 

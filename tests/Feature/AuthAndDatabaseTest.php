@@ -2,16 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Models\CallList;
 use App\Models\MasterCustomer;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthAndDatabaseTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_login_page_is_accessible(): void
     {
         $response = $this->get('/login');
@@ -183,19 +185,5 @@ class AuthAndDatabaseTest extends TestCase
                     'csrf_token',
                 ],
             ]);
-    }
-
-    public function test_demo_scenario_seeder_creates_approved_call_list_with_audit_logs(): void
-    {
-        $mr = User::where('email', 'mr@mersi.com')->first();
-        $this->assertNotNull($mr);
-
-        $approvedList = CallList::where('owner_id', $mr->id)
-            ->where('status', 'approved')
-            ->first();
-
-        $this->assertNotNull($approvedList);
-        $this->assertCount(4, $approvedList->doctors);
-        $this->assertGreaterThanOrEqual(3, $approvedList->approvalLogs->count());
     }
 }

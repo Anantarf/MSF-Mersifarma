@@ -55,18 +55,31 @@ class CallPlan extends Model
         return $this->hasOne(VisitSession::class, 'plan_id');
     }
 
+    public const STATUS_SCHEDULED = 'scheduled';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_EXPIRED = 'expired';
+
     public function isScheduled(): bool
     {
-        return $this->status === 'scheduled';
+        return $this->status === self::STATUS_SCHEDULED;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === self::STATUS_COMPLETED;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === 'cancelled';
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATUS_EXPIRED;
     }
 }

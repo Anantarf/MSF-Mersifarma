@@ -267,36 +267,24 @@
             outline-offset: 2px;
         }
 
-        /* Status Badges */
+        /* Status Badges - Mersifarma Enterprise Style */
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
             font-size: 0.75rem;
             font-weight: 600;
-            padding: 0.2rem 0.55rem;
+            padding: 0.18rem 0.55rem;
             border-radius: 4px;
             border: 1px solid transparent;
-            line-height: 1.2;
+            line-height: 1.25;
             white-space: nowrap;
-        }
-
-        .status-badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-            flex-shrink: 0;
+            letter-spacing: 0.01em;
         }
 
         .status-approved, .status-completed {
-            background: #ecfdf5;
-            color: #065f46;
-            border-color: #a7f3d0;
-        }
-        .status-approved::before, .status-completed::before {
-            background: #10b981;
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
         }
 
         .status-pending {
@@ -304,26 +292,23 @@
             color: #92400e;
             border-color: #fde68a;
         }
-        .status-pending::before {
-            background: #f59e0b;
+
+        .status-draft {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #e2e8f0;
         }
 
-        .status-draft, .status-scheduled {
-            background: #f1f5f9;
-            color: #334155;
-            border-color: #cbd5e1;
-        }
-        .status-draft::before, .status-scheduled::before {
-            background: #64748b;
+        .status-scheduled {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #bae6fd;
         }
 
         .status-rejected, .status-cancelled {
-            background: #fff1f2;
-            color: #9f1239;
-            border-color: #fecdd3;
-        }
-        .status-rejected::before, .status-cancelled::before {
-            background: #f43f5e;
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
         }
 
         /* Tabs */
@@ -959,14 +944,15 @@
             timeoutId = setTimeout(removeToast, duration);
         };
 
-        function escapeHtmlToast(str) {
+        window.escapeHtml = function(str) {
             return String(str || '')
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
-        }
+        };
+        const escapeHtmlToast = window.escapeHtml;
 
         // Global Table Skeleton Generator Helper
         window.renderTableSkeleton = function(rows = 3) {

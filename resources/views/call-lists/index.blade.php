@@ -1,75 +1,136 @@
 @extends('layouts.app')
 
-@section('title', 'Call List')
+@section('title', 'Target Dokter')
 
 @section('content')
 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-    <!-- Header Section -->
+    <!-- Page Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Target Dokter</h1>
-            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call List Bulanan : Perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
+            <p style="color: var(--text-muted); font-size: 0.8125rem; margin: 0;">Call List Bulanan</p>
         </div>
         <div>
             @if(auth()->user()->role === 'mr')
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-                + Buat Call List Baru
+                + Susun Target Dokter
             </button>
             @endif
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
+    <!-- Tabs Navigation (Khusus Manajer) -->
+    @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
     <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border);">
-        <button id="tabMyLists" class="tab-btn {{ auth()->user()->role === 'mr' ? 'active' : '' }}" onclick="switchTab('myLists')">
-            Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
-        </button>
-        @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
-        <button id="tabReview" class="tab-btn {{ auth()->user()->role !== 'mr' ? 'active' : '' }}" onclick="switchTab('review')">
+        <button id="tabReview" class="tab-btn active" onclick="switchTab('review')">
             Persetujuan Masuk (<span id="reviewCount" class="tabular-nums">0</span>)
         </button>
-        @endif
+        <button id="tabMyLists" class="tab-btn" onclick="switchTab('myLists')">
+            Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
+        </button>
     </div>
+    @endif
 
-    <!-- Alert Banner inside view -->
+    <!-- Alert Banner -->
     <div id="statusAlert" style="display: none;" class="alert"></div>
 
-    <!-- Container Tab 1: My Call Lists -->
-    <div id="myListsContainer" style="display: {{ auth()->user()->role === 'mr' ? 'flex' : 'none' }}; flex-direction: column; gap: 1rem;">
+    <!-- ================= TAB 1: TARGET SAYA (MR VIEW) ================= -->
+    <div id="myListsContainer" style="display: {{ auth()->user()->role === 'mr' ? 'flex' : 'none' }}; flex-direction: column; gap: 1.25rem;">
         <div id="loadingMyLists" style="padding: 0.25rem 0;"></div>
-        <div id="myListsTableWrap" class="table-responsive" style="display: none;">
-            <table class="enterprise-table">
-                <thead>
-                    <tr>
-                        <th>Periode</th>
-                        <th>Target Dokter</th>
-                        <th>Status</th>
-                        <th>Atasan Peninjau</th>
-                        <th style="text-align: right;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="myListsTableBody"></tbody>
-            </table>
+
+        <!-- Kartu Target Periode Berjalan / Utama -->
+        <div id="currentMonthSpotlight" style="display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); overflow: hidden;">
+            <!-- Header Kartu Target -->
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.25rem;">
+                        <span style="font-size: 0.725rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Target Periode</span>
+                        <div id="spotlightStatusBadge"></div>
+                    </div>
+                    <h2 id="spotlightPeriod" style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); margin: 0;">-</h2>
+                    <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Atasan Peninjau: <strong id="spotlightApprover" style="color: var(--secondary);">-</strong>
+                    </div>
+                </div>
+
+                <div id="spotlightActionBtns" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;"></div>
+            </div>
+
+            <!-- Pesan Alasan Revisi dari DM (Jika Ditolak) -->
+            <div id="spotlightRejectionBox" style="display: none; margin: 1.25rem 1.5rem 0 1.5rem; padding: 0.85rem 1.15rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.25rem;">
+                    Catatan Revisi dari Atasan:
+                </div>
+                <div id="spotlightRejectionReason" style="font-size: 0.875rem; color: #7f1d1d; font-style: italic; line-height: 1.4;">-</div>
+            </div>
+
+            <!-- Daftar Dokter Sasaran (Langsung tampil di dalam kartu) -->
+            <div style="padding: 1.25rem 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin: 0;">Daftar Dokter Sasaran</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            Total komitmen target: <strong id="spotlightDoctorCount" class="tabular-nums" style="color: var(--secondary);">0</strong> Dokter
+                        </div>
+                    </div>
+                    <div id="spotlightQuickAddBtnWrap"></div>
+                </div>
+
+                <!-- Tabel Dokter Sasaran -->
+                <div class="table-responsive" style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
+                    <table class="enterprise-table" style="margin: 0;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="width: 45px; text-align: center;">No</th>
+                                <th>Nama Dokter</th>
+                                <th>Spesialisasi</th>
+                                <th>Alamat / Faskes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="spotlightDoctorsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        <!-- Kartu Riwayat Periode Sebelumnya (Hanya tampil jika ada riwayat lampau) -->
+        <div id="myListsTableWrap" style="display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); overflow: hidden;">
+            <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: #ffffff;">
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin: 0;">Riwayat Periode Sebelumnya</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">Daftar target dokter dari bulan-bulan sebelumnya</p>
+            </div>
+            <div class="table-responsive" style="border: none; border-radius: 0; box-shadow: none;">
+                <table class="enterprise-table" style="margin: 0;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding-left: 1.25rem;">Periode</th>
+                            <th>Target Dokter</th>
+                            <th>Status</th>
+                            <th>Atasan Peninjau</th>
+                            <th style="text-align: right; padding-right: 1.25rem;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myListsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State Target -->
         <div id="emptyMyLists" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
-            <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Call List</h4>
-            @if(auth()->user()->role === 'mr')
+            <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Dokter</h4>
             <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
-                Susun perencanaan target dokter bulanan dan ajukan ke atasan langsung Anda untuk mendapatkan persetujuan operasional.
+                Mulai susun komitmen target dokter bulanan Anda dari Master Dokter untuk diajukan ke atasan langsung.
             </p>
-            <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Baru</button>
-            @else
-            <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 440px; margin: 0 auto;">
-                Belum ada target dokter pribadi yang tercatat.
-            </p>
+            @if(auth()->user()->role === 'mr')
+            <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Susun Target Dokter</button>
             @endif
         </div>
     </div>
 
-    <!-- Container Tab 2: Manager Review Queue -->
+    <!-- ================= TAB 2: PERSETUJUAN MASUK (MANAGER VIEW) ================= -->
     @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
     <div id="reviewContainer" style="display: {{ auth()->user()->role !== 'mr' ? 'flex' : 'none' }}; flex-direction: column; gap: 1rem;">
-        <!-- Widget Ringkasan Monitoring Wilayah (Read-Only) -->
+        <!-- Widget Ringkasan Monitoring Wilayah -->
         <div id="monitoringSummaryCard" style="display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.15rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
                 <div>
@@ -86,7 +147,7 @@
                 </div>
             </div>
 
-            <!-- Integrated Enterprise Metric Strip -->
+            <!-- Metric Strip -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); border: 1px solid var(--border); border-radius: 5px; background: #f8fafc; overflow: hidden; margin-bottom: 0.85rem;">
                 <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border);">
                     <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Tim Bawahan</div>
@@ -96,19 +157,19 @@
                     <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Target Dokter</div>
                     <div id="statTotalDoctors" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">0</div>
                 </div>
-                <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border); background: #ecfdf5;">
-                    <div style="font-size: 0.6875rem; color: #065f46; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Disetujui</div>
-                    <div id="statApproved" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #047857; margin-top: 0.15rem;">0</div>
+                <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border); background: #f0fdf4;">
+                    <div style="font-size: 0.6875rem; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Disetujui</div>
+                    <div id="statApproved" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #15803d; margin-top: 0.15rem;">0</div>
                 </div>
                 <div style="padding: 0.65rem 0.85rem; background: #fffbeb;">
-                    <div style="font-size: 0.6875rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Menunggu Persetujuan</div>
+                    <div style="font-size: 0.6875rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Menunggu Review</div>
                     <div id="statPending" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: #b45309; margin-top: 0.15rem;">0</div>
                 </div>
             </div>
 
-            <!-- Subordinates Progress Breakdown as a Clean List -->
+            <!-- Daftar Anggota Tim -->
             <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">Daftar Anggota Tim & Target:</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">Daftar Anggota Tim & Status:</div>
                 <div id="subordinatesListContainer" class="team-roster-list"></div>
             </div>
         </div>
@@ -138,76 +199,115 @@
     @endif
 </div>
 
-<!-- MODAL: Buat Call List Baru -->
-<div id="createModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="font-size: 1.15rem; font-weight: 700;">Buat Draft Call List Baru</h3>
-            <button type="button" class="close-btn" onclick="closeCreateModal()">&times;</button>
+<!-- ================= MODAL: PENYUSUNAN TARGET DOKTER (CREATE / EDIT) ================= -->
+<div id="targetModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 680px;">
+        <div class="target-detail-head">
+            <div>
+                <h3 id="targetModalTitle" style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin: 0;">Susun Target Dokter</h3>
+                <span id="targetModalSubtitle" style="font-size: 0.8rem; color: var(--text-muted);">Pilih dokter sasaran dari Master Customer List</span>
+            </div>
+            <button type="button" class="close-btn" onclick="closeTargetModal()">&times;</button>
         </div>
-        <div id="createModalError" style="display: none;" class="alert alert-danger"></div>
-        <form id="createCallListForm" onsubmit="handleCreateSubmit(event)">
+
+        <div id="targetModalError" style="display: none;" class="alert alert-danger"></div>
+
+        <form id="targetForm" onsubmit="handleTargetFormSubmit(event)">
+            <input type="hidden" id="editingCallListId" value="">
+
+            <!-- 1. Pilihan Periode Bulan -->
             <div style="margin-bottom: 1rem;">
-                <label for="periodMonthInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Periode Bulan (YYYY-MM)</label>
-                <input type="month" id="periodMonthInput" required
-                       style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem;">
-            </div>
-
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Pilih Dokter Target (Minimal 1):
+                <label for="periodMonthInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
+                    Periode Bulan:
                 </label>
-                <div class="modal-filter-wrap">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="doctorSearchInput" class="modal-filter-input" placeholder="Cari nama atau spesialisasi dokter..." oninput="filterDoctorPicker(this.value)">
+                <input type="month" id="periodMonthInput" required
+                       style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+            </div>
+
+            <!-- 2. Pencarian & Filter Dokter -->
+            <div style="margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary);">
+                        Pilih Dokter Target (Minimal 1 Dokter):
+                    </label>
+                    <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">
+                        <span id="selectedDoctorCount">0</span> Dokter Terpilih
+                    </span>
                 </div>
-                <div id="doctorPickerList" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; background: #fafafa;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">Memuat daftar dokter...</span>
+
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="doctorSearchInput" placeholder="Cari nama dokter, spesialisasi, atau rumah sakit..."
+                           oninput="onDoctorSearchInput(this.value)"
+                           style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;">
+                    <button type="button" id="btnFilterToggleSelected" class="btn btn-outline btn-sm" onclick="toggleShowOnlySelected()" style="white-space: nowrap; font-size: 0.8rem;">
+                        Tampilkan Terpilih
+                    </button>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline" onclick="closeCreateModal()">Batal</button>
-                <button type="submit" id="btnSubmitCreate" class="btn btn-primary">Simpan Draft</button>
+            <!-- 3. Daftar Dokter Lega & Interaktif -->
+            <div id="doctorPickerList" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; background: #f8fafc;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem;">Memuat daftar dokter...</span>
+            </div>
+
+            <!-- 4. Footer Modal -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                    Total: <strong id="footerCountText" class="tabular-nums" style="color: var(--secondary);">0</strong> dokter
+                </span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeTargetModal()">Batal</button>
+                    <button type="submit" id="btnSubmitDraft" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">
+                        Simpan Draft
+                    </button>
+                    <button type="button" id="btnSubmitAndSend" class="btn btn-primary" onclick="handleSaveAndSubmit()">
+                        Simpan & Ajukan ke DM
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
-<!-- MODAL: Detail & Approval Call List -->
+<!-- ================= MODAL: DETAIL CALL LIST ================= -->
 <div id="detailModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card" style="max-width: 600px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 id="detailTitle" style="font-size: 1.15rem; font-weight: 700;">Detail Call List</h3>
+    <div class="modal-card target-detail-modal">
+        <div class="target-detail-head">
+            <div>
+                <h3 id="detailTitle" class="target-detail-title">Detail Target Dokter</h3>
+                <span id="detailPeriodSubtitle" class="target-detail-subtitle">-</span>
+            </div>
             <button type="button" class="close-btn" onclick="closeDetailModal()">&times;</button>
         </div>
 
-        <div id="detailContent" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div id="detailContent" class="target-detail-content">
             <div style="text-align: center; padding: 2rem; color: var(--text-muted);">Memuat detail...</div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Penolakan (Reject Modal) -->
+<!-- ================= MODAL: TOLAK PENGAJUAN (REJECT MODAL) ================= -->
 <div id="rejectModal" class="modal-backdrop" style="display: none; z-index: 60;">
     <div class="modal-card" style="max-width: 440px;">
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--danger); margin-bottom: 0.75rem;">Tolak Pengajuan Call List</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-            Sesuai aturan bisnis, Call List yang ditolak akan dikembalikan ke status <strong>Draft</strong> agar bawahan dapat melakukan revisi dan mengajukan ulang.
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--danger); margin-bottom: 0.5rem;">Tolak Target Dokter</h3>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
+            Target akan dikembalikan ke status <strong>Perlu Revisi (Draft)</strong> agar bawahan dapat menyesuaikan daftar dokter sasaran.
         </p>
         <div id="rejectModalError" style="display: none;" class="alert alert-danger"></div>
         <form onsubmit="handleRejectSubmit(event)">
             <input type="hidden" id="rejectCallListId">
             <div style="margin-bottom: 1rem;">
-                <label for="rejectReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
+                <label for="rejectReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
                     Alasan Penolakan (Wajib Diisi):
                 </label>
-                <textarea id="rejectReasonInput" rows="3" required placeholder="Contoh: Jumlah dokter spesialis anak belum mencukupi target wilayah."
-                          style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></textarea>
+                <textarea id="rejectReasonInput" rows="3" required placeholder="Contoh: Tambahkan 3 dokter spesialis anak di RSUD wilayah distrik."
+                          style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.875rem;"></textarea>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                 <button type="button" class="btn btn-outline" onclick="closeRejectModal()">Batal</button>
-                <button type="submit" id="btnConfirmReject" class="btn" style="background: var(--danger); color: white;">Tolak & Kembalikan</button>
+                <button type="submit" id="btnConfirmReject" class="btn" style="background: var(--danger); color: white; font-weight: 600;">
+                    Tolak & Kembalikan
+                </button>
             </div>
         </form>
     </div>
@@ -215,6 +315,91 @@
 
 @push('styles')
 <style>
+    .target-detail-modal {
+        max-width: 640px;
+        padding: 1.4rem 1.6rem;
+    }
+    .target-detail-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.15rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .target-detail-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--secondary);
+        margin: 0 0 0.2rem;
+    }
+    .target-detail-subtitle {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+    }
+    .target-detail-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+    }
+    .target-detail-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem 1rem;
+        font-size: 0.84rem;
+        color: var(--text-muted);
+    }
+    .target-detail-meta strong {
+        display: block;
+        color: var(--secondary);
+        font-size: 0.9rem;
+        margin-top: 0.15rem;
+    }
+    .target-detail-section-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--secondary);
+        margin: 0 0 0.5rem;
+    }
+    .target-detail-list {
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--border);
+    }
+    .target-detail-doctor {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .target-detail-doctor strong {
+        display: block;
+        color: var(--secondary);
+        font-size: 0.92rem;
+        margin-bottom: 0.15rem;
+    }
+    .target-detail-doctor span,
+    .target-detail-history {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+    }
+    .target-detail-history {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+    .target-detail-history-row strong {
+        color: var(--secondary);
+    }
+    .target-detail-actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 0.25rem;
+    }
+    @media (max-width: 640px) {
+        .target-detail-meta { grid-template-columns: 1fr; }
+        .target-detail-modal { padding: 1.15rem; }
+    }
     .tab-btn {
         padding: 0.65rem 1.25rem;
         border: none;
@@ -232,41 +417,33 @@
         color: var(--primary);
         border-bottom-color: var(--primary);
     }
-    .call-card {
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        padding: 1.25rem;
+    .doctor-selectable-row {
         display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 0.85rem;
-        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), border-color 0.2s ease;
-    }
-    .call-card:hover {
-        transform: translateY(-2px);
-        border-color: #cbd5e1;
-        box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
-    }
-    .status-badge {
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        font-variant-numeric: tabular-nums;
-        border: 1px solid transparent;
+        gap: 0.75rem;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.65rem 0.85rem;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        user-select: none;
     }
-    .status-draft { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
-    .status-pending { background: #fffbeb; color: #92400e; border-color: #fde68a; }
-    .status-approved { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-    .status-rejected { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-
+    .doctor-selectable-row:hover {
+        border-color: #94a3b8;
+        background: #f1f5f9;
+    }
+    .doctor-selectable-row.selected {
+        border-color: var(--primary);
+        background: #f0fdf4;
+    }
+    .doctor-selectable-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--primary);
+        flex-shrink: 0;
+    }
     .modal-backdrop {
         position: fixed;
         top: 0;
@@ -299,61 +476,62 @@
         color: var(--text-muted);
         line-height: 1;
     }
+    .team-roster-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .team-roster-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .role-pill {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+        border-radius: 3px;
+        letter-spacing: 0.04em;
+    }
+    .role-mr { background: #e0f2fe; color: #0369a1; }
+    .role-dm { background: #fef3c7; color: #92400e; }
+    .role-rsm { background: #f3e8ff; color: #7e22ce; }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-    let currentUserId = {{ auth()->id() }};
-    let currentUserRole = "{{ auth()->user()->role }}";
+    const currentUserRole = "{{ auth()->user()->role }}";
     let allDoctors = [];
     let myCallLists = [];
     let reviewCallLists = [];
-
-    function escapeHtml(value) {
-        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        }[char]));
-    }
+    let currentSelectedDoctorIds = new Set();
+    let isFilterOnlySelected = false;
 
     document.addEventListener('DOMContentLoaded', () => {
         loadDoctors();
-        loadMyCallLists();
-        if (['dm', 'rsm', 'mm'].includes(currentUserRole)) {
+        if (currentUserRole === 'mr') {
+            loadMyCallLists();
+        } else {
             loadReviewCallLists();
-            loadManagerSummary();
-            if (!sessionStorage.getItem('call_list_tab_manual')) {
-                switchTab('review', false);
-            }
+            loadMyCallLists();
         }
-        // Default month: bulan depan
-        const now = new Date();
-        now.setMonth(now.getMonth() + 1);
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const periodEl = document.getElementById('periodMonthInput');
-        if (periodEl) {
-            periodEl.value = `${yyyy}-${mm}`;
-        }
-    });    document.addEventListener('keydown', (e) => {
+    });
+
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            closeCreateModal();
+            closeTargetModal();
             closeDetailModal();
             closeRejectModal();
         }
     });
 
-    function callListStatusClass(status) {
-        if (status === 'pending_approval') {
-            return 'pending';
-        }
-
-        return ['draft', 'approved', 'rejected'].includes(status) ? status : 'draft';
-    }
     function showAlert(message, type = 'success') {
         window.showToast(message, type);
     }
@@ -362,22 +540,20 @@
         if (isManual) {
             sessionStorage.setItem('call_list_tab_manual', '1');
         }
-        document.getElementById('tabMyLists').classList.remove('active');
-        if (document.getElementById('tabReview')) {
-            document.getElementById('tabReview').classList.remove('active');
-        }
+        if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.remove('active');
+        if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.remove('active');
 
         if (tab === 'myLists') {
-            document.getElementById('tabMyLists').classList.add('active');
+            if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.add('active');
             document.getElementById('myListsContainer').style.display = 'flex';
-            if (document.getElementById('reviewContainer')) {
-                document.getElementById('reviewContainer').style.display = 'none';
-            }
+            if (document.getElementById('reviewContainer')) document.getElementById('reviewContainer').style.display = 'none';
         } else {
-            document.getElementById('tabReview').classList.add('active');
+            if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.add('active');
             document.getElementById('myListsContainer').style.display = 'none';
-            document.getElementById('reviewContainer').style.display = 'flex';
-            loadManagerSummary();
+            if (document.getElementById('reviewContainer')) {
+                document.getElementById('reviewContainer').style.display = 'flex';
+                loadManagerSummary();
+            }
         }
     }
 
@@ -387,37 +563,19 @@
             const data = await res.json();
             if (data.success) {
                 allDoctors = data.data;
-                renderDoctorPicker();
             }
         } catch (err) {
-            console.error('Gagal mengambil daftar dokter', err);
+            console.error('Gagal memuat dokter', err);
         }
     }
 
-    function renderDoctorPicker(selectedIds = []) {
-        const container = document.getElementById('doctorPickerList');
-        if (!allDoctors.length) {
-            container.innerHTML = '<span style="font-size:0.85rem; color:red;">Gagal memuat daftar dokter.</span>';
-            return;
-        }
-        container.innerHTML = allDoctors.map(doc => `
-            <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; background: white; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
-                <input type="checkbox" name="doctor_ids" value="${doc.id}" ${selectedIds.includes(doc.id) ? 'checked' : ''} style="margin-top: 0.2rem;">
-                <div>
-                    <strong>${escapeHtml(doc.name)}</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(${escapeHtml(doc.specialization || 'Umum')})</span>
-                    <div style="font-size: 0.75rem; color: #64748b;">${escapeHtml(doc.address || '-')}</div>
-                </div>
-            </label>
-        `).join('');
-    }
-
-    function filterDoctorPicker(keyword) {
-        const term = String(keyword || '').toLowerCase().trim();
-        const labels = document.querySelectorAll('#doctorPickerList label');
-        labels.forEach(label => {
-            const text = label.innerText.toLowerCase();
-            label.style.display = text.includes(term) ? 'flex' : 'none';
-        });
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     async function loadMyCallLists() {
@@ -429,15 +587,16 @@
         try {
             const res = await window.apiFetch('/api/call-lists');
             const result = await res.json();
-            document.getElementById('loadingMyLists').style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
 
             if (result.success) {
                 myCallLists = result.data;
-                document.getElementById('myListCount').innerText = myCallLists.length;
-                renderMyListsGrid();
+                const countEl = document.getElementById('myListCount');
+                if (countEl) countEl.innerText = myCallLists.length;
+                renderMyListsView();
             }
         } catch (err) {
-            document.getElementById('loadingMyLists').style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
             console.error(err);
         }
     }
@@ -452,62 +611,505 @@
             'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         ];
-        const monthName = monthNames[monthNum - 1] || parts[1];
-        return `${monthName} ${year}`;
+        return `${monthNames[monthNum - 1] || parts[1]} ${year}`;
     }
 
-    function renderMyListsGrid() {
+    function renderMyListsView() {
+        const spotlight = document.getElementById('currentMonthSpotlight');
         const tableWrap = document.getElementById('myListsTableWrap');
         const tbody = document.getElementById('myListsTableBody');
         const empty = document.getElementById('emptyMyLists');
+
         if (!myCallLists.length) {
-            if (tbody) tbody.innerHTML = '';
+            if (spotlight) spotlight.style.display = 'none';
             if (tableWrap) tableWrap.style.display = 'none';
-            empty.style.display = 'block';
+            if (empty) empty.style.display = 'block';
             return;
         }
-        empty.style.display = 'none';
-        if (tableWrap) tableWrap.style.display = 'block';
-        tbody.innerHTML = myCallLists.map(cl => {
-            let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
-            let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Persetujuan' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
-            if (cl.status === 'draft' && cl.is_rejected_revision) {
-                statusClass = 'status-rejected';
-                statusLabel = 'Perlu Revisi (Ditolak)';
+
+        if (empty) empty.style.display = 'none';
+
+        // 1. Render Kartu Target Periode Berjalan / Utama
+        const activeList = myCallLists[0];
+        if (spotlight && activeList) {
+            spotlight.style.display = 'block';
+            document.getElementById('spotlightPeriod').innerText = formatPeriodIndonesian(activeList.period_month);
+            document.getElementById('spotlightDoctorCount').innerText = activeList.doctor_count;
+            document.getElementById('spotlightApprover').innerText = activeList.assigned_approver_name || 'Atasan Langsung';
+
+            const badgeEl = document.getElementById('spotlightStatusBadge');
+            const btnsEl = document.getElementById('spotlightActionBtns');
+            const rejBox = document.getElementById('spotlightRejectionBox');
+            const quickAddWrap = document.getElementById('spotlightQuickAddBtnWrap');
+            const doctorsTableBody = document.getElementById('spotlightDoctorsTableBody');
+
+            let badgeHtml = '';
+            let btnsHtml = '';
+
+            if (activeList.status === 'approved') {
+                badgeHtml = `<span class="status-badge status-approved" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">Disetujui</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" onclick="openDetailModal(${activeList.id})">Lihat Histori</button>
+                    <a href="/call-plans" class="btn btn-primary btn-sm" style="text-decoration: none;">+ Jadwalkan Kunjungan</a>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) quickAddWrap.innerHTML = '';
+            } else if (activeList.status === 'pending_approval') {
+                badgeHtml = `<span class="status-badge status-pending" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">Menunggu Review</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" onclick="openDetailModal(${activeList.id})">Detail Pengajuan</button>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) quickAddWrap.innerHTML = '';
+            } else if (activeList.status === 'draft' && activeList.is_rejected_revision) {
+                badgeHtml = `<span class="status-badge status-rejected" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">Perlu Revisi</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" onclick="openDetailModal(${activeList.id})">Riwayat</button>
+                    <button class="btn btn-primary btn-sm" onclick="submitCallList(${activeList.id})">Ajukan Ulang ke DM</button>
+                `;
+                if (rejBox) {
+                    rejBox.style.display = 'block';
+                    document.getElementById('spotlightRejectionReason').innerText = activeList.latest_rejection_reason || 'Perlu penyesuaian daftar dokter target.';
+                }
+                if (quickAddWrap) {
+                    quickAddWrap.innerHTML = `
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openEditModal(${activeList.id})">
+                            + Kelola Dokter Sasaran
+                        </button>
+                    `;
+                }
+            } else {
+                badgeHtml = `<span class="status-badge status-draft" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">Draft</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" onclick="openDetailModal(${activeList.id})">Detail</button>
+                    <button class="btn btn-primary btn-sm" onclick="submitCallList(${activeList.id})">Ajukan ke DM</button>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) {
+                    quickAddWrap.innerHTML = `
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openEditModal(${activeList.id})">
+                            + Kelola Dokter Sasaran
+                        </button>
+                    `;
+                }
             }
+
+            badgeEl.innerHTML = badgeHtml;
+            btnsEl.innerHTML = btnsHtml;
+
+            // Render Daftar Dokter Sasaran pada Kartu
+            const docs = activeList.doctors || [];
+            if (doctorsTableBody) {
+                if (docs.length === 0) {
+                    doctorsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.875rem;">
+                                Belum ada dokter yang ditargetkan untuk periode ini.
+                                ${activeList.status === 'draft' ? `<div style="margin-top: 0.75rem;"><button type="button" class="btn btn-primary btn-sm" onclick="openEditModal(${activeList.id})">+ Pilih Dokter Sasaran</button></div>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    doctorsTableBody.innerHTML = docs.map((doc, idx) => `
+                        <tr>
+                            <td style="text-align: center; color: var(--text-muted); font-weight: 600; font-size: 0.8125rem;">${idx + 1}</td>
+                            <td>
+                                <strong style="color: var(--secondary); font-size: 0.9rem;">${escapeHtml(doc.name)}</strong>
+                            </td>
+                            <td>
+                                <span class="badge" style="background: #e2e8f0; color: #334155; font-size: 0.75rem; font-weight: 500; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                    ${escapeHtml(doc.specialization || 'Umum')}
+                                </span>
+                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.8125rem;">
+                                ${escapeHtml(doc.address || '-')}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        // 2. Render Tabel Riwayat Periode Sebelumnya (Hanya jika ada periode selain yang aktif)
+        if (myCallLists.length > 1) {
+            if (tableWrap) tableWrap.style.display = 'block';
+            if (tbody) {
+                const previousLists = myCallLists.slice(1);
+                tbody.innerHTML = previousLists.map(cl => {
+                    let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
+                    let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+                    if (cl.status === 'draft' && cl.is_rejected_revision) {
+                        statusClass = 'status-rejected';
+                        statusLabel = 'Perlu Revisi';
+                    }
+
+                    return `
+                        <tr>
+                            <td style="white-space: nowrap; padding-left: 1.25rem;">
+                                <strong style="color: var(--secondary); font-size: 0.9rem;">${formatPeriodIndonesian(cl.period_month)}</strong>
+                            </td>
+                            <td style="white-space: nowrap;">
+                                <strong style="color: var(--secondary); font-size: 0.875rem;">${cl.doctor_count} Dokter</strong>
+                            </td>
+                            <td>
+                                <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                            </td>
+                            <td style="white-space: nowrap; color: var(--text-main); font-size: 0.875rem;">
+                                <span>${escapeHtml(cl.assigned_approver_name || '-')}</span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap; padding-right: 1.25rem;">
+                                <div style="display: inline-flex; gap: 0.35rem;">
+                                    <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Detail</button>
+                                    ${cl.status === 'draft' ? `
+                                        <button class="btn btn-outline btn-sm" onclick="openEditModal(${cl.id})">Ubah</button>
+                                        <button class="btn btn-primary btn-sm" onclick="submitCallList(${cl.id})">Ajukan</button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        } else {
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (tbody) tbody.innerHTML = '';
+        }
+    }
+
+    // Modal Builder: Pemilihan Dokter yang Lega & Nyaman
+    async function openCreateModal() {
+        document.getElementById('editingCallListId').value = '';
+        document.getElementById('targetModalTitle').innerText = 'Susun Target Dokter Baru';
+        document.getElementById('targetModalSubtitle').innerText = 'Pilih dokter sasaran dari Master Customer List';
+
+        const periodInput = document.getElementById('periodMonthInput');
+        periodInput.disabled = false;
+
+        // Default ke bulan berjalan atau bulan depan
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        periodInput.value = `${yyyy}-${mm}`;
+
+        currentSelectedDoctorIds = new Set();
+        isFilterOnlySelected = false;
+        document.getElementById('doctorSearchInput').value = '';
+        document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+
+        const errEl = document.getElementById('targetModalError');
+        if (errEl) errEl.style.display = 'none';
+
+        if (!allDoctors.length) {
+            await loadDoctors();
+        }
+
+        renderDoctorPickerList();
+        updateSelectedCounter();
+        document.getElementById('targetModal').style.display = 'flex';
+    }
+
+    async function openEditModal(callListId) {
+        document.getElementById('editingCallListId').value = callListId;
+        document.getElementById('targetModalTitle').innerText = 'Ubah Target Dokter';
+        document.getElementById('targetModalSubtitle').innerText = 'Perbarui daftar dokter sasaran untuk periode ini';
+
+        const errEl = document.getElementById('targetModalError');
+        if (errEl) errEl.style.display = 'none';
+
+        if (!allDoctors.length) {
+            await loadDoctors();
+        }
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${callListId}`);
+            const result = await res.json();
+            if (result.success) {
+                const cl = result.data;
+                const periodInput = document.getElementById('periodMonthInput');
+                periodInput.value = cl.period_month;
+                periodInput.disabled = true; // Periode tidak boleh diubah saat edit
+
+                currentSelectedDoctorIds = new Set(cl.doctors.map(d => d.id));
+                isFilterOnlySelected = false;
+                document.getElementById('doctorSearchInput').value = '';
+                document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+
+                renderDoctorPickerList();
+                updateSelectedCounter();
+                document.getElementById('targetModal').style.display = 'flex';
+            }
+        } catch (err) {
+            showAlert('Gagal memuat data target untuk diedit', 'danger');
+        }
+    }
+
+    function closeTargetModal() {
+        document.getElementById('targetModal').style.display = 'none';
+    }
+
+    function renderDoctorPickerList() {
+        const container = document.getElementById('doctorPickerList');
+        const searchTerm = (document.getElementById('doctorSearchInput').value || '').toLowerCase().trim();
+
+        if (!allDoctors.length) {
+            container.innerHTML = '<span style="font-size:0.85rem; color: var(--text-muted); padding: 0.5rem;">Memuat dokter...</span>';
+            return;
+        }
+
+        let filtered = allDoctors.filter(doc => {
+            const matchesSearch = doc.name.toLowerCase().includes(searchTerm) ||
+                (doc.specialization || '').toLowerCase().includes(searchTerm) ||
+                (doc.address || '').toLowerCase().includes(searchTerm);
+
+            if (isFilterOnlySelected) {
+                return matchesSearch && currentSelectedDoctorIds.has(doc.id);
+            }
+            return matchesSearch;
+        });
+
+        if (!filtered.length) {
+            container.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Tidak ada dokter yang cocok dengan pencarian.</div>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(doc => {
+            const isChecked = currentSelectedDoctorIds.has(doc.id);
             return `
-                <tr>
-                    <td style="white-space: nowrap;">
-                        <strong style="color: var(--secondary); font-size: 0.95rem;">${formatPeriodIndonesian(cl.period_month)}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(cl.period_month)}</div>
-                    </td>
-                    <td style="white-space: nowrap;">
-                        <strong style="color: var(--text-main);">${cl.doctor_count} Target Dokter</strong>
-                    </td>
-                    <td>
-                        <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-                        ${cl.status === 'draft' && cl.is_rejected_revision && cl.latest_rejection_reason ? `
-                            <div style="font-size: 0.775rem; color: var(--danger); background: #fff1f2; border: 1px solid #fecdd3; border-radius: 4px; padding: 0.35rem 0.55rem; margin-top: 0.35rem; line-height: 1.35;">
-                                <strong>Catatan Revisi:</strong> "${escapeHtml(cl.latest_rejection_reason)}"
-                            </div>
-                        ` : ''}
-                    </td>
-                    <td style="white-space: nowrap;">
-                        <span>${escapeHtml(cl.assigned_approver_name || '-')}</span>
-                    </td>
-                    <td style="text-align: right; white-space: nowrap;">
-                        <div style="display: inline-flex; gap: 0.35rem;">
-                            <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Detail</button>
-                            ${cl.status === 'draft' ? `
-                                <button class="btn btn-primary btn-sm" onclick="submitCallList(${cl.id})">Ajukan</button>
-                            ` : ''}
+                <div class="doctor-selectable-row ${isChecked ? 'selected' : ''}" onclick="toggleDoctorSelection(${doc.id}, event)">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleDoctorSelection(${doc.id}, event)">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                            <strong style="color: var(--secondary); font-size: 0.9rem;">${escapeHtml(doc.name)}</strong>
+                            <span style="font-size: 0.725rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 3px; background: #e2e8f0; color: #334155;">
+                                ${escapeHtml(doc.specialization || 'Umum')}
+                            </span>
                         </div>
-                    </td>
-                </tr>
+                        <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${escapeHtml(doc.address || '-')}
+                        </div>
+                    </div>
+                </div>
             `;
         }).join('');
     }
 
+    function toggleDoctorSelection(doctorId, event) {
+        if (currentSelectedDoctorIds.has(doctorId)) {
+            currentSelectedDoctorIds.delete(doctorId);
+        } else {
+            currentSelectedDoctorIds.add(doctorId);
+        }
+        updateSelectedCounter();
+        renderDoctorPickerList();
+    }
+
+    function updateSelectedCounter() {
+        const count = currentSelectedDoctorIds.size;
+        document.getElementById('selectedDoctorCount').innerText = count;
+        document.getElementById('footerCountText').innerText = count;
+    }
+
+    function onDoctorSearchInput(val) {
+        renderDoctorPickerList();
+    }
+
+    function toggleShowOnlySelected() {
+        isFilterOnlySelected = !isFilterOnlySelected;
+        document.getElementById('btnFilterToggleSelected').innerText = isFilterOnlySelected ? 'Tampilkan Semua' : 'Tampilkan Terpilih';
+        renderDoctorPickerList();
+    }
+
+    async function handleTargetFormSubmit(e) {
+        e.preventDefault();
+        await saveCallList(false);
+    }
+
+    async function handleSaveAndSubmit() {
+        await saveCallList(true);
+    }
+
+    async function saveCallList(autoSubmit = false) {
+        const errEl = document.getElementById('targetModalError');
+        errEl.style.display = 'none';
+
+        const editingId = document.getElementById('editingCallListId').value;
+        const period = document.getElementById('periodMonthInput').value;
+        const selectedDoctors = Array.from(currentSelectedDoctorIds);
+
+        if (!selectedDoctors.length) {
+            errEl.innerText = 'Pilih minimal 1 target dokter.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        const btnDraft = document.getElementById('btnSubmitDraft');
+        const btnSend = document.getElementById('btnSubmitAndSend');
+        btnDraft.disabled = true;
+        btnSend.disabled = true;
+
+        try {
+            let res, data;
+            if (editingId) {
+                // Update draft yang sudah ada
+                res = await window.apiFetch(`/api/call-lists/${editingId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ doctor_ids: selectedDoctors })
+                });
+                data = await res.json();
+            } else {
+                // Buat draft baru
+                res = await window.apiFetch('/api/call-lists', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        period_month: period,
+                        doctor_ids: selectedDoctors
+                    })
+                });
+                data = await res.json();
+            }
+
+            if (!data.success) {
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                errEl.innerText = data.message || 'Gagal menyimpan target dokter.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const savedId = editingId || data.data.id;
+
+            if (autoSubmit) {
+                const subRes = await window.apiFetch(`/api/call-lists/${savedId}/submit`, { method: 'POST' });
+                const subData = await subRes.json();
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                closeTargetModal();
+                showAlert('Target dokter berhasil disimpan dan diajukan ke atasan!');
+                loadMyCallLists();
+            } else {
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                closeTargetModal();
+                showAlert('Draft target dokter berhasil disimpan!');
+                loadMyCallLists();
+            }
+        } catch (err) {
+            btnDraft.disabled = false;
+            btnSend.disabled = false;
+            errEl.innerText = 'Terjadi kesalahan jaringan atau server.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    async function submitCallList(id) {
+        if (!confirm('Ajukan Target Dokter ini ke atasan langsung?')) return;
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}/submit`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Target dokter berhasil diajukan untuk persetujuan.');
+                loadMyCallLists();
+                if (['dm', 'rsm', 'mm'].includes(currentUserRole)) loadReviewCallLists();
+            } else {
+                showAlert(data.message || 'Gagal mengajukan target dokter.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
+        }
+    }
+
+    function formatApprovalEvent(event) {
+        const labels = {
+            created_draft: 'Draft dibuat',
+            submitted: 'Diajukan',
+            approved: 'Disetujui',
+            rejected: 'Ditolak',
+            revised: 'Direvisi',
+        };
+
+        return labels[event] || String(event || '-').replaceAll('_', ' ');
+    }
+
+    async function openDetailModal(id) {
+        document.getElementById('detailContent').innerHTML = '<div style="padding: 1rem 0; color: var(--text-muted);">Memuat detail...</div>';
+        document.getElementById('detailModal').style.display = 'flex';
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}`);
+            const result = await res.json();
+            if (result.success) {
+                const cl = result.data;
+                document.getElementById('detailPeriodSubtitle').innerText = formatPeriodIndonesian(cl.period_month);
+
+                const statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
+                const statusLabel = cl.status === 'pending_approval' ? 'Menunggu review' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+                const doctorCount = cl.doctors.length;
+
+                const historyHtml = cl.approval_history.length
+                    ? cl.approval_history.map(h => `
+                        <div class="target-detail-history-row">
+                            <strong>${escapeHtml(formatApprovalEvent(h.event))}</strong>
+                            <span>oleh ${escapeHtml(h.actor_name || 'Sistem')} pada ${new Date(h.created_at).toLocaleString('id-ID')}</span>
+                            ${h.reason ? `<div>${escapeHtml(h.reason)}</div>` : ''}
+                        </div>
+                    `).join('')
+                    : '<div class="target-detail-history-row">Belum ada riwayat.</div>';
+
+                const html = `
+                    <div class="target-detail-meta">
+                        <div>
+                            Status
+                            <strong><span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></strong>
+                        </div>
+                        <div>
+                            Peninjau
+                            <strong>${escapeHtml(cl.assigned_approver ? cl.assigned_approver.name : '-')}</strong>
+                        </div>
+                        <div>
+                            Pengaju
+                            <strong>${escapeHtml(cl.owner ? cl.owner.name : '-')}</strong>
+                        </div>
+                        <div>
+                            Jumlah dokter
+                            <strong>${doctorCount} dokter</strong>
+                        </div>
+                    </div>
+
+                    <section>
+                        <h4 class="target-detail-section-title">Daftar dokter</h4>
+                        <div class="target-detail-list">
+                            ${cl.doctors.map(d => `
+                                <div class="target-detail-doctor">
+                                    <strong>${escapeHtml(d.name)}</strong>
+                                    <span>${escapeHtml(d.specialization || 'Umum')} - ${escapeHtml(d.address || '-')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+
+                    <section>
+                        <h4 class="target-detail-section-title">Riwayat</h4>
+                        <div class="target-detail-history">
+                            ${historyHtml}
+                        </div>
+                    </section>
+
+                    <div class="target-detail-actions">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="closeDetailModal()">Tutup</button>
+                    </div>
+                `;
+                document.getElementById('detailContent').innerHTML = html;
+            }
+        } catch (err) {
+            document.getElementById('detailContent').innerHTML = '<div style="color: var(--danger); padding: 1rem 0;">Gagal memuat detail.</div>';
+        }
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // Manager Actions
     async function loadReviewCallLists() {
         const loadingEl = document.getElementById('loadingReview');
         if (!loadingEl) return;
@@ -516,18 +1118,16 @@
         try {
             const res = await window.apiFetch('/api/call-lists?mode=review');
             const result = await res.json();
-            document.getElementById('loadingReview').style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
 
             if (result.success) {
                 reviewCallLists = result.data;
-                document.getElementById('reviewCount').innerText = reviewCallLists.length;
+                const countEl = document.getElementById('reviewCount');
+                if (countEl) countEl.innerText = reviewCallLists.length;
                 renderReviewGrid();
-                if (['dm', 'rsm', 'mm'].includes(currentUserRole) && reviewCallLists.length > 0 && !sessionStorage.getItem('call_list_tab_manual')) {
-                    switchTab('review', false);
-                }
             }
         } catch (err) {
-            document.getElementById('loadingReview').style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
             console.error(err);
         }
     }
@@ -539,30 +1139,29 @@
         if (!reviewCallLists.length) {
             if (tbody) tbody.innerHTML = '';
             if (tableWrap) tableWrap.style.display = 'none';
-            empty.style.display = 'block';
+            if (empty) empty.style.display = 'block';
             return;
         }
-        empty.style.display = 'none';
+        if (empty) empty.style.display = 'none';
         if (tableWrap) tableWrap.style.display = 'block';
         tbody.innerHTML = reviewCallLists.map(cl => `
             <tr>
                 <td style="white-space: nowrap;">
                     <strong style="color: var(--secondary); font-size: 0.95rem;">${formatPeriodIndonesian(cl.period_month)}</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(cl.period_month)}</div>
                 </td>
                 <td style="white-space: nowrap;">
-                    <strong style="color: var(--text-main);">${escapeHtml(cl.owner_name)}</strong>
-                </td>
-                <td style="white-space: nowrap;">
-                    <strong>${cl.doctor_count} Target Dokter</strong>
+                    <strong style="color: var(--secondary);">${escapeHtml(cl.owner_name || '-')}</strong>
                 </td>
                 <td>
-                    <span class="status-badge status-pending">Menunggu Persetujuan</span>
+                    <strong style="color: var(--secondary);">${cl.doctor_count} Dokter</strong>
+                </td>
+                <td>
+                    <span class="status-badge status-pending">Menunggu Review</span>
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
                     <div style="display: inline-flex; gap: 0.35rem;">
-                        <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Periksa</button>
-                        <button class="btn btn-primary btn-sm" style="background: var(--success); border-color: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
+                        <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Detail</button>
+                        <button class="btn btn-primary btn-sm" onclick="approveCallList(${cl.id})">Setujui</button>
                         <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3;" onclick="openRejectModal(${cl.id})">Tolak</button>
                     </div>
                 </td>
@@ -570,25 +1169,91 @@
         `).join('');
     }
 
-    async function loadManagerSummary() {
-        const summaryCard = document.getElementById('monitoringSummaryCard');
-        if (!summaryCard) return;
+    async function approveCallList(id) {
+        if (!confirm('Setujui Target Dokter ini?')) return;
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'approved', reason: 'Disetujui' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Target dokter berhasil disetujui!');
+                loadReviewCallLists();
+                loadManagerSummary();
+            } else {
+                showAlert(data.message || 'Gagal menyetujui target dokter.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Terjadi kesalahan jaringan.', 'danger');
+        }
+    }
 
-        let month = document.getElementById('summaryMonthSelect')?.value;
-        let url = '/api/call-lists/summary';
-        if (month) {
-            url += `?period_month=${encodeURIComponent(month)}`;
+    function openRejectModal(id) {
+        document.getElementById('rejectCallListId').value = id;
+        document.getElementById('rejectReasonInput').value = '';
+        const errEl = document.getElementById('rejectModalError');
+        if (errEl) errEl.style.display = 'none';
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+
+    async function handleRejectSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('rejectCallListId').value;
+        const reason = document.getElementById('rejectReasonInput').value.trim();
+        const errEl = document.getElementById('rejectModalError');
+
+        if (!reason) {
+            errEl.innerText = 'Alasan penolakan wajib diisi.';
+            errEl.style.display = 'block';
+            return;
         }
 
         try {
-            const res = await window.apiFetch(url);
+            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'rejected', reason: reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeRejectModal();
+                showAlert('Target dokter ditolak dan dikembalikan untuk direvisi.');
+                loadReviewCallLists();
+                loadManagerSummary();
+            } else {
+                errEl.innerText = data.message || 'Gagal menolak target.';
+                errEl.style.display = 'block';
+            }
+        } catch (err) {
+            errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    async function loadManagerSummary() {
+        const monthInput = document.getElementById('summaryMonthSelect');
+        const card = document.getElementById('monitoringSummaryCard');
+        if (!card) return;
+
+        let selectedMonth = monthInput.value;
+        if (!selectedMonth) {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            selectedMonth = `${yyyy}-${mm}`;
+            monthInput.value = selectedMonth;
+        }
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/summary?period_month=${selectedMonth}`);
             const result = await res.json();
-            if (result.success && result.data) {
+            if (result.success) {
+                card.style.display = 'block';
                 const data = result.data;
-                summaryCard.style.display = 'block';
-                if (!month && data.period_month) {
-                    document.getElementById('summaryMonthSelect').value = data.period_month.substring(0, 7);
-                }
                 document.getElementById('statTotalSubordinates').innerText = data.total_subordinates;
                 document.getElementById('statTotalDoctors').innerText = data.total_target_doctors;
                 document.getElementById('statApproved').innerText = `${data.approved_count} / ${data.total_subordinates}`;
@@ -605,14 +1270,14 @@
                             statusText = 'Disetujui';
                         } else if (sub.status === 'pending_approval') {
                             statusTheme = 'status-pending';
-                            statusText = 'Menunggu Persetujuan';
+                            statusText = 'Menunggu Review';
                         } else if (sub.status === 'draft') {
                             statusTheme = 'status-draft';
                             statusText = 'Perlu Revisi';
                         }
 
                         const actionBtn = sub.call_list_id ? `
-                            <button type="button" class="btn btn-outline btn-sm" onclick="viewListDetail(${sub.call_list_id})" style="padding: 0.25rem 0.65rem; font-size: 0.775rem;">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openDetailModal(${sub.call_list_id})" style="padding: 0.25rem 0.65rem; font-size: 0.775rem;">
                                 Lihat Target
                             </button>
                         ` : `
@@ -621,264 +1286,27 @@
 
                         return `
                             <div class="team-roster-item">
-                                <div class="team-roster-user">
-                                    <div class="team-roster-name-wrap">
-                                        <strong class="team-roster-name">${escapeHtml(sub.name)}</strong>
-                                        <span class="role-pill role-${sub.role}">${sub.role.toUpperCase()}</span>
-                                    </div>
-                                    <span class="team-roster-subtitle">${escapeHtml(sub.role_subtitle || '')}</span>
+                                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                    <strong style="font-size: 0.875rem; color: var(--secondary);">${escapeHtml(sub.name)}</strong>
+                                    <span class="role-pill role-${sub.role}">${sub.role.toUpperCase()}</span>
                                 </div>
-                                <div class="team-roster-meta">
-                                    <div class="team-roster-count">
-                                        <span class="team-roster-num tabular-nums">${sub.doctor_count}</span>
-                                        <span class="team-roster-label">Target Dokter</span>
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div style="font-size: 0.825rem; color: var(--secondary);">
+                                        <strong class="tabular-nums">${sub.doctor_count}</strong> Dokter
                                     </div>
-                                    <div class="team-roster-status ${statusTheme}">
-                                        <span class="team-roster-dot"></span>
-                                        <span>${statusText}</span>
-                                    </div>
-                                    <div class="team-roster-action">
-                                        ${actionBtn}
-                                    </div>
+                                    <span class="status-badge ${statusTheme}">${statusText}</span>
+                                    ${actionBtn}
                                 </div>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    listContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">Tidak ada anggota tim terdaftar.</div>';
+                    listContainer.innerHTML = '<div style="padding: 0.75rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">Tidak ada anggota tim terdaftar.</div>';
                 }
             }
         } catch (err) {
             console.error('Gagal mengambil ringkasan monitoring manajerial', err);
         }
-    }
-
-    function openCreateModal() {
-        const errEl = document.getElementById('createModalError');
-        if (errEl) {
-            errEl.style.display = 'none';
-            errEl.innerText = '';
-        }
-        document.getElementById('createModal').style.display = 'flex';
-    }
-
-    function closeCreateModal() {
-        document.getElementById('createModal').style.display = 'none';
-    }
-
-    async function handleCreateSubmit(e) {
-        e.preventDefault();
-        const errEl = document.getElementById('createModalError');
-        errEl.style.display = 'none';
-
-        const period = document.getElementById('periodMonthInput').value;
-        const selectedDoctors = Array.from(document.querySelectorAll('#doctorPickerList input[name="doctor_ids"]:checked')).map(cb => parseInt(cb.value));
-
-        if (!selectedDoctors.length) {
-            errEl.innerText = 'Pilih minimal 1 target dokter dari daftar.';
-            errEl.style.display = 'block';
-            return;
-        }
-
-        const btn = document.getElementById('btnSubmitCreate');
-        btn.disabled = true;
-        btn.innerText = 'Menyimpan...';
-
-        try {
-            const res = await window.apiFetch('/api/call-lists', {
-                method: 'POST',
-                body: JSON.stringify({
-                    period_month: period,
-                    doctor_ids: selectedDoctors
-                })
-            });
-            const data = await res.json();
-            btn.disabled = false;
-            btn.innerText = 'Simpan Draft';
-
-            if (data.success) {
-                closeCreateModal();
-                showAlert('Draft Call List berhasil dibuat!');
-                loadMyCallLists();
-            } else {
-                errEl.innerText = data.message || 'Gagal membuat Call List.';
-                errEl.style.display = 'block';
-            }
-        } catch (err) {
-            btn.disabled = false;
-            btn.innerText = 'Simpan Draft';
-            errEl.innerText = 'Terjadi kesalahan jaringan.';
-            errEl.style.display = 'block';
-        }
-    }
-
-    async function submitCallList(id) {
-        if (!confirm('Apakah Anda yakin ingin mengajukan Call List ini ke atasan langsung?')) return;
-        try {
-            const res = await window.apiFetch(`/api/call-lists/${id}/submit`, { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                showAlert('Call List berhasil diajukan untuk persetujuan.');
-                loadMyCallLists();
-                if (['dm', 'rsm', 'mm'].includes(currentUserRole)) loadReviewCallLists();
-            } else {
-                showAlert(data.message || 'Gagal mengajukan Call List.', 'danger');
-            }
-        } catch (err) {
-            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
-        }
-    }
-
-    async function approveCallList(id) {
-        if (!confirm('Setujui Call List ini?')) return;
-        try {
-            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: 'approved', reason: 'Disetujui' })
-            });
-            const data = await res.json();
-            if (data.success) {
-                showAlert('Call List berhasil disetujui!');
-                loadReviewCallLists();
-                loadMyCallLists();
-                closeDetailModal();
-            } else {
-                showAlert(data.message || 'Gagal menyetujui Call List.', 'danger');
-            }
-        } catch (err) {
-            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
-        }
-    }
-
-    function openRejectModal(id) {
-        const errEl = document.getElementById('rejectModalError');
-        if (errEl) {
-            errEl.style.display = 'none';
-            errEl.innerText = '';
-        }
-        document.getElementById('rejectCallListId').value = id;
-        document.getElementById('rejectReasonInput').value = '';
-        document.getElementById('rejectModal').style.display = 'flex';
-    }
-
-    function closeRejectModal() {
-        document.getElementById('rejectModal').style.display = 'none';
-    }
-
-    async function handleRejectSubmit(e) {
-        e.preventDefault();
-        const errEl = document.getElementById('rejectModalError');
-        errEl.style.display = 'none';
-
-        const id = document.getElementById('rejectCallListId').value;
-        const reason = document.getElementById('rejectReasonInput').value.trim();
-
-        if (!reason) {
-            errEl.innerText = 'Alasan penolakan wajib diisi untuk panduan revisi bawahan.';
-            errEl.style.display = 'block';
-            return;
-        }
-
-        const btn = document.getElementById('btnConfirmReject');
-        btn.disabled = true;
-        btn.innerText = 'Memproses...';
-
-        try {
-            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: 'rejected', reason: reason })
-            });
-            const data = await res.json();
-            btn.disabled = false;
-            btn.innerText = 'Tolak & Kembalikan';
-
-            if (data.success) {
-                closeRejectModal();
-                closeDetailModal();
-                showAlert('Call List berhasil ditolak dan dikembalikan ke Draft.');
-                loadReviewCallLists();
-                loadMyCallLists();
-            } else {
-                errEl.innerText = data.message || 'Gagal menolak Call List.';
-                errEl.style.display = 'block';
-            }
-        } catch (err) {
-            btn.disabled = false;
-            btn.innerText = 'Tolak & Kembalikan';
-            errEl.innerText = 'Terjadi kesalahan jaringan.';
-            errEl.style.display = 'block';
-        }
-    }
-
-    async function openDetailModal(id) {
-        document.getElementById('detailModal').style.display = 'flex';
-        const content = document.getElementById('detailContent');
-        content.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">Memuat detail...</div>';
-
-        try {
-            const res = await window.apiFetch(`/api/call-lists/${id}`);
-            const result = await res.json();
-
-            if (!result.success) {
-                content.innerHTML = `<div class="alert alert-danger">${escapeHtml(result.message)}</div>`;
-                return;
-            }
-
-            const cl = result.data;
-            const isAssignedApprover = (cl.assigned_approver_id === currentUserId && cl.status === 'pending_approval');
-            const isOwnerDraft = (cl.owner_id === currentUserId && cl.status === 'draft');
-
-            content.innerHTML = `
-                <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-size: 0.875rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>Periode: <strong>${cl.period_month}</strong></span>
-                        <span class="status-badge status-${cl.status === 'pending_approval' ? 'pending' : cl.status}">${escapeHtml(cl.status)}</span>
-                    </div>
-                    <div>Pemilik: <strong>${escapeHtml(cl.owner_name)}</strong></div>
-                    <div>Approver: <strong>${escapeHtml(cl.assigned_approver_name || '-')}</strong></div>
-                </div>
-
-                <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Daftar Target Dokter (${cl.doctors.length})</h4>
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto;">
-                        ${cl.doctors.map((doc, idx) => `
-                            <div style="font-size: 0.85rem; padding: 0.4rem; background: white; border: 1px solid var(--border); border-radius: 0.25rem;">
-                                ${idx + 1}. <strong>${escapeHtml(doc.name)}</strong> <span style="color: var(--text-muted);">(${escapeHtml(doc.specialization || 'Umum')})</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Riwayat Persetujuan (Audit Trail)</h4>
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; max-height: 150px; overflow-y: auto;">
-                        ${cl.approval_history.map(h => `
-                            <div style="padding: 0.4rem; background: #f1f5f9; border-radius: 0.25rem;">
-                                <div><strong>${escapeHtml(h.actor_name)}</strong> melakukan <code>${escapeHtml(h.event)}</code> (${window.formatDateTimeIndonesia(h.created_at)})</div>
-                                ${h.reason ? `<div style="color: #64748b; margin-top: 0.2rem;">Catatan: <em>"${escapeHtml(h.reason)}"</em></div>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                    ${isOwnerDraft ? `
-                        <button class="btn btn-primary" onclick="submitCallList(${cl.id}); closeDetailModal();">Ajukan ke Atasan</button>
-                    ` : ''}
-                    ${isAssignedApprover ? `
-                        <button class="btn" style="background: var(--danger); color: white;" onclick="openRejectModal(${cl.id})">Tolak</button>
-                        <button class="btn btn-primary" style="background: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
-                    ` : ''}
-                    <button class="btn btn-outline" onclick="closeDetailModal()">Tutup</button>
-                </div>
-            `;
-        } catch (err) {
-            content.innerHTML = '<div class="alert alert-danger">Gagal memuat detail Call List.</div>';
-        }
-    }
-
-    function closeDetailModal() {
-        document.getElementById('detailModal').style.display = 'none';
     }
 </script>
 @endpush

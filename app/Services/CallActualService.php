@@ -70,22 +70,17 @@ class CallActualService
                 $visitType = $this->classifyWithoutPlan($mr, $doctorId, $visitDate, $checkIn);
             }
 
-            $actual = CallActual::create([
-                'mr_id' => $mr->id,
-                'plan_id' => $plan?->id,
-                'visit_session_id' => null,
-                'doctor_id' => $doctorId,
-                'visit_date' => $visitDate,
-                'check_in_at' => $checkIn,
-                'check_out_at' => $checkOut,
-                'visit_type' => $visitType,
-                'photo_url' => trim($data['photo_url']),
-                'signature_url' => trim($data['signature_url']),
-                'visit_reason' => $data['visit_reason'] ?? null,
-                'deviation_reason' => $data['deviation_reason'] ?? null,
-            ]);
-
-            $actual->products()->sync($productIds->all());
+            $actual = $this->createCompletedActual(
+                $mr,
+                $data,
+                $productIds,
+                $doctorId,
+                $visitDate,
+                $checkIn,
+                $checkOut,
+                $visitType,
+                $plan,
+            );
 
             if ($plan) {
                 $plan->update(['status' => 'completed']);
@@ -97,11 +92,7 @@ class CallActualService
 
     private function recordSessionBacked(User $mr, array $data, int $sessionId, Collection $productIds): CallActual
     {
-        foreach (['plan_id', 'doctor_id', 'visit_date', 'check_in', 'check_out'] as $field) {
-            if (array_key_exists($field, $data)) {
-                throw new HttpException(422, 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', null, ['X-Error-Code' => 'SESSION_PAYLOAD_MISMATCH']);
-            }
-        }
+        $this->ensureSessionPayloadIsPure($data);
 
         $sessionIdentity = VisitSession::whereKey($sessionId)->firstOrFail();
 
@@ -141,22 +132,18 @@ class CallActualService
                 $visitType = $this->classifyWithoutPlan($mr, $doctorId, $visitDate, $checkIn);
             }
 
-            $actual = CallActual::create([
-                'mr_id' => $mr->id,
-                'plan_id' => $plan?->id,
-                'visit_session_id' => $session->id,
-                'doctor_id' => $doctorId,
-                'visit_date' => $visitDate,
-                'check_in_at' => $checkIn,
-                'check_out_at' => $checkOut,
-                'visit_type' => $visitType,
-                'photo_url' => trim($data['photo_url']),
-                'signature_url' => trim($data['signature_url']),
-                'visit_reason' => $data['visit_reason'] ?? null,
-                'deviation_reason' => $data['deviation_reason'] ?? null,
-            ]);
-
-            $actual->products()->sync($productIds->all());
+            $actual = $this->createCompletedActual(
+                $mr,
+                $data,
+                $productIds,
+                $doctorId,
+                $visitDate,
+                $checkIn,
+                $checkOut,
+                $visitType,
+                $plan,
+                $session,
+            );
 
             $session->update([
                 'status' => 'completed',
@@ -171,17 +158,90 @@ class CallActualService
         });
     }
 
-    public function getActuals(User $mr, ?string $date = null, ?int $doctorId = null): Collection
+    private function ensureSessionPayloadIsPure(array $data): void
     {
-        $query = CallActual::with(['doctor', 'products', 'plan'])
-            ->where('mr_id', $mr->id);
+        foreach (['plan_id', 'doctor_id', 'visit_date', 'check_in', 'check_out'] as $field) {
+            if (array_key_exists($field, $data)) {
+                throw new HttpException(422, 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', null, ['X-Error-Code' => 'SESSION_PAYLOAD_MISMATCH']);
+            }
+        }
+    }
+
+    private function createCompletedActual(
+        User $mr,
+        array $data,
+        Collection $productIds,
+        int $doctorId,
+        string $visitDate,
+        Carbon $checkIn,
+        Carbon $checkOut,
+        string $visitType,
+        ?CallPlan $plan = null,
+        ?VisitSession $session = null
+    ): CallActual {
+        $actual = CallActual::create([
+            'mr_id' => $mr->id,
+            'plan_id' => $plan?->id,
+            'visit_session_id' => $session?->id,
+            'doctor_id' => $doctorId,
+            'visit_date' => $visitDate,
+            'check_in_at' => $checkIn,
+            'check_out_at' => $checkOut,
+            'visit_type' => $visitType,
+            'photo_url' => trim($data['photo_url']),
+            'signature_url' => trim($data['signature_url']),
+            'visit_reason' => $data['visit_reason'] ?? null,
+            'deviation_reason' => $data['deviation_reason'] ?? null,
+        ]);
+
+        $actual->products()->sync($productIds->all());
+
+        return $actual;
+    }
+
+    public function getActuals(
+        User $user,
+        ?string $date = null,
+        ?int $doctorId = null,
+        ?int $targetMrId = null,
+        ?string $month = null,
+        ?string $visitType = null
+    ): Collection {
+        $query = CallActual::with(['doctor', 'products', 'plan', 'mr']);
+
+        if ($user->role === 'mr') {
+            if ($targetMrId && $targetMrId !== $user->id) {
+                throw new AccessDeniedHttpException('Anda tidak memiliki akses ke data MR ini.');
+            }
+            $query->where('mr_id', $user->id);
+        } else {
+            $allowedMrIds = $user->getSubordinateMrIds();
+            if ($targetMrId) {
+                if (! in_array($targetMrId, $allowedMrIds, true)) {
+                    throw new AccessDeniedHttpException('Anda tidak memiliki akses ke data MR ini.');
+                }
+                $query->where('mr_id', $targetMrId);
+            } else {
+                $query->whereIn('mr_id', $allowedMrIds);
+            }
+        }
 
         if ($date) {
             $query->where('visit_date', $date);
         }
 
+        if ($month) {
+            $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+            $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+            $query->whereBetween('visit_date', [$startOfMonth, $endOfMonth]);
+        }
+
         if ($doctorId) {
             $query->where('doctor_id', $doctorId);
+        }
+
+        if ($visitType) {
+            $query->where('visit_type', $visitType);
         }
 
         return $query->orderByDesc('visit_date')
