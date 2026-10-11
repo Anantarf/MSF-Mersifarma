@@ -61,10 +61,10 @@
 ### ADR-029: Role-Based Supervisory Context & Quick Demo Switching
 - Date: 2026-10-11
 - Status: Accepted
-- Problem: Akun manajer (DM/RSM/MM) masih melihat tombol buat jadwal dan kunjungan yang memicu 403 Forbidden di backend. Selain itu, penguji studi kasus harus bolak-balik logout untuk menguji alur multi-role.
-- Decision: Sembunyikan tombol input kunjungan/jadwal bagi non-MR, tampilkan banner peran supervisi yang informatif, auto-fokus ke tab Persetujuan Masuk jika ada antrean bagi manajer, dan sediakan switch akun demo cepat di navbar.
-- Source of requirement: Engineering necessity / UX
-- API/DB/UX impact: Backend API tetap utuh; Blade UI lebih akurat terhadap hak akses pengguna.
+- Problem: Akun manajer (DM/RSM/MM) masih melihat tombol buat target dokter, jadwal, dan kunjungan yang tidak sesuai peran manajerial di lapangan. Selain itu, penguji studi kasus harus bolak-balik logout untuk menguji alur multi-role.
+- Decision: Batasi pembuatan Call List, Call Plan, dan Call Actual pada antarmuka (UI) hanya untuk Medical Representative (MR). Untuk manajer (DM, RSM, MM), sembunyikan seluruh tombol buat target/jadwal/kunjungan, buka langsung tab Persetujuan Masuk (Review) secara default, tampilkan banner peran supervisi yang informatif, dan sediakan switch akun demo cepat di navbar.
+- Source of requirement: Business reality / UX
+- API/DB/UX impact: Backend API tetap utuh; Blade UI sepenuhnya mencerminkan peran operasional lapangan tanpa membingungkan manajer.
 - Risks/trade-offs: Tidak ada.
 - Tests to update: Mempertahankan 100% kelulusan tes PHPUnit.
 

@@ -11,7 +11,7 @@
             <p style="color: var(--text-muted); font-size: 0.8125rem;">Call List Bulanan : Perencanaan target dokter bulanan dan alur persetujuan atasan langsung.</p>
         </div>
         <div>
-            @if(auth()->user()->role !== 'mm')
+            @if(auth()->user()->role === 'mr')
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">
                 + Buat Call List Baru
             </button>
@@ -19,13 +19,24 @@
         </div>
     </div>
 
+    @if(auth()->user()->role !== 'mr')
+    <div style="background: #f8fafc; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 0.85rem 1.15rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.2rem;">
+            Mode Supervisi Manajemen: {{ strtoupper(auth()->user()->role) }}
+        </h4>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0; line-height: 1.45;">
+            Anda masuk sebagai <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->role_subtitle }}). Tugas utama Anda adalah meninjau dan menyetujui perencanaan Target Dokter (Call List) yang diajukan oleh tim bawahan langsung Anda pada tab <strong>Persetujuan Masuk</strong>.
+        </p>
+    </div>
+    @endif
+
     <!-- Tabs Navigation -->
     <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border);">
-        <button id="tabMyLists" class="tab-btn active" onclick="switchTab('myLists')">
+        <button id="tabMyLists" class="tab-btn {{ auth()->user()->role === 'mr' ? 'active' : '' }}" onclick="switchTab('myLists')">
             Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
         </button>
         @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
-        <button id="tabReview" class="tab-btn" onclick="switchTab('review')">
+        <button id="tabReview" class="tab-btn {{ auth()->user()->role !== 'mr' ? 'active' : '' }}" onclick="switchTab('review')">
             Persetujuan Masuk (<span id="reviewCount" class="tabular-nums">0</span>)
         </button>
         @endif
@@ -35,7 +46,7 @@
     <div id="statusAlert" style="display: none;" class="alert"></div>
 
     <!-- Container Tab 1: My Call Lists -->
-    <div id="myListsContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+    <div id="myListsContainer" style="display: {{ auth()->user()->role === 'mr' ? 'flex' : 'none' }}; flex-direction: column; gap: 1rem;">
         <div id="loadingMyLists" style="padding: 0.25rem 0;"></div>
         <div id="myListsTableWrap" class="table-responsive" style="display: none;">
             <table class="enterprise-table">
@@ -53,14 +64,14 @@
         </div>
         <div id="emptyMyLists" style="display: none; text-align: center; padding: 3rem 1.5rem; background: white; border: 1px solid var(--border); border-radius: 8px;">
             <h4 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.35rem;">Belum Ada Target Call List</h4>
-            @if(auth()->user()->role !== 'mm')
+            @if(auth()->user()->role === 'mr')
             <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 420px; margin: 0 auto 1.25rem;">
                 Susun perencanaan target dokter bulanan dan ajukan ke atasan langsung Anda untuk mendapatkan persetujuan operasional.
             </p>
             <button type="button" class="btn btn-primary" onclick="openCreateModal()">+ Buat Call List Baru</button>
             @else
             <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 440px; margin: 0 auto;">
-                Sebagai Marketing Manager (MM), tugas utama Anda adalah meninjau dan menyetujui pengajuan Target Dokter dari Regional Sales Manager (RSM) pada tab <strong>Persetujuan Masuk</strong>.
+                Sebagai manajer ({{ strtoupper(auth()->user()->role) }}), tugas Anda adalah meninjau dan menyetujui pengajuan Target Dokter dari bawahan langsung pada tab <strong>Persetujuan Masuk</strong>.
             </p>
             @endif
         </div>
@@ -68,7 +79,7 @@
 
     <!-- Container Tab 2: Manager Review Queue -->
     @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
-    <div id="reviewContainer" style="display: none; flex-direction: column; gap: 1rem;">
+    <div id="reviewContainer" style="display: {{ auth()->user()->role !== 'mr' ? 'flex' : 'none' }}; flex-direction: column; gap: 1rem;">
         <!-- Widget Ringkasan Monitoring Wilayah (Read-Only) -->
         <div id="monitoringSummaryCard" style="display: none; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.15rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
@@ -326,13 +337,19 @@
         if (['dm', 'rsm', 'mm'].includes(currentUserRole)) {
             loadReviewCallLists();
             loadManagerSummary();
+            if (!sessionStorage.getItem('call_list_tab_manual')) {
+                switchTab('review', false);
+            }
         }
         // Default month: bulan depan
         const now = new Date();
         now.setMonth(now.getMonth() + 1);
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
-        document.getElementById('periodMonthInput').value = `${yyyy}-${mm}`;
+        const periodEl = document.getElementById('periodMonthInput');
+        if (periodEl) {
+            periodEl.value = `${yyyy}-${mm}`;
+        }
     });    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeCreateModal();
