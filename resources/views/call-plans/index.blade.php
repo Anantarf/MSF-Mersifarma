@@ -364,41 +364,41 @@
 
             return `
                 <tr>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <strong style="color: var(--secondary); font-size: 0.9rem;">${dateStr}</strong>
                         <div style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${timeStr}</div>
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name || 'Dokter')}</strong>
                     </td>
                     <td>
-                        <div>${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}</div>
+                        <div style="font-weight: 500;">${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}</div>
                         <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
                     </td>
                     <td>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         ${isCancelled && plan.cancellation_reason ? `
-                            <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
-                                Alasan: <em>"${escapeHtml(plan.cancellation_reason)}"</em>
+                            <div style="font-size: 0.775rem; color: var(--danger); background: #fff1f2; border: 1px solid #fecdd3; border-radius: 4px; padding: 0.35rem 0.55rem; margin-top: 0.35rem; line-height: 1.35;">
+                                <strong>Alasan Batal:</strong> "${escapeHtml(plan.cancellation_reason)}"
                             </div>
                         ` : ''}
                     </td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
                         ${plan.status === 'scheduled' ? `
-                            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-                                <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; text-decoration: none;">
+                            <div style="display: inline-flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+                                <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary btn-sm" style="text-decoration: none;">
                                     Isi Laporan
                                 </a>
-                                <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; color: var(--danger); border-color: #fca5a5;" onclick="openCancelPlanModal(${plan.id}, '${escapeHtml(plan.doctor_name)}', '${escapeHtml(plan.plan_date)}')">
+                                <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3;" onclick="openCancelPlanModal(${plan.id}, '${escapeHtml(plan.doctor_name)}', '${escapeHtml(plan.plan_date)}')">
                                     Batalkan
                                 </button>
                             </div>
                         ` : (isCompleted ? `
-                            <span style="font-size: 0.8rem; color: var(--success); font-weight: 600;">
+                            <span class="status-badge status-completed">
                                 Selesai
                             </span>
                         ` : `
-                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">
+                            <span class="status-badge status-cancelled">
                                 Dibatalkan
                             </span>
                         `)}

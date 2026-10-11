@@ -429,6 +429,20 @@
         }
     }
 
+    function formatPeriodIndonesian(periodStr) {
+        if (!periodStr) return '-';
+        const parts = String(periodStr).split('-');
+        if (parts.length !== 2) return periodStr;
+        const year = parts[0];
+        const monthNum = parseInt(parts[1], 10);
+        const monthNames = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const monthName = monthNames[monthNum - 1] || parts[1];
+        return `${monthName} ${year}`;
+    }
+
     function renderMyListsGrid() {
         const tableWrap = document.getElementById('myListsTableWrap');
         const tbody = document.getElementById('myListsTableBody');
@@ -450,28 +464,29 @@
             }
             return `
                 <tr>
-                    <td>
-                        <strong style="color: var(--secondary); font-size: 0.95rem;">${cl.period_month}</strong>
+                    <td style="white-space: nowrap;">
+                        <strong style="color: var(--secondary); font-size: 0.95rem;">${formatPeriodIndonesian(cl.period_month)}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(cl.period_month)}</div>
                     </td>
-                    <td>
-                        <strong>${cl.doctor_count} Dokter Sasaran</strong>
+                    <td style="white-space: nowrap;">
+                        <strong style="color: var(--text-main);">${cl.doctor_count} Dokter Sasaran</strong>
                     </td>
                     <td>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         ${cl.status === 'draft' && cl.is_rejected_revision && cl.latest_rejection_reason ? `
-                            <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
-                                Catatan: <em>"${escapeHtml(cl.latest_rejection_reason)}"</em>
+                            <div style="font-size: 0.775rem; color: var(--danger); background: #fff1f2; border: 1px solid #fecdd3; border-radius: 4px; padding: 0.35rem 0.55rem; margin-top: 0.35rem; line-height: 1.35;">
+                                <strong>Catatan Revisi:</strong> "${escapeHtml(cl.latest_rejection_reason)}"
                             </div>
                         ` : ''}
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <span>${escapeHtml(cl.assigned_approver_name || '-')}</span>
                     </td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
                         <div style="display: inline-flex; gap: 0.35rem;">
-                            <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Detail</button>
+                            <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Detail</button>
                             ${cl.status === 'draft' ? `
-                                <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="submitCallList(${cl.id})">Ajukan</button>
+                                <button class="btn btn-primary btn-sm" onclick="submitCallList(${cl.id})">Ajukan</button>
                             ` : ''}
                         </div>
                     </td>
@@ -513,23 +528,24 @@
         if (tableWrap) tableWrap.style.display = 'block';
         tbody.innerHTML = reviewCallLists.map(cl => `
             <tr>
-                <td>
-                    <strong style="color: var(--secondary); font-size: 0.95rem;">${cl.period_month}</strong>
+                <td style="white-space: nowrap;">
+                    <strong style="color: var(--secondary); font-size: 0.95rem;">${formatPeriodIndonesian(cl.period_month)}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(cl.period_month)}</div>
                 </td>
-                <td>
-                    <strong>${escapeHtml(cl.owner_name)}</strong>
+                <td style="white-space: nowrap;">
+                    <strong style="color: var(--text-main);">${escapeHtml(cl.owner_name)}</strong>
                 </td>
-                <td>
+                <td style="white-space: nowrap;">
                     <strong>${cl.doctor_count} Dokter Sasaran</strong>
                 </td>
                 <td>
                     <span class="status-badge status-pending">Menunggu Review</span>
                 </td>
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
                     <div style="display: inline-flex; gap: 0.35rem;">
-                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" onclick="openDetailModal(${cl.id})">Periksa</button>
-                        <button class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; background: var(--success); border-color: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
-                        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; color: var(--danger); border-color: #fca5a5;" onclick="openRejectModal(${cl.id})">Tolak</button>
+                        <button class="btn btn-outline btn-sm" onclick="openDetailModal(${cl.id})">Periksa</button>
+                        <button class="btn btn-primary btn-sm" style="background: var(--success); border-color: var(--success);" onclick="approveCallList(${cl.id})">Setujui</button>
+                        <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: #fecdd3;" onclick="openRejectModal(${cl.id})">Tolak</button>
                     </div>
                 </td>
             </tr>

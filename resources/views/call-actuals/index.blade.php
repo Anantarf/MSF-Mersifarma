@@ -250,6 +250,39 @@
     </div>
 </div>
 
+<!-- Modal Lihat Bukti Kunjungan (Foto & TTD) -->
+<div id="evidenceModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin: 0;">
+                Bukti Kunjungan: <span id="evidenceDoctorName">-</span>
+            </h3>
+            <button type="button" class="close-btn" onclick="closeEvidenceModal()">&times;</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+                    Foto Kunjungan di Lokasi:
+                </label>
+                <div style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #f8fafc; text-align: center; max-height: 220px; display: flex; align-items: center; justify-content: center;">
+                    <img id="evidencePhotoImg" src="" alt="Foto Lokasi" style="max-width: 100%; max-height: 220px; object-fit: contain;">
+                </div>
+            </div>
+            <div>
+                <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+                    Tanda Tangan Digital Dokter:
+                </label>
+                <div style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #ffffff; text-align: center; height: 110px; display: flex; align-items: center; justify-content: center; padding: 0.5rem;">
+                    <img id="evidenceSignatureImg" src="" alt="Tanda Tangan Dokter" style="max-width: 100%; max-height: 100px; object-fit: contain;">
+                </div>
+            </div>
+            <div style="text-align: right; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="closeEvidenceModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     let todayPlans = [];
@@ -289,8 +322,35 @@
         if (e.key === 'Escape') {
             closeActualModal();
             closeCancelSessionModal();
+            closeEvidenceModal();
         }
     });
+
+    function showEvidenceModal(doctorName, photoUrl, sigUrl) {
+        document.getElementById('evidenceDoctorName').innerText = doctorName || 'Dokter';
+        document.getElementById('evidencePhotoImg').src = photoUrl || '';
+        document.getElementById('evidenceSignatureImg').src = sigUrl || '';
+        document.getElementById('evidenceModal').style.display = 'flex';
+    }
+
+    function closeEvidenceModal() {
+        document.getElementById('evidenceModal').style.display = 'none';
+    }
+
+    function formatVisitDateIndonesian(dateStr) {
+        if (!dateStr) return '-';
+        const parts = String(dateStr).split('-');
+        if (parts.length !== 3) return dateStr;
+        const year = parts[0];
+        const monthNum = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        const monthNames = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+            'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+        ];
+        const monthName = monthNames[monthNum - 1] || parts[1];
+        return `${day} ${monthName} ${year}`;
+    }
 
     function initSignaturePad() {
         sigCanvas = document.getElementById('signatureCanvas');
@@ -532,18 +592,18 @@
 
             return `
                 <tr>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <strong style="color: var(--primary); font-size: 0.95rem;">${escapeHtml((plan.planned_time || '').substring(0, 5))} WIB</strong>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">Hari Ini</div>
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(plan.doctor_name)}</strong>
                     </td>
                     <td>
-                        <div>${escapeHtml(plan.doctor_specialization || 'Umum')}</div>
+                        <div style="font-weight: 500;">${escapeHtml(plan.doctor_specialization || 'Spesialis Umum')}</div>
                         <small style="color: var(--text-muted); font-size: 0.75rem;">${escapeHtml(plan.doctor_address || '-')}</small>
                     </td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
                         ${actionHtml}
                     </td>
                 </tr>
@@ -574,15 +634,22 @@
                 visitBadgeClass = 'status-draft';
             }
 
+            let timeHtml = '';
+            if (actual.check_in && actual.check_out) {
+                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${actual.check_in.substring(0, 5)} - ${actual.check_out.substring(0, 5)} WIB</div>`;
+            } else if (actual.check_in) {
+                timeHtml = `<div style="font-size: 0.75rem; color: var(--text-muted);">${actual.check_in.substring(0, 5)} WIB</div>`;
+            }
+
             return `
                 <tr>
-                    <td>
-                        <strong style="color: var(--secondary); font-size: 0.9rem;">${escapeHtml(actual.visit_date)}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(actual.check_in || '')} - ${escapeHtml(actual.check_out || '')}</div>
+                    <td style="white-space: nowrap;">
+                        <strong style="color: var(--secondary); font-size: 0.9rem;">${formatVisitDateIndonesian(actual.visit_date)}</strong>
+                        ${timeHtml}
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <strong style="font-size: 0.95rem; color: var(--secondary);">${escapeHtml(actual.doctor_name)}</strong>
-                        <div style="font-size: 0.775rem; color: var(--text-muted);">${escapeHtml(actual.doctor_specialization || 'Spesialis')}</div>
+                        <div style="font-size: 0.775rem; color: var(--text-muted);">${escapeHtml(actual.doctor_specialization || 'Spesialis Umum')}</div>
                     </td>
                     <td>
                         <span class="status-badge ${visitBadgeClass}">${escapeHtml(visitTypeLabel)}</span>
@@ -597,10 +664,10 @@
                             ${actual.products.map((p) => escapeHtml(p.name)).join(', ')}
                         </div>
                     </td>
-                    <td>
-                        <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--success); font-weight: 600; font-size: 0.8rem;">
-                            ✓ Foto & TTD Terverifikasi
-                        </span>
+                    <td style="white-space: nowrap;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="showEvidenceModal('${escapeHtml(actual.doctor_name)}', '${actual.photo_url}', '${actual.signature_url}')" style="font-size: 0.775rem; color: var(--success); border-color: #a7f3d0; background: #ecfdf5;">
+                            <i class="bi bi-file-earmark-check"></i> Foto & TTD
+                        </button>
                     </td>
                 </tr>
             `;

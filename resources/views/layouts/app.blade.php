@@ -150,7 +150,7 @@
         .nav-link.active {
             color: var(--primary);
             background: var(--primary-subtle);
-            border: 1px solid var(--primary-border);
+            border-bottom: 2px solid var(--primary);
             font-weight: 700;
         }
 
@@ -330,8 +330,9 @@
             width: 100%;
             overflow-x: auto;
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 8px;
             background: #ffffff;
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
         }
 
         .enterprise-table {
@@ -343,7 +344,7 @@
 
         .enterprise-table th {
             background: #f8fafc;
-            padding: 0.65rem 1rem;
+            padding: 0.75rem 1rem;
             font-weight: 600;
             color: #475569;
             border-bottom: 1px solid var(--border);
@@ -354,10 +355,11 @@
         }
 
         .enterprise-table td {
-            padding: 0.75rem 1rem;
+            padding: 0.85rem 1rem;
             border-bottom: 1px solid #f1f5f9;
             color: var(--text-main);
             vertical-align: middle;
+            line-height: 1.45;
         }
 
         .enterprise-table tr:last-child td {
@@ -413,10 +415,10 @@
 
         main {
             flex: 1;
-            max-width: 1100px;
+            max-width: 1140px;
             width: 100%;
             margin: 0 auto;
-            padding: 1.5rem 1rem;
+            padding: 1.75rem 1rem;
         }
 
         .alert {
