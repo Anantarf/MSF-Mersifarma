@@ -151,7 +151,7 @@ class DemoScenarioSeeder extends Seeder
         );
         $draftList->doctors()->syncWithoutDetaching([2, 3, 5]);
 
-        // D. MR Ahmad (MR2) - Call List "Menunggu Persetujuan" (Antrean Approval untuk DM Joko)
+        // D. MR Ahmad (MR2) - Call List "Menunggu Persetujuan" (Antrean Approval untuk DM Wisnu)
         if ($mr2) {
             $pendingListMR2 = CallList::firstOrCreate(
                 [
@@ -191,7 +191,7 @@ class DemoScenarioSeeder extends Seeder
             }
         }
 
-        // E. DM Joko - Call List "Menunggu Persetujuan" (Antrean Approval untuk RSM Siti)
+        // E. DM Wisnu - Call List "Menunggu Persetujuan" (Antrean Approval untuk RSM Siti)
         if ($rsm) {
             $pendingListDM = CallList::firstOrCreate(
                 [

@@ -471,23 +471,23 @@
 
         <div class="demo-btn-list">
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('mr@mersi.com', 'password')">
-                <span><strong>Rudi Hartono</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(MR Area 1)</span></span>
+                <span><strong>Rudi Hartono</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(MR Jakarta Selatan 1)</span></span>
                 <span class="role-pill role-mr">MR</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('dm@mersi.com', 'password')">
-                <span><strong>Joko Widodo</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Atasan)</span></span>
+                <span><strong>Wisnu Santhika</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Jakarta Selatan)</span></span>
                 <span class="role-pill role-dm">DM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('rsm@mersi.com', 'password')">
-                <span><strong>Siti Rahma</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Atasan DM)</span></span>
+                <span><strong>Siti Rahma</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(RSM DKI Jakarta)</span></span>
                 <span class="role-pill role-rsm">RSM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('mm@mersi.com', 'password')">
-                <span><strong>Budi Santoso</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(National MM)</span></span>
+                <span><strong>Budi Santoso</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(MM Nasional)</span></span>
                 <span class="role-pill role-mm">MM</span>
             </button>
             <button type="button" class="btn btn-outline demo-btn" onclick="fillAccount('dm2@mersi.com', 'password')">
-                <span><strong>Hendra Gunawan</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Non-Atasan)</span></span>
+                <span><strong>Hendra Gunawan</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(DM Jakarta Timur)</span></span>
                 <span class="role-pill role-dm">DM</span>
             </button>
         </div>

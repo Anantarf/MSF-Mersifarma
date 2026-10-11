@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         $mm = User::updateOrCreate(
             ['email' => 'mm@mersi.com'],
             [
-                'name' => 'Budi Santoso (MM)',
+                'name' => 'Budi Santoso (MM Nasional)',
                 'username' => 'mm',
                 'password' => $defaultPassword,
                 'role' => 'mm',
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
         $rsm = User::updateOrCreate(
             ['email' => 'rsm@mersi.com'],
             [
-                'name' => 'Siti Rahma (RSM)',
+                'name' => 'Siti Rahma (RSM DKI Jakarta)',
                 'username' => 'rsm',
                 'password' => $defaultPassword,
                 'role' => 'rsm',
@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
         $dm = User::updateOrCreate(
             ['email' => 'dm@mersi.com'],
             [
-                'name' => 'Joko Widodo (DM)',
+                'name' => 'Wisnu Santhika (DM Jakarta Selatan)',
                 'username' => 'dm',
                 'password' => $defaultPassword,
                 'role' => 'dm',
@@ -68,7 +68,7 @@ class DatabaseSeeder extends Seeder
         $dm2 = User::updateOrCreate(
             ['email' => 'dm2@mersi.com'],
             [
-                'name' => 'Hendra Gunawan (DM 2)',
+                'name' => 'Hendra Gunawan (DM Jakarta Timur)',
                 'username' => 'dm2',
                 'password' => $defaultPassword,
                 'role' => 'dm',
@@ -76,11 +76,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // MR 1 (assigned to DM Joko)
+        // MR 1 (assigned to DM Wisnu)
         $mr = User::updateOrCreate(
             ['email' => 'mr@mersi.com'],
             [
-                'name' => 'Rudi Hartono (MR)',
+                'name' => 'Rudi Hartono (MR Jakarta Selatan 1)',
                 'username' => 'mr',
                 'password' => $defaultPassword,
                 'role' => 'mr',
@@ -92,7 +92,7 @@ class DatabaseSeeder extends Seeder
         $mr2 = User::updateOrCreate(
             ['email' => 'mr2@mersi.com'],
             [
-                'name' => 'Ahmad Dahlan (MR 2)',
+                'name' => 'Ahmad Dahlan (MR Jakarta Selatan 2)',
                 'username' => 'mr2',
                 'password' => $defaultPassword,
                 'role' => 'mr',

@@ -85,14 +85,14 @@ Arsitektur detail dapat dipelajari pada [docs/DESIGN.md](docs/DESIGN.md) dan [do
 
 Seluruh akun pengujian menggunakan data sintetis dengan kata sandi default: **`password`**. Halaman login menyediakan tombol **1-Klik Isi Cepat** untuk kemudahan penguji berganti peran.
 
-| Peran | Nama Pengguna | Alamat Email | Atasan Langsung (`manager_id`) | Keterangan Uji |
+| Peran | Nama Pengguna | Alamat Email | Atasan Langsung (`manager_id`) | Keterangan Uji & Cakupan Wilayah |
 |---|---|---|---|---|
-| **MM** | Budi Santoso | `mm@mersi.com` | *- (Puncak Hierarki)* | Marketing Manager (Review level tertinggi) |
-| **RSM** | Siti Rahma | `rsm@mersi.com` | Budi Santoso (`mm`) | Regional Sales Manager |
-| **DM** | Joko Widodo | `dm@mersi.com` | Siti Rahma (`rsm`) | District Manager (Atasan langsung MR Rudi) |
-| **MR** | Rudi Hartono | `mr@mersi.com` | Joko Widodo (`dm`) | Medical Representative Utama |
-| **MR 2** | Ahmad Dahlan | `mr2@mersi.com` | Joko Widodo (`dm`) | MR Pembanding (Uji negatif kepemilikan/privasi) |
-| **DM 2** | Hendra Gunawan | `dm2@mersi.com` | Siti Rahma (`rsm`) | DM Pembanding (Uji negatif bukan atasan langsung) |
+| **MM** | Budi Santoso | `mm@mersi.com` | *- (Puncak Hierarki)* | Marketing Manager Nasional (Review level tertinggi) |
+| **RSM** | Siti Rahma | `rsm@mersi.com` | Budi Santoso (`mm`) | Regional Sales Manager (DKI Jakarta) |
+| **DM** | Wisnu Santhika | `dm@mersi.com` | Siti Rahma (`rsm`) | District Manager (Jakarta Selatan - Atasan langsung MR Rudi) |
+| **MR** | Rudi Hartono | `mr@mersi.com` | Wisnu Santhika (`dm`) | Medical Representative Utama (Jakarta Selatan 1) |
+| **MR 2** | Ahmad Dahlan | `mr2@mersi.com` | Wisnu Santhika (`dm`) | MR Pembanding (Jakarta Selatan 2 - Uji negatif kepemilikan/privasi) |
+| **DM 2** | Hendra Gunawan | `dm2@mersi.com` | Siti Rahma (`rsm`) | DM Pembanding (Jakarta Timur - Uji negatif bukan atasan langsung) |
 
 ---
 
@@ -192,7 +192,7 @@ Untuk demonstrasi teknis di hadapan tim penilai:
 1. **Menit 0–5:** Paparan ringkas arsitektur monolith Laravel + MySQL InnoDB, hierarki peran MR-DM-RSM-MM, dan prinsip P0 sebelum P1.
 2. **Menit 5–12 (Live Demo Alur Happy Path PDF-01):**
    * Login sebagai Rudi Hartono (MR) &rarr; Buat Call List baru &rarr; Ajukan ke atasan.
-   * Login sebagai Joko Widodo (DM) &rarr; Buka tab Persetujuan Masuk &rarr; Setujui Call List.
+   * Login sebagai Wisnu Santhika (DM) &rarr; Buka tab Persetujuan Masuk &rarr; Setujui Call List.
    * Kembali ke MR &rarr; Buat Call Plan &rarr; Eksekusi Call Actual (foto, TTD, detailing produk).
 3. **Menit 12–20 (Live Demo Proteksi Bisnis & Skenario Negatif):**
    * Demo **PDF-02:** Menolak pembuatan Plan dari Call List Draft.
