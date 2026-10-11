@@ -134,7 +134,7 @@
                 </label>
                 <input type="text" id="plannedTimeInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
                        style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
-                       onblur="window.normalizeTime24(this)">
+                       oninput="window.autoFormatTimeInput(this)" onblur="window.normalizeTime24(this)">
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">

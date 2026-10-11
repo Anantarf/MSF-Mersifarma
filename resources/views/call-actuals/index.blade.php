@@ -159,13 +159,13 @@
                         <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
                         <input type="text" id="checkInInput" required value="08.30" maxlength="5" inputmode="numeric" placeholder="08.30"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
-                               onblur="window.normalizeTime24(this)">
+                               oninput="window.autoFormatTimeInput(this)" onblur="window.normalizeTime24(this)">
                     </div>
                     <div>
                         <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
                         <input type="text" id="checkOutInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
                                style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
-                               onblur="window.normalizeTime24(this)">
+                               oninput="window.autoFormatTimeInput(this)" onblur="window.normalizeTime24(this)">
                     </div>
                 </div>
 

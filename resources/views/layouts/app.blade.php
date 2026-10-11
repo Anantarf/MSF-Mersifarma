@@ -1042,6 +1042,17 @@
             }
         };
 
+        window.autoFormatTimeInput = function(el) {
+            if (!el) return;
+            let digits = el.value.replace(/\D/g, '');
+            if (digits.length > 4) digits = digits.substring(0, 4);
+            if (digits.length >= 3) {
+                el.value = digits.substring(0, 2) + '.' + digits.substring(2);
+            } else {
+                el.value = digits;
+            }
+        };
+
         // Native Network Status Listeners (Efficient & Friendly)
         window.addEventListener('online', () => {
             window.showToast('Koneksi internet terhubung kembali.', 'info', 3000);
