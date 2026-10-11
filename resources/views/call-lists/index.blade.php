@@ -42,7 +42,7 @@
                 <thead>
                     <tr>
                         <th>Periode</th>
-                        <th>Target Sasaran</th>
+                        <th>Target Dokter</th>
                         <th>Status</th>
                         <th>Atasan Peninjau</th>
                         <th style="text-align: right;">Aksi</th>
@@ -87,7 +87,7 @@
                     <div id="statTotalSubordinates" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">0</div>
                 </div>
                 <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border);">
-                    <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Dokter Sasaran</div>
+                    <div style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Target Dokter</div>
                     <div id="statTotalDoctors" class="tabular-nums" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">0</div>
                 </div>
                 <div style="padding: 0.65rem 0.85rem; border-right: 1px solid var(--border); background: #ecfdf5;">
@@ -116,7 +116,7 @@
                     <tr>
                         <th>Periode</th>
                         <th>Bawahan Pengaju</th>
-                        <th>Target Sasaran</th>
+                        <th>Target Dokter</th>
                         <th>Status</th>
                         <th style="text-align: right;">Aksi</th>
                     </tr>
@@ -469,7 +469,7 @@
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(cl.period_month)}</div>
                     </td>
                     <td style="white-space: nowrap;">
-                        <strong style="color: var(--text-main);">${cl.doctor_count} Dokter Sasaran</strong>
+                        <strong style="color: var(--text-main);">${cl.doctor_count} Target Dokter</strong>
                     </td>
                     <td>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
@@ -536,7 +536,7 @@
                     <strong style="color: var(--text-main);">${escapeHtml(cl.owner_name)}</strong>
                 </td>
                 <td style="white-space: nowrap;">
-                    <strong>${cl.doctor_count} Dokter Sasaran</strong>
+                    <strong>${cl.doctor_count} Target Dokter</strong>
                 </td>
                 <td>
                     <span class="status-badge status-pending">Menunggu Review</span>
@@ -613,7 +613,7 @@
                                 <div class="team-roster-meta">
                                     <div class="team-roster-count">
                                         <span class="team-roster-num tabular-nums">${sub.doctor_count}</span>
-                                        <span class="team-roster-label">Dokter Sasaran</span>
+                                        <span class="team-roster-label">Target Dokter</span>
                                     </div>
                                     <div class="team-roster-status ${statusTheme}">
                                         <span class="team-roster-dot"></span>
@@ -657,7 +657,7 @@
         const selectedDoctors = Array.from(document.querySelectorAll('#doctorPickerList input[name="doctor_ids"]:checked')).map(cb => parseInt(cb.value));
 
         if (!selectedDoctors.length) {
-            errEl.innerText = 'Pilih minimal 1 dokter target sasaran dari daftar.';
+            errEl.innerText = 'Pilih minimal 1 target dokter dari daftar.';
             errEl.style.display = 'block';
             return;
         }
@@ -821,7 +821,7 @@
                 </div>
 
                 <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Daftar Dokter Sasaran (${cl.doctors.length})</h4>
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Daftar Target Dokter (${cl.doctors.length})</h4>
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto;">
                         ${cl.doctors.map((doc, idx) => `
                             <div style="font-size: 0.85rem; padding: 0.4rem; background: white; border: 1px solid var(--border); border-radius: 0.25rem;">

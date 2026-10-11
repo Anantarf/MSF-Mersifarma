@@ -8,7 +8,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--secondary); letter-spacing: -0.02em; margin-bottom: 0.15rem;">Jadwal Kunjungan</h1>
-            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Plan : Perencanaan jadwal harian kunjungan dokter sasaran dari Call List yang telah disetujui.</p>
+            <p style="color: var(--text-muted); font-size: 0.8125rem;">Call Plan : Perencanaan jadwal harian kunjungan target dokter dari Call List yang telah disetujui.</p>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()">
@@ -59,7 +59,7 @@
                 <thead>
                     <tr>
                         <th>Jadwal Kunjungan</th>
-                        <th>Dokter Sasaran</th>
+                        <th>Target Dokter</th>
                         <th>Spesialisasi & Faskes</th>
                         <th>Status</th>
                         <th style="text-align: right;">Aksi</th>
@@ -104,10 +104,10 @@
                 </small>
             </div>
 
-            <!-- 2. Pilih Dokter Sasaran dari Call List Terpilih -->
+            <!-- 2. Pilih Target Dokter dari Call List Terpilih -->
             <div style="margin-bottom: 1rem;">
                 <label for="doctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Pilih Dokter Sasaran:
+                    Pilih Target Dokter:
                 </label>
                 <select id="doctorSelect" required disabled onchange="onDoctorChange()"
                         style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
@@ -493,7 +493,7 @@
                     doctorSelect.innerHTML = '<option value="">Tidak ada dokter di Call List ini</option>';
                     return;
                 }
-                doctorSelect.innerHTML = '<option value="">-- Pilih Dokter Sasaran --</option>' +
+                doctorSelect.innerHTML = '<option value="">-- Pilih Target Dokter --</option>' +
                     currentCallListDoctors.map(doc => `
                         <option value="${doc.id}">
                             ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})
@@ -550,7 +550,7 @@
             noticeEl.style.background = '#f0fdf4';
             noticeEl.style.borderColor = '#bbf7d0';
             noticeEl.style.color = '#166534';
-            noticeEl.innerHTML = '✓ Seluruh tanggal pada bulan ini masih tersedia untuk dokter sasaran ini.';
+            noticeEl.innerHTML = '✓ Seluruh tanggal pada bulan ini masih tersedia untuk target dokter ini.';
             return;
         }
 
@@ -625,7 +625,7 @@
         }
 
         if (!doctorId) {
-            errEl.innerText = 'Pilih dokter sasaran dari Call List.';
+            errEl.innerText = 'Pilih target dokter dari Call List.';
             errEl.style.display = 'block';
             return;
         }

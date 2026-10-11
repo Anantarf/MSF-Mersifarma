@@ -62,7 +62,7 @@
                 <thead>
                     <tr>
                         <th>Jam Rencana</th>
-                        <th>Dokter Sasaran</th>
+                        <th>Target Dokter</th>
                         <th>Spesialisasi & Alamat</th>
                         <th style="text-align: right;">Aksi</th>
                     </tr>
@@ -92,7 +92,7 @@
                 <thead>
                     <tr>
                         <th>Tanggal & Jam</th>
-                        <th>Dokter Sasaran</th>
+                        <th>Target Dokter</th>
                         <th>Kategori Kunjungan</th>
                         <th>Detailing Produk</th>
                         <th>Verifikasi Bukti</th>
@@ -126,7 +126,7 @@
 
             <!-- 1. Pilihan Dokter -->
             <div style="margin-bottom: 1rem;">
-                <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Dokter Sasaran (MCL)</label>
+                <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Target Dokter (MCL)</label>
                 <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
             </div>
 
@@ -798,7 +798,7 @@
         }
 
         section.style.display = 'block';
-        document.getElementById('activeSessionDoctorName').innerText = activeSession.doctor_name || 'Dokter Sasaran';
+        document.getElementById('activeSessionDoctorName').innerText = activeSession.doctor_name || 'Target Dokter';
         document.getElementById('activeSessionDoctorDetail').innerText = `${activeSession.doctor_specialization || 'Spesialis Umum'} - ${activeSession.doctor_address || '-'}`;
 
         const checkInDate = new Date(activeSession.check_in_at);
@@ -896,7 +896,7 @@
     function openCancelSessionModal() {
         if (!activeSession) return;
         document.getElementById('cancelSessionId').value = activeSession.id;
-        document.getElementById('cancelSessionDoctorName').innerText = activeSession.doctor_name || 'Dokter Sasaran';
+        document.getElementById('cancelSessionDoctorName').innerText = activeSession.doctor_name || 'Target Dokter';
         document.getElementById('cancelSessionReasonInput').value = '';
         const errEl = document.getElementById('cancelSessionModalError');
         errEl.style.display = 'none';
