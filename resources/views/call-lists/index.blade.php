@@ -147,7 +147,7 @@
 
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Pilih Dokter Target dari MCL (Minimal 1 Dokter):
+                    Pilih Dokter Target (Minimal 1):
                 </label>
                 <div class="modal-filter-wrap">
                     <i class="bi bi-search"></i>
@@ -380,7 +380,7 @@
     function renderDoctorPicker(selectedIds = []) {
         const container = document.getElementById('doctorPickerList');
         if (!allDoctors.length) {
-            container.innerHTML = '<span style="font-size:0.85rem; color:red;">Gagal memuat dokter MCL.</span>';
+            container.innerHTML = '<span style="font-size:0.85rem; color:red;">Gagal memuat daftar dokter.</span>';
             return;
         }
         container.innerHTML = allDoctors.map(doc => `

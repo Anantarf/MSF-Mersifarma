@@ -1023,6 +1023,25 @@
             return `${day} ${month} ${year}, ${h}.${m} WIB`;
         };
 
+        window.normalizeTime24 = function(el) {
+            if (!el || !el.value) return;
+            let val = el.value.trim().replace(':', '.');
+            if (/^\d{1,2}$/.test(val)) {
+                val = val.padStart(2, '0') + '.00';
+            } else if (/^\d{3}$/.test(val)) {
+                val = '0' + val[0] + '.' + val.substring(1);
+            } else if (/^\d{4}$/.test(val)) {
+                val = val.substring(0, 2) + '.' + val.substring(2);
+            } else if (/^(\d{1,2})\.(\d{1,2})$/.test(val)) {
+                const parts = val.split('.');
+                val = parts[0].padStart(2, '0') + '.' + parts[1].padEnd(2, '0');
+            }
+            const match = val.match(/^([0-1][0-9]|2[0-3])\.([0-5][0-9])$/);
+            if (match) {
+                el.value = val;
+            }
+        };
+
         // Native Network Status Listeners (Efficient & Friendly)
         window.addEventListener('online', () => {
             window.showToast('Koneksi internet terhubung kembali.', 'info', 3000);

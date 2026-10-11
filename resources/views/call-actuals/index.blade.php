@@ -117,32 +117,23 @@
         <div id="actualModalError" style="display: none; margin-bottom: 0.85rem;" class="alert alert-danger"></div>
 
         <!-- 3-STEP PROGRESS STEPPER -->
-        <div class="stepper-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.15rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+        <div class="stepper-wrap" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border);">
             <!-- Step 1 -->
-            <div id="stepIndicator1" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(1)">
+            <div id="stepIndicator1" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(1)">
                 <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">1</span>
-                <div>
-                    <div style="font-size: 0.775rem; font-weight: 700; color: var(--primary);">Dokter & Waktu</div>
-                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Konteks</small>
-                </div>
+                <span class="step-title" style="font-size: 0.825rem; font-weight: 700; color: var(--primary);">Dokter & Waktu</span>
             </div>
-            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine1"></div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.65rem;" id="stepLine1"></div>
             <!-- Step 2 -->
-            <div id="stepIndicator2" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(2)">
+            <div id="stepIndicator2" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(2)">
                 <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">2</span>
-                <div>
-                    <div style="font-size: 0.775rem; font-weight: 500; color: var(--text-muted);">Detailing Produk</div>
-                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Min. 1 Item</small>
-                </div>
+                <span class="step-title" style="font-size: 0.825rem; font-weight: 500; color: var(--text-muted);">Produk</span>
             </div>
-            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.5rem;" id="stepLine2"></div>
+            <div style="flex: 1; height: 2px; background: var(--border); margin: 0 0.65rem;" id="stepLine2"></div>
             <!-- Step 3 -->
-            <div id="stepIndicator3" style="display: flex; align-items: center; gap: 0.45rem; cursor: pointer;" onclick="goToActualStep(3)">
+            <div id="stepIndicator3" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="goToActualStep(3)">
                 <span class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">3</span>
-                <div>
-                    <div style="font-size: 0.775rem; font-weight: 500; color: var(--text-muted);">Bukti Verifikasi</div>
-                    <small style="font-size: 0.675rem; color: var(--text-muted); display: block;">Foto & Validasi</small>
-                </div>
+                <span class="step-title" style="font-size: 0.825rem; font-weight: 500; color: var(--text-muted);">Bukti Kunjungan</span>
             </div>
         </div>
 
@@ -154,33 +145,34 @@
             <div id="stepSection1">
                 <!-- 1. Pilihan Dokter -->
                 <div style="margin-bottom: 1rem;">
-                    <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Target Dokter (MCL)</label>
+                    <label for="actualDoctorSelect" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Dokter</label>
                     <select id="actualDoctorSelect" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;"></select>
                 </div>
 
                 <!-- 2. Tanggal & Jam Kunjungan -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 0.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.15rem;">
                     <div>
                         <label for="actualDateInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Tanggal Kunjungan</label>
-                        <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                        <input type="date" id="actualDateInput" required style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
                     </div>
                     <div>
-                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in (00.00 - 23.59 WIB)</label>
-                        <input type="time" id="checkInInput" required value="08:30" step="60" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                        <label for="checkInInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-in</label>
+                        <input type="text" id="checkInInput" required value="08.30" maxlength="5" inputmode="numeric" placeholder="08.30"
+                               style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
+                               onblur="window.normalizeTime24(this)">
                     </div>
                     <div>
-                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out (00.00 - 23.59 WIB)</label>
-                        <input type="time" id="checkOutInput" required value="09:00" step="60" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
+                        <label for="checkOutInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">Jam Check-out</label>
+                        <input type="text" id="checkOutInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
+                               style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
+                               onblur="window.normalizeTime24(this)">
                     </div>
-                </div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1.15rem;">
-                    Format waktu 24 jam Indonesia (00.00 - 23.59 WIB). Contoh: 08.30 atau 14.15.
                 </div>
 
                 <!-- 3. Alasan Kunjungan (jika di luar rencana) -->
                 <div id="visitReasonWrap" style="margin-bottom: 1.15rem; display: none;">
                     <label for="visitReasonInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--secondary);">
-                        Alasan Kunjungan di Luar Rencana (Opsional):
+                        Alasan Kunjungan (Opsional)
                     </label>
                     <textarea id="visitReasonInput" rows="2" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.85rem;" placeholder="Contoh: Kunjungan mendadak atas permintaan dokter"></textarea>
                 </div>
@@ -195,24 +187,24 @@
                     <div style="display: flex; gap: 0.5rem; margin-left: auto;">
                         <button type="button" class="btn btn-outline" onclick="closeActualModal()">Batal</button>
                         <button type="button" class="btn btn-primary" onclick="goToActualStep(2)">
-                            Lanjut: Detailing Produk <i class="bi bi-arrow-right"></i>
+                            Lanjut <i class="bi bi-arrow-right"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- ================= STEP 2: DETAILING PRODUK ================= -->
+            <!-- ================= STEP 2: PRODUK ================= -->
             <div id="stepSection2" style="display: none;">
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--secondary);">
-                        Produk Detailing yang Dipresentasikan
+                        Pilih Produk
                     </label>
                     <p style="font-size: 0.775rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-                        Pilih minimal satu item produk obat terapi farmasi yang dipresentasikan kepada dokter.
+                        Centang produk obat yang dipresentasikan ke dokter.
                     </p>
                     <div class="modal-filter-wrap" style="margin-bottom: 0.5rem;">
                         <i class="bi bi-search"></i>
-                        <input type="text" id="productSearchInput" class="modal-filter-input" placeholder="Cari nama produk atau kategori obat..." oninput="filterProductPicker(this.value)">
+                        <input type="text" id="productSearchInput" class="modal-filter-input" placeholder="Cari produk obat..." oninput="filterProductPicker(this.value)">
                     </div>
                     <div id="productPicker" style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.5rem; background: #fafafa;">
                         Memuat produk...
@@ -222,10 +214,10 @@
                 <!-- Step 2 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="goToActualStep(1)">
-                        <i class="bi bi-arrow-left"></i> Kembali: Dokter & Waktu
+                        <i class="bi bi-arrow-left"></i> Kembali
                     </button>
                     <button type="button" class="btn btn-primary" onclick="goToActualStep(3)">
-                        Lanjut: Bukti Verifikasi <i class="bi bi-arrow-right"></i>
+                        Lanjut <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -235,9 +227,9 @@
                 <!-- 1. Foto Kunjungan -->
                 <div style="margin-bottom: 1.15rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">1. Foto Bukti di Lokasi</label>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">Foto Bukti Kunjungan</label>
                         <button type="button" class="btn btn-outline" style="min-height: 26px; padding: 0.1rem 0.45rem; font-size: 0.725rem;" onclick="useSamplePhoto()">
-                            + Contoh Foto Klinik
+                            + Gunakan Foto Sampel
                         </button>
                     </div>
                     <input type="hidden" id="photoUrlInput" required>
@@ -275,7 +267,7 @@
                 <!-- 2. Verifikasi Bukti Dokter -->
                 <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 1rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
-                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">2. Verifikasi Bukti Dokter</label>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: var(--secondary);">Verifikasi Dokter</label>
                         <div style="display: flex; gap: 0.25rem; background: #e2e8f0; padding: 0.15rem; border-radius: 0.375rem;">
                             <button type="button" id="tabSignTouch" class="btn btn-sm" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; border-radius: 0.25rem; background: white; color: var(--primary); font-weight: 600;" onclick="switchVerificationMode('touch')">
                                 <i class="bi bi-pen"></i> Tanda Tangan Layar
@@ -330,10 +322,10 @@
                 <!-- Step 3 Footer Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.85rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="goToActualStep(2)">
-                        <i class="bi bi-arrow-left"></i> Kembali: Detailing
+                        <i class="bi bi-arrow-left"></i> Kembali
                     </button>
                     <button type="submit" id="actualSubmitButton" class="btn btn-primary" style="font-weight: 700;">
-                        <i class="bi bi-check2-circle"></i> Simpan Laporan Kunjungan
+                        <i class="bi bi-check2-circle"></i> Simpan Laporan
                     </button>
                 </div>
             </div>
@@ -938,7 +930,7 @@
     function renderDoctorSelect(selectedDoctorId = '') {
         const select = document.getElementById('actualDoctorSelect');
         if (!select) return;
-        select.innerHTML = '<option value="">-- Pilih Dokter MCL --</option>' + doctors.map((doctor) => `
+        select.innerHTML = '<option value="">-- Pilih Dokter --</option>' + doctors.map((doctor) => `
             <option value="${doctor.id}" ${String(doctor.id) === String(selectedDoctorId) ? 'selected' : ''}>
                 ${escapeHtml(doctor.name)} (${escapeHtml(doctor.specialization || 'Umum')})
             </option>
@@ -1117,7 +1109,7 @@
             const checkOut = document.getElementById('checkOutInput')?.value;
 
             if (!docId) {
-                errEl.innerText = 'Silakan pilih Target Dokter (MCL) terlebih dahulu.';
+                errEl.innerText = 'Silakan pilih dokter terlebih dahulu.';
                 errEl.style.display = 'block';
                 return;
             }
@@ -1132,7 +1124,7 @@
         if (step > 2) {
             const productIds = Array.from(document.querySelectorAll('#productPicker input[name="product_ids"]:checked'));
             if (!productIds.length) {
-                errEl.innerText = 'Pilih minimal satu produk obat farmasi yang dipresentasikan ke dokter.';
+                errEl.innerText = 'Pilih minimal satu produk obat yang dipresentasikan.';
                 errEl.style.display = 'block';
                 return;
             }
@@ -1156,7 +1148,7 @@
             const item = document.getElementById(`stepIndicator${i}`);
             if (!item) continue;
             const num = item.querySelector('.step-num');
-            const title = item.querySelector('div > div');
+            const title = item.querySelector('.step-title');
 
             if (i < currentActualStep) {
                 num.style.background = 'var(--success)';
@@ -1164,7 +1156,7 @@
                 num.innerHTML = '✓';
                 if (title) {
                     title.style.color = 'var(--secondary)';
-                    title.style.fontWeight = '700';
+                    title.style.fontWeight = '600';
                 }
             } else if (i === currentActualStep) {
                 num.style.background = 'var(--primary)';
@@ -1247,20 +1239,20 @@
 
         const signatureUrl = document.getElementById('signatureUrlInput').value.trim();
         if (!signatureUrl) {
-            errorEl.innerText = 'Bukti verifikasi dokter (tanda tangan layar sentuh atau foto stempel fisik resmi) wajib diisi.';
+            errorEl.innerText = 'Bukti verifikasi dokter (tanda tangan atau stempel fisik) wajib diisi.';
             errorEl.style.display = 'block';
             return;
         }
 
         const productIds = Array.from(document.querySelectorAll('#productPicker input[name="product_ids"]:checked')).map((input) => parseInt(input.value));
         if (!productIds.length) {
-            errorEl.innerText = 'Pilih minimal satu produk detailing farmasi.';
+            errorEl.innerText = 'Pilih minimal satu produk obat.';
             errorEl.style.display = 'block';
             return;
         }
 
         button.disabled = true;
-        button.innerText = 'Menyimpan Laporan...';
+        button.innerText = 'Menyimpan...';
 
         try {
             const planId = document.getElementById('actualPlanId').value;
@@ -1278,8 +1270,8 @@
                 payload.plan_id = planId ? parseInt(planId) : null;
                 payload.doctor_id = parseInt(document.getElementById('actualDoctorSelect').value);
                 payload.visit_date = document.getElementById('actualDateInput').value;
-                payload.check_in = document.getElementById('checkInInput').value;
-                payload.check_out = document.getElementById('checkOutInput').value;
+                payload.check_in = document.getElementById('checkInInput').value.trim().replace('.', ':');
+                payload.check_out = document.getElementById('checkOutInput').value.trim().replace('.', ':');
             }
 
             const res = await window.apiFetch('/api/call-actuals', {
@@ -1290,7 +1282,7 @@
             if (result.success) {
                 clearActualDraft(false);
                 closeActualModal();
-                showActualAlert('Laporan kunjungan dokter berhasil disimpan dan dicatat.');
+                showActualAlert('Laporan kunjungan dokter berhasil disimpan.');
                 await loadActiveSession();
                 loadTodayPlans();
                 loadActuals();

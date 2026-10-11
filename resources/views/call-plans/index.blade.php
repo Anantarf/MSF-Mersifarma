@@ -130,13 +130,11 @@
             <!-- 4. Jam Rencana Kunjungan -->
             <div style="margin-bottom: 1.5rem;">
                 <label for="plannedTimeInput" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    Jam Rencana Kunjungan (00.00 - 23.59 WIB):
+                    Jam Rencana Kunjungan
                 </label>
-                <input type="time" id="plannedTimeInput" required value="09:00" step="60"
-                       style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem;">
-                <small style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
-                    Format waktu 24 jam Indonesia (00.00 - 23.59 WIB). Contoh: 09.00 atau 14.30.
-                </small>
+                <input type="text" id="plannedTimeInput" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00"
+                       style="width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; font-size: 0.9rem; font-variant-numeric: tabular-nums;"
+                       onblur="window.normalizeTime24(this)">
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
@@ -639,7 +637,7 @@
         const callListId = document.getElementById('callListSelect').value;
         const doctorId = document.getElementById('doctorSelect').value;
         const planDate = document.getElementById('planDateInput').value;
-        const plannedTime = document.getElementById('plannedTimeInput').value;
+        const plannedTime = (document.getElementById('plannedTimeInput').value || '').trim().replace('.', ':');
 
         if (!callListId) {
             errEl.innerText = 'Pilih Call List yang telah disetujui (Approved).';
