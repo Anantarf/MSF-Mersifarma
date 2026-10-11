@@ -147,7 +147,7 @@
 
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
-                    <i class="bi bi-person-circle" style="color: var(--primary); margin-right: 0.25rem;"></i>Pilih Dokter Target (Minimal 1):
+                    Pilih Dokter Target (Minimal 1):
                 </label>
                 <div class="modal-filter-wrap">
                     <i class="bi bi-search"></i>
