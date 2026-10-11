@@ -244,11 +244,8 @@
             <div id="stepSection3" style="display: none;">
                 <!-- 1. Foto Kunjungan -->
                 <div style="margin-bottom: 1.15rem; background: #ffffff; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.85rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div style="margin-bottom: 0.5rem;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 0;">Foto Bukti Kunjungan</label>
-                        <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;" onclick="useSamplePhoto()">
-                            Gunakan Foto Sampel
-                        </button>
                     </div>
                     <input type="hidden" id="photoUrlInput" required>
 
@@ -841,16 +838,6 @@
             };
             reader.readAsDataURL(file);
         }
-    }
-
-    function useSamplePhoto() {
-        const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="#e0f2fe"/><rect x="20" y="20" width="260" height="160" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2"/><circle cx="150" cy="85" r="35" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2"/><path d="M150 65v40M130 85h40" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/><text x="150" y="145" font-family="sans-serif" font-size="12" font-weight="bold" fill="#0f172a" text-anchor="middle">KLINIK MITRA MERSIFARMA</text><text x="150" y="162" font-family="sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Bukti Kunjungan Lapangan Terverifikasi</text></svg>`;
-        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
-        document.getElementById('photoUrlInput').value = dataUrl;
-        document.getElementById('photoPreviewImg').src = dataUrl;
-        document.getElementById('photoFileName').innerText = 'klinik-mitra-verified.svg';
-        document.getElementById('photoPreviewContainer').style.display = 'flex';
-        saveActualDraft();
     }
 
     function saveActualDraft() {
