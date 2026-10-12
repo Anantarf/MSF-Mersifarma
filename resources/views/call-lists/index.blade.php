@@ -8,7 +8,7 @@
     <div class="target-page-head">
         <div>
             <h1 class="target-page-title">Target Dokter</h1>
-            <p class="target-page-subtitle">Daftar target dokter dan komitmen kunjungan bulanan.</p>
+            <p class="target-page-subtitle"><strong>Call List Bulanan</strong> : Daftar target dokter dan komitmen kunjungan bulanan.</p>
         </div>
         <div>
             @if(auth()->user()->role === 'mr')
@@ -24,6 +24,9 @@
     <div class="target-tabs">
         <button id="tabReview" class="tab-btn active" data-action="switch-tab" data-tab="review">
             Persetujuan Masuk (<span id="reviewCount" class="tabular-nums">0</span>)
+        </button>
+        <button id="tabCampaigns" class="tab-btn" data-action="switch-tab" data-tab="campaigns">
+            Program Rekomendasi
         </button>
         <button id="tabMyLists" class="tab-btn" data-action="switch-tab" data-tab="myLists">
             Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
@@ -213,6 +216,51 @@
             </p>
         </div>
     </div>
+
+    <!-- ================= TAB 3: PROGRAM REKOMENDASI MANAJERIAL (P1) ================= -->
+    <div id="campaignsContainer" class="target-list-stack" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div>
+                <h3 style="font-size: 1.05rem; color: var(--secondary); margin-bottom: 0.2rem;">Program Rekomendasi Distrik & Fokus Produk</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Arahan strategis dokter target dan produk promosi (durasi 1–3 bulan).</p>
+            </div>
+            @if(in_array(auth()->user()->role, ['dm', 'rsm']))
+            <button type="button" class="btn btn-primary btn-sm" data-action="open-create-campaign">
+                + Buat Program Baru
+            </button>
+            @endif
+        </div>
+
+        <div id="loadingCampaigns" class="target-loader" style="display: none;"></div>
+
+        <!-- Executive Summary Section (Khusus RSM & MM) -->
+        <div id="executiveSummarySection" style="display: none; margin-bottom: 1.25rem;">
+            <div id="executiveMetricGrid" class="metric-strip-grid"></div>
+            <div id="districtBreakdownWrap" class="target-card" style="padding: 1rem; overflow-x: auto;">
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--secondary);">Ringkasan Performa Antar-Distrik</h4>
+                <table class="target-table">
+                    <thead>
+                        <tr>
+                            <th>Distrik</th>
+                            <th>Penanggung Jawab (DM)</th>
+                            <th>Target Dokter</th>
+                            <th>Terkunjungi (Reach %)</th>
+                            <th>Detailing Obat Fokus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="districtBreakdownTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Stack Kartu Kampanye Aktif -->
+        <div id="campaignCardsStack" class="target-list-stack"></div>
+
+        <div id="emptyCampaigns" class="target-empty" style="display: none;">
+            <h4>Belum Ada Program Rekomendasi</h4>
+            <p>Belum ada program kampanye rekomendasi aktif untuk wilayah ini.</p>
+        </div>
+    </div>
     @endif
 </div>
 
@@ -370,6 +418,117 @@
                 Lanjutkan
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: BUAT PROGRAM REKOMENDASI (DM/RSM) ================= -->
+<div id="createCampaignModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card target-form-modal" style="max-width: 620px;">
+        <div class="target-detail-head">
+            <div>
+                <h3 class="target-detail-title">Buat Program Rekomendasi Distrik</h3>
+                <span class="target-detail-subtitle">Tentukan obat fokus promosi dan dokter target (berlaku 1–3 bulan)</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-create-campaign">&times;</button>
+        </div>
+
+        <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
+
+        <form id="createCampaignForm">
+            <div class="target-field">
+                <label class="target-field-label">Judul Program Rekomendasi:</label>
+                <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="target-field">
+                    <label class="target-field-label">Durasi Program:</label>
+                    <select id="campaignDurationSelect" class="target-input" required>
+                        <option value="1">1 Bulan</option>
+                        <option value="2">2 Bulan</option>
+                        <option value="3" selected>3 Bulan (Maksimal)</option>
+                    </select>
+                </div>
+                <div class="target-field">
+                    <label class="target-field-label">Target Spesialisasi:</label>
+                    <input type="text" id="campaignSpecInput" class="target-input" placeholder="Contoh: Spesialis Anak">
+                </div>
+            </div>
+
+            <div class="target-field">
+                <label class="target-field-label">Pilih Obat Fokus Promosi (Maksimal 5 Produk):</label>
+                <div id="campaignProductCheckboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat produk master...</span>
+                </div>
+            </div>
+
+            <div class="target-field">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <label class="target-field-label" style="margin-bottom: 0;">Pilih Dokter Target di Distrik:</label>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);"><span id="campaignSelectedDocCount">0</span> Dokter Terpilih</span>
+                </div>
+                <div id="campaignDoctorCheckboxes" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 160px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat dokter distrik...</span>
+                </div>
+            </div>
+
+            <div class="target-field">
+                <label class="target-field-label">Catatan Tambahan (Opsional):</label>
+                <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing ke MR..."></textarea>
+            </div>
+
+            <div class="target-modal-foot">
+                <span></span>
+                <div class="target-actions">
+                    <button type="button" class="btn btn-outline" data-action="close-create-campaign">Batal</button>
+                    <button type="submit" id="btnSubmitCampaign" class="btn btn-primary">
+                        Ajukan ke Atasan
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL: DAFTAR DOKTER BELUM DIKUNJUNGI ================= -->
+<div id="unvisitedDoctorsModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 540px;">
+        <div class="target-detail-head">
+            <div>
+                <h3 id="unvisitedModalTitle" class="target-detail-title">Dokter Belum Dikunjungi</h3>
+                <span class="target-detail-subtitle">Daftar dokter target rekomendasi yang belum memiliki Call Actual</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-unvisited-modal">&times;</button>
+        </div>
+
+        <div id="unvisitedDoctorsListWrap" style="max-height: 280px; overflow-y: auto; margin: 1rem 0;">
+            <ul id="unvisitedDoctorsList" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+        </div>
+
+        <div class="target-dialog-actions">
+            <button type="button" class="btn btn-primary btn-sm" data-action="close-unvisited-modal">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL: TOLAK PROGRAM REKOMENDASI ================= -->
+<div id="rejectCampaignModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 440px;">
+        <h3 class="target-detail-title" style="color: var(--danger);">Tolak Program Rekomendasi</h3>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            Berikan catatan alasan penolakan agar pembuat program dapat merevisi target atau fokus produk.
+        </p>
+        <form id="rejectCampaignForm">
+            <input type="hidden" id="rejectCampaignId" value="">
+            <div class="target-field">
+                <label class="target-field-label">Alasan Penolakan:</label>
+                <textarea id="rejectCampaignReasonInput" class="target-input target-textarea" rows="3" required placeholder="Contoh: Sesuaikan fokus obat dengan ketersediaan stok regional..."></textarea>
+            </div>
+            <div class="target-dialog-actions">
+                <button type="button" class="btn btn-outline" data-action="close-reject-campaign">Batal</button>
+                <button type="submit" class="btn target-danger-button">Tolak Program</button>
+            </div>
+        </form>
     </div>
 </div>
 

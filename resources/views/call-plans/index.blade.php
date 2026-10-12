@@ -8,7 +8,7 @@
     <div class="plan-page-head">
         <div>
             <h1 class="plan-page-title">Jadwal Kunjungan</h1>
-            <p class="plan-page-subtitle">Jadwal dari target dokter yang sudah disetujui.</p>
+            <p class="plan-page-subtitle"><strong>Call Plan</strong> : Jadwal kunjungan dari target dokter yang sudah disetujui.</p>
         </div>
         <div>
             @if(auth()->user()->role === 'mr')

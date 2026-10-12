@@ -308,12 +308,27 @@ async function onCallListChange() {
                 doctorSelect.innerHTML = '<option value="">Tidak ada dokter di target ini</option>';
                 return;
             }
+            let recMap = {};
+            try {
+                const recRes = await window.apiFetch('/api/managerial-campaigns/recommendations');
+                const recData = await recRes.json();
+                if (recData.success && Array.isArray(recData.data)) {
+                    recData.data.forEach((item) => {
+                        recMap[item.doctor_id] = item;
+                    });
+                }
+            } catch (e) {}
+
             doctorSelect.innerHTML = '<option value="">-- Pilih Target Dokter --</option>' +
-                currentCallListDoctors.map(doc => `
-                    <option value="${doc.id}">
-                        ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})
-                    </option>
-                `).join('');
+                currentCallListDoctors.map(doc => {
+                    const rec = recMap[doc.id];
+                    const recLabel = rec ? ` [★ Rekomendasi: ${escapeHtml(rec.focus_products)}]` : '';
+                    return `
+                        <option value="${doc.id}">
+                            ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})${recLabel}
+                        </option>
+                    `;
+                }).join('');
             doctorSelect.disabled = false;
         }
     } catch (err) {

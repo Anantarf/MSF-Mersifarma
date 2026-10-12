@@ -9,9 +9,9 @@
         <div>
             <h1 class="actual-page-title">Pelaksanaan Kunjungan</h1>
             @if(auth()->user()->role === 'mr')
-            <p class="actual-page-subtitle" id="actualTodayLabel">Catatan kunjungan dokter.</p>
+            <p class="actual-page-subtitle" id="actualTodayLabel"><strong>Call Actual</strong> : Catatan kunjungan dokter dan pelaporan bukti lapangan.</p>
             @else
-            <p class="actual-page-subtitle">Rekap kunjungan tim.</p>
+            <p class="actual-page-subtitle"><strong>Call Actual</strong> : Rekapitulasi pelaksanaan kunjungan dan audit bukti tim.</p>
             @endif
         </div>
     </div>

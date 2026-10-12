@@ -3,6 +3,9 @@ const currentUserRole = pageEl?.dataset.currentUserRole || '';
 let allDoctors = [];
 let myCallLists = [];
 let reviewCallLists = [];
+let allCampaigns = [];
+let doctorRecommendationsMap = {};
+let masterProducts = [];
 let currentSelectedDoctorIds = new Set();
 let isFilterOnlySelected = false;
 let pickerCurrentPage = 1;
@@ -129,6 +132,27 @@ function bindCallListEvents() {
                     event.stopPropagation();
                     toggleDoctorSelection(parseInt(trigger.dataset.doctorId, 10));
                     break;
+                case 'open-create-campaign':
+                    openCreateCampaignModal();
+                    break;
+                case 'close-create-campaign':
+                    closeCreateCampaignModal();
+                    break;
+                case 'show-unvisited-doctors':
+                    if (trigger.dataset.campaignId) showUnvisitedDoctors(parseInt(trigger.dataset.campaignId, 10));
+                    break;
+                case 'close-unvisited-modal':
+                    closeUnvisitedModal();
+                    break;
+                case 'approve-campaign':
+                    if (trigger.dataset.campaignId) handleApproveCampaign(parseInt(trigger.dataset.campaignId, 10));
+                    break;
+                case 'open-reject-campaign':
+                    if (trigger.dataset.campaignId) openRejectCampaignModal(parseInt(trigger.dataset.campaignId, 10));
+                    break;
+                case 'close-reject-campaign':
+                    closeRejectCampaignModal();
+                    break;
                 default:
                     break;
             }
@@ -136,6 +160,8 @@ function bindCallListEvents() {
 
         document.getElementById('targetForm')?.addEventListener('submit', handleTargetFormSubmit);
         document.getElementById('rejectForm')?.addEventListener('submit', handleRejectSubmit);
+        document.getElementById('createCampaignForm')?.addEventListener('submit', handleCreateCampaignSubmit);
+        document.getElementById('rejectCampaignForm')?.addEventListener('submit', handleRejectCampaignSubmit);
         document.getElementById('doctorSearchInput')?.addEventListener('input', (event) => onDoctorSearchInput(event.target.value));
         document.getElementById('summaryMonthSelect')?.addEventListener('change', loadManagerSummary);
         document.getElementById('periodMonthSelect')?.addEventListener('change', syncPeriodToHiddenInput);
@@ -157,18 +183,33 @@ function switchTab(tab, isManual = true) {
         }
         if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.remove('active');
         if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.remove('active');
+        if (document.getElementById('tabCampaigns')) document.getElementById('tabCampaigns').classList.remove('active');
+
+        const myListsEl = document.getElementById('myListsContainer');
+        const reviewEl = document.getElementById('reviewContainer');
+        const campEl = document.getElementById('campaignsContainer');
 
         if (tab === 'myLists') {
             if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.add('active');
-            document.getElementById('myListsContainer').style.display = 'flex';
-            if (document.getElementById('reviewContainer')) document.getElementById('reviewContainer').style.display = 'none';
+            if (myListsEl) myListsEl.style.display = 'flex';
+            if (reviewEl) reviewEl.style.display = 'none';
+            if (campEl) campEl.style.display = 'none';
+        } else if (tab === 'campaigns') {
+            if (document.getElementById('tabCampaigns')) document.getElementById('tabCampaigns').classList.add('active');
+            if (myListsEl) myListsEl.style.display = 'none';
+            if (reviewEl) reviewEl.style.display = 'none';
+            if (campEl) {
+                campEl.style.display = 'flex';
+                loadCampaigns();
+            }
         } else {
             if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.add('active');
-            document.getElementById('myListsContainer').style.display = 'none';
-            if (document.getElementById('reviewContainer')) {
-                document.getElementById('reviewContainer').style.display = 'flex';
+            if (myListsEl) myListsEl.style.display = 'none';
+            if (reviewEl) {
+                reviewEl.style.display = 'flex';
                 loadManagerSummary();
             }
+            if (campEl) campEl.style.display = 'none';
         }
     }
 
@@ -178,6 +219,20 @@ async function loadDoctors() {
             const data = await res.json();
             if (data.success) {
                 allDoctors = data.data;
+            }
+
+            // Muat rekomendasi dokter aktif untuk distrik ini
+            try {
+                const recRes = await window.apiFetch('/api/managerial-campaigns/recommendations');
+                const recData = await recRes.json();
+                if (recData.success && Array.isArray(recData.data)) {
+                    doctorRecommendationsMap = {};
+                    recData.data.forEach((item) => {
+                        doctorRecommendationsMap[item.doctor_id] = item;
+                    });
+                }
+            } catch (recErr) {
+                console.warn('Gagal memuat data rekomendasi dokter', recErr);
             }
         } catch (err) {
             console.error('Gagal memuat dokter', err);
@@ -498,6 +553,12 @@ function renderDoctorPickerList() {
 
         container.innerHTML = pageDoctors.map(doc => {
             const isChecked = currentSelectedDoctorIds.has(doc.id);
+            const rec = doctorRecommendationsMap[doc.id];
+            const recBadge = rec ? `
+                <span class="badge-priority">★ Rekomendasi</span>
+                <span class="badge-focus-product">Fokus: ${escapeHtml(rec.focus_products)}</span>
+            ` : '';
+
             return `
                 <div class="doctor-selectable-row ${isChecked ? 'selected' : ''}" data-action="toggle-doctor-selection" data-doctor-id="${doc.id}">
                     <input type="checkbox" ${isChecked ? 'checked' : ''} data-action="toggle-doctor-selection" data-doctor-id="${doc.id}">
@@ -507,6 +568,7 @@ function renderDoctorPickerList() {
                             <span class="target-specialty-badge target-specialty-compact">
                                 ${escapeHtml(doc.specialization || 'Umum')}
                             </span>
+                            ${recBadge}
                         </div>
                         <div class="target-picker-address">
                             ${escapeHtml(doc.address || '-')}
@@ -981,3 +1043,438 @@ async function loadManagerSummary() {
             console.error('Gagal mengambil ringkasan monitoring manajerial', err);
         }
     }
+
+// =========================================================================
+// FITUR P1: PROGRAM REKOMENDASI MANAJERIAL & PEMANTAUAN PROGRES
+// =========================================================================
+
+async function loadCampaigns() {
+    const loadingEl = document.getElementById('loadingCampaigns');
+    const cardsStack = document.getElementById('campaignCardsStack');
+    const emptyEl = document.getElementById('emptyCampaigns');
+
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (cardsStack) cardsStack.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    try {
+        if (currentUserRole === 'rsm' || currentUserRole === 'mm') {
+            loadExecutiveSummary();
+        }
+
+        const res = await window.apiFetch('/api/managerial-campaigns');
+        const result = await res.json();
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (result.success && Array.isArray(result.data)) {
+            allCampaigns = result.data;
+            if (!allCampaigns.length) {
+                if (emptyEl) emptyEl.style.display = 'block';
+                return;
+            }
+            renderCampaignCards(allCampaigns);
+        }
+    } catch (err) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        console.error('Gagal memuat program kampanye', err);
+        showAlert('Gagal memuat data program rekomendasi.', 'danger');
+    }
+}
+
+async function renderCampaignCards(campaigns) {
+    const cardsStack = document.getElementById('campaignCardsStack');
+    if (!cardsStack) return;
+
+    cardsStack.innerHTML = campaigns.map(camp => {
+        let statusBadge = '<span class="status-badge status-draft">Draft</span>';
+        if (camp.status === 'approved') {
+            statusBadge = '<span class="status-badge status-approved">Disetujui</span>';
+        } else if (camp.status === 'pending_approval') {
+            statusBadge = '<span class="status-badge status-pending">Menunggu Persetujuan</span>';
+        } else if (camp.status === 'rejected') {
+            statusBadge = '<span class="status-badge status-rejected">Perlu Revisi</span>';
+        }
+
+        const productNames = camp.products && camp.products.length
+            ? camp.products.map(p => p.name).join(', ')
+            : '-';
+
+        let actionButtons = '';
+        if (camp.status === 'pending_approval' && (currentUserRole === 'rsm' || currentUserRole === 'mm')) {
+            actionButtons = `
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                    <button type="button" class="btn btn-primary btn-sm" data-action="approve-campaign" data-campaign-id="${camp.id}">
+                        Setujui Program
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm target-danger-button" data-action="open-reject-campaign" data-campaign-id="${camp.id}">
+                        Tolak
+                    </button>
+                </div>
+            `;
+        }
+
+        const rejectionInfo = camp.rejection_reason ? `
+            <div style="margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--danger);">
+                <strong>Catatan Revisi Atasan:</strong> ${escapeHtml(camp.rejection_reason)}
+            </div>
+        ` : '';
+
+        return `
+            <div class="target-card" id="campaignCard_${camp.id}" style="padding: 1rem 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <h4 style="font-size: 1.05rem; color: var(--secondary); margin: 0;">${escapeHtml(camp.title)}</h4>
+                            ${statusBadge}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            Distrik: <strong>${escapeHtml(camp.district_name || '-')}</strong> • 
+                            Durasi: <strong>${camp.duration_months} Bulan</strong> (${camp.start_date || '-'} s.d. ${camp.end_date || '-'}) • 
+                            Diajukan oleh: <strong>${escapeHtml(camp.creator_name || '-')}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; font-size: 0.8rem;">
+                    <span class="badge-priority">★ ${camp.doctor_count} Dokter Target</span>
+                    <span class="badge-focus-product">Obat Fokus: ${escapeHtml(productNames)}</span>
+                    ${camp.specialization ? `<span class="target-specialty-badge">${escapeHtml(camp.specialization)}</span>` : ''}
+                </div>
+
+                <div id="campaignProgress_${camp.id}">
+                    ${camp.status === 'approved' ? '<div style="font-size: 0.775rem; color: var(--text-muted);">Memuat kalkulasi progres aktual...</div>' : ''}
+                </div>
+
+                ${rejectionInfo}
+                ${actionButtons}
+            </div>
+        `;
+    }).join('');
+
+    campaigns.filter(c => c.status === 'approved').forEach(c => {
+        loadSingleCampaignProgress(c.id);
+    });
+}
+
+async function loadSingleCampaignProgress(campaignId) {
+    const wrap = document.getElementById(`campaignProgress_${campaignId}`);
+    if (!wrap) return;
+
+    try {
+        const res = await window.apiFetch(`/api/managerial-campaigns/${campaignId}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+            const p = result.data;
+            wrap.innerHTML = `
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; margin-top: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.8rem;">
+                        <span>Progres Kunjungan Dokter: <strong>${p.visited_doctors_count} dari ${p.total_doctors} Dokter (${p.reach_percentage}%)</strong></span>
+                        <span>Detailing Obat Fokus: <strong style="color: var(--primary);">${p.focus_detailing_count}x Terlaksana</strong></span>
+                    </div>
+                    <div class="progress-bar-container" style="margin-bottom: 0.5rem;">
+                        <div class="progress-bar-fill" style="width: ${p.reach_percentage}%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Total Kunjungan Lapangan: ${p.total_calls} kali</span>
+                        ${p.unvisited_doctors_count > 0 ? `
+                            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;" data-action="show-unvisited-doctors" data-campaign-id="${campaignId}">
+                                Lihat ${p.unvisited_doctors_count} Dokter Belum Dikunjungi
+                            </button>
+                        ` : `
+                            <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">✓ Seluruh dokter target telah dikunjungi</span>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+    } catch (e) {
+        console.warn(`Gagal memuat progres kampanye ${campaignId}`, e);
+    }
+}
+
+async function loadExecutiveSummary() {
+    const section = document.getElementById('executiveSummarySection');
+    const metricGrid = document.getElementById('executiveMetricGrid');
+    const tableBody = document.getElementById('districtBreakdownTableBody');
+    if (!section || !metricGrid || !tableBody) return;
+
+    try {
+        const res = await window.apiFetch('/api/managerial-campaigns/summary');
+        const result = await res.json();
+        if (result.success && result.data) {
+            const sum = result.data;
+            section.style.display = 'block';
+
+            metricGrid.innerHTML = `
+                <div class="metric-card">
+                    <span class="metric-card-label">Total Dokter Target</span>
+                    <strong class="metric-card-value">${sum.total_target_doctors}</strong>
+                    <span class="metric-card-sub">${sum.summary_scope}</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-card-label">Cakupan Kunjungan</span>
+                    <strong class="metric-card-value" style="color: var(--primary);">${sum.overall_reach_percentage}%</strong>
+                    <span class="metric-card-sub">${sum.total_visited_doctors} dokter unik telah dikunjungi</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-card-label">Detailing Produk Fokus</span>
+                    <strong class="metric-card-value" style="color: var(--success);">${sum.total_focus_detailing}</strong>
+                    <span class="metric-card-sub">Presentasi produk pada kunjungan</span>
+                </div>
+            `;
+
+            if (sum.district_breakdown && sum.district_breakdown.length) {
+                tableBody.innerHTML = sum.district_breakdown.map(d => `
+                    <tr>
+                        <td><strong>${escapeHtml(d.district_name)}</strong></td>
+                        <td>${escapeHtml(d.dm_name)}</td>
+                        <td><span class="tabular-nums">${d.total_doctors}</span> Dokter</td>
+                        <td>
+                            <strong>${d.visited_doctors_count}/${d.total_doctors} (${d.reach_percentage}%)</strong>
+                            <div class="progress-bar-container" style="height: 5px; margin-top: 3px; max-width: 100px;">
+                                <div class="progress-bar-fill" style="width: ${d.reach_percentage}%;"></div>
+                            </div>
+                        </td>
+                        <td><span class="tabular-nums font-bold">${d.focus_detailing_count}x</span> didiskusikan</td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Belum ada program distrik yang disetujui.</td></tr>';
+            }
+        }
+    } catch (e) {
+        console.warn('Gagal memuat Executive Summary', e);
+    }
+}
+
+async function openCreateCampaignModal() {
+    const modal = document.getElementById('createCampaignModal');
+    const errBox = document.getElementById('createCampaignError');
+    const prodBox = document.getElementById('campaignProductCheckboxes');
+    const docBox = document.getElementById('campaignDoctorCheckboxes');
+
+    if (!modal) return;
+    if (errBox) errBox.style.display = 'none';
+
+    if (!masterProducts.length) {
+        try {
+            const res = await window.apiFetch('/api/products');
+            const pData = await res.json();
+            if (pData.success) {
+                masterProducts = pData.data;
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    if (prodBox && masterProducts.length) {
+        prodBox.innerHTML = masterProducts.map(p => `
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer;">
+                <input type="checkbox" name="campaign_product" value="${p.id}">
+                <span>${escapeHtml(p.name)}</span>
+            </label>
+        `).join('');
+    }
+
+    if (docBox && allDoctors.length) {
+        docBox.innerHTML = allDoctors.map(d => `
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer; padding: 0.2rem 0; border-bottom: 1px dashed #e2e8f0;">
+                <input type="checkbox" name="campaign_doctor" value="${d.id}" onchange="updateCampaignSelectedDocCount()">
+                <span><strong>${escapeHtml(d.name)}</strong> (${escapeHtml(d.specialization || 'Umum')}) - <small style="color: var(--text-muted);">${escapeHtml(d.district || '-')}</small></span>
+            </label>
+        `).join('');
+    }
+
+    updateCampaignSelectedDocCount();
+    modal.style.display = 'flex';
+}
+
+function updateCampaignSelectedDocCount() {
+    const countEl = document.getElementById('campaignSelectedDocCount');
+    if (!countEl) return;
+    const checked = document.querySelectorAll('input[name="campaign_doctor"]:checked');
+    countEl.innerText = checked.length;
+}
+
+window.updateCampaignSelectedDocCount = updateCampaignSelectedDocCount;
+
+function closeCreateCampaignModal() {
+    const modal = document.getElementById('createCampaignModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function handleCreateCampaignSubmit(e) {
+    e.preventDefault();
+    const errBox = document.getElementById('createCampaignError');
+    if (errBox) errBox.style.display = 'none';
+
+    const title = document.getElementById('campaignTitleInput')?.value?.trim();
+    const duration = parseInt(document.getElementById('campaignDurationSelect')?.value, 10);
+    const spec = document.getElementById('campaignSpecInput')?.value?.trim();
+    const notes = document.getElementById('campaignNotesInput')?.value?.trim();
+
+    const selectedProducts = Array.from(document.querySelectorAll('input[name="campaign_product"]:checked')).map(el => parseInt(el.value, 10));
+    const selectedDoctors = Array.from(document.querySelectorAll('input[name="campaign_doctor"]:checked')).map(el => parseInt(el.value, 10));
+
+    if (!selectedProducts.length) {
+        if (errBox) {
+            errBox.innerText = 'Pilih minimal 1 obat fokus promosi.';
+            errBox.style.display = 'block';
+        }
+        return;
+    }
+    if (selectedProducts.length > 5) {
+        if (errBox) {
+            errBox.innerText = 'Maksimal 5 obat fokus promosi.';
+            errBox.style.display = 'block';
+        }
+        return;
+    }
+    if (!selectedDoctors.length) {
+        if (errBox) {
+            errBox.innerText = 'Pilih minimal 1 dokter target distrik.';
+            errBox.style.display = 'block';
+        }
+        return;
+    }
+
+    const payload = {
+        title,
+        duration_months: duration,
+        specialization: spec || null,
+        product_ids: selectedProducts,
+        doctor_ids: selectedDoctors,
+        notes: notes || null,
+    };
+
+    const submitBtn = document.getElementById('btnSubmitCampaign');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+        const res = await window.apiFetch('/api/managerial-campaigns', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+        const result = await res.json();
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (result.success) {
+            showAlert('Program rekomendasi distrik berhasil diajukan untuk ditinjau atasan.');
+            closeCreateCampaignModal();
+            loadCampaigns();
+        } else {
+            if (errBox) {
+                errBox.innerText = result.message || 'Gagal mengajukan program.';
+                errBox.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        if (submitBtn) submitBtn.disabled = false;
+        if (errBox) {
+            errBox.innerText = 'Terjadi kesalahan sistem saat mengirim pengajuan.';
+            errBox.style.display = 'block';
+        }
+    }
+}
+
+async function handleApproveCampaign(campaignId) {
+    const ok = await requestConfirmation('Setujui program rekomendasi distrik ini? Rekomendasi dokter dan obat fokus akan otomatis aktif untuk seluruh MR di distrik terkait.', 'Konfirmasi Persetujuan Program');
+    if (!ok) return;
+
+    try {
+        const res = await window.apiFetch(`/api/managerial-campaigns/${campaignId}/review`, {
+            method: 'PATCH',
+            body: JSON.stringify({ decision: 'approved' }),
+        });
+        const result = await res.json();
+        if (result.success) {
+            showAlert('Program rekomendasi distrik berhasil disetujui.');
+            loadCampaigns();
+        } else {
+            showAlert(result.message || 'Gagal menyetujui program.', 'danger');
+        }
+    } catch (err) {
+        showAlert('Terjadi kesalahan saat menyetujui program.', 'danger');
+    }
+}
+
+function openRejectCampaignModal(campaignId) {
+    const modal = document.getElementById('rejectCampaignModal');
+    const idInput = document.getElementById('rejectCampaignId');
+    const reasonInput = document.getElementById('rejectCampaignReasonInput');
+    if (modal && idInput && reasonInput) {
+        idInput.value = campaignId;
+        reasonInput.value = '';
+        modal.style.display = 'flex';
+    }
+}
+
+function closeRejectCampaignModal() {
+    const modal = document.getElementById('rejectCampaignModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function handleRejectCampaignSubmit(e) {
+    e.preventDefault();
+    const campaignId = document.getElementById('rejectCampaignId')?.value;
+    const reason = document.getElementById('rejectCampaignReasonInput')?.value?.trim();
+
+    if (!reason) {
+        showAlert('Alasan penolakan wajib diisi.', 'danger');
+        return;
+    }
+
+    try {
+        const res = await window.apiFetch(`/api/managerial-campaigns/${campaignId}/review`, {
+            method: 'PATCH',
+            body: JSON.stringify({ decision: 'rejected', reason }),
+        });
+        const result = await res.json();
+        if (result.success) {
+            showAlert('Program rekomendasi berhasil ditolak dengan catatan.');
+            closeRejectCampaignModal();
+            loadCampaigns();
+        } else {
+            showAlert(result.message || 'Gagal menolak program.', 'danger');
+        }
+    } catch (err) {
+        showAlert('Terjadi kesalahan saat memproses penolakan.', 'danger');
+    }
+}
+
+async function showUnvisitedDoctors(campaignId) {
+    const modal = document.getElementById('unvisitedDoctorsModal');
+    const listEl = document.getElementById('unvisitedDoctorsList');
+    if (!modal || !listEl) return;
+
+    listEl.innerHTML = '<li style="font-size: 0.8rem; color: var(--text-muted);">Memuat daftar dokter...</li>';
+    modal.style.display = 'flex';
+
+    try {
+        const res = await window.apiFetch(`/api/managerial-campaigns/${campaignId}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+            const doctors = result.data.unvisited_doctors || [];
+            if (!doctors.length) {
+                listEl.innerHTML = '<li style="font-size: 0.8rem; color: var(--success); font-weight: 600;">Semua dokter telah berhasil dikunjungi!</li>';
+                return;
+            }
+            listEl.innerHTML = doctors.map(d => `
+                <li style="padding: 0.45rem 0.65rem; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.825rem;">
+                    <strong>${escapeHtml(d.name)}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                        ${escapeHtml(d.specialization || 'Umum')} • Distrik: ${escapeHtml(d.district || '-')}
+                    </div>
+                </li>
+            `).join('');
+        }
+    } catch (e) {
+        listEl.innerHTML = '<li style="color: var(--danger); font-size: 0.8rem;">Gagal memuat dokter belum dikunjungi.</li>';
+    }
+}
+
+function closeUnvisitedModal() {
+    const modal = document.getElementById('unvisitedDoctorsModal');
+    if (modal) modal.style.display = 'none';
+}
