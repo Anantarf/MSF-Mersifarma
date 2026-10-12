@@ -459,7 +459,7 @@
 
 <!-- ================= MODAL: BUAT PROGRAM REKOMENDASI (DM/RSM) ================= -->
 <div id="createCampaignModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card target-form-modal" style="max-width: 620px;">
+    <div class="modal-card target-form-modal" style="max-width: 650px;">
         <div class="modal-sheet-head">
             <div>
                 <h3 id="campaignModalHeading" class="modal-sheet-title">Program Rekomendasi</h3>
@@ -472,64 +472,119 @@
             <div class="modal-sheet-body">
                 <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
 
-                <!-- Pilihan Arahan RSM (Khusus DM) -->
-                <div id="campaignRsmGuidanceField" class="target-field" style="display: none;">
-                    <label class="target-field-label">Pilih Program Arahan dari RSM (Opsional):</label>
-                    <select id="campaignRsmGuidanceSelect" class="target-input">
-                        <option value="">-- Buat Usulan Distrik Mandiri --</option>
-                    </select>
-                    <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
-                        Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
-                    </small>
-                </div>
+                <!-- Section 1: Informasi & Lingkup Program -->
+                <div class="modal-section-card">
+                    <div id="campaignDistrictBadgeWrap" class="campaign-scope-banner">
+                        <span>Wilayah Cakupan Program:</span>
+                        <strong id="campaignDistrictLabel" style="color: var(--secondary); font-size: 0.85rem;">-</strong>
+                    </div>
 
-                <!-- Indikator Distrik Sasaran -->
-                <div id="campaignDistrictBadgeWrap" style="font-size: 0.825rem; color: var(--text-muted); background: #f8fafc; padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                    Wilayah Cakupan: <strong id="campaignDistrictLabel" style="color: var(--secondary);">-</strong>
-                </div>
+                    <div id="campaignGuidanceLockBanner" class="guidance-lock-banner" style="display: none;">
+                        <i class="bi bi-shield-lock-fill" style="font-size: 1rem; color: #0284c7; flex-shrink: 0; margin-top: 1px;"></i>
+                        <div>
+                            <strong>Terkunci Sesuai Arahan RSM:</strong>
+                            <span id="campaignGuidanceLockDesc">Durasi dan obat fokus promosi telah disesuaikan otomatis dengan arahan regional.</span>
+                        </div>
+                    </div>
 
-                <div class="target-field">
-                    <label class="target-field-label">Judul Program Rekomendasi:</label>
-                    <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                    <div class="target-field">
-                        <label class="target-field-label">Durasi Waktu:</label>
-                        <select id="campaignDurationSelect" class="target-input" required>
-                            <option value="1">1 Bulan</option>
-                            <option value="2">2 Bulan</option>
-                            <option value="3" selected>3 Bulan (Maksimal)</option>
+                    <!-- Pilihan Arahan RSM (Khusus DM) -->
+                    <div id="campaignRsmGuidanceField" class="target-field" style="display: none; margin-bottom: 0.85rem;">
+                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Pilih Program Arahan dari RSM (Opsional):</label>
+                        <select id="campaignRsmGuidanceSelect" class="target-input">
+                            <option value="">-- Buat Usulan Distrik Mandiri --</option>
                         </select>
+                        <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                            Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
+                        </small>
                     </div>
-                    <div class="target-field">
-                        <label class="target-field-label">Target Spesialisasi:</label>
-                        <select id="campaignSpecSelect" class="target-input">
-                            <option value="">-- Semua Spesialisasi --</option>
-                        </select>
+
+                    <div class="target-field" style="margin-bottom: 0.85rem;">
+                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Judul Program Rekomendasi:</label>
+                        <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="target-field" style="margin: 0;">
+                            <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Durasi Waktu:</label>
+                            <select id="campaignDurationSelect" class="target-input" required>
+                                <option value="1">1 Bulan</option>
+                                <option value="2">2 Bulan</option>
+                                <option value="3" selected>3 Bulan (Maksimal)</option>
+                            </select>
+                        </div>
+                        <div class="target-field" style="margin: 0;">
+                            <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Target Spesialisasi:</label>
+                            <select id="campaignSpecSelect" class="target-input">
+                                <option value="">-- Semua Spesialisasi --</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div class="target-field">
-                    <label class="target-field-label">Obat Fokus Promosi (Maksimal 5 Produk):</label>
-                    <div id="campaignProductCheckboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat produk master...</span>
+                <!-- Section 2: Fokus Produk Promosi -->
+                <div class="modal-section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                        <div>
+                            <label class="target-field-label" style="margin: 0; font-weight: 700; color: var(--secondary); font-size: 0.88rem;">
+                                Obat Fokus Promosi
+                            </label>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">
+                                Pilih 1 hingga maksimal 5 obat untuk fokus detailing
+                            </span>
+                        </div>
+                        <span class="badge badge-info" style="font-size: 0.75rem; font-weight: 600;">
+                            <span id="campaignSelectedProdCount">0</span>/5 Terpilih
+                        </span>
+                    </div>
+
+                    <div id="campaignProductCheckboxes" class="product-chips-grid">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1; padding: 0.5rem; text-align: center;">
+                            Memuat produk master...
+                        </span>
                     </div>
                 </div>
 
-                <div id="campaignDoctorSection" class="target-field">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                        <label class="target-field-label" style="margin-bottom: 0;">Pilih Dokter Target di Distrik:</label>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);"><span id="campaignSelectedDocCount">0</span> Dokter Terpilih</span>
+                <!-- Section 3: Target Dokter Distrik (Khusus DM) -->
+                <div id="campaignDoctorSection" class="modal-section-card" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                        <div>
+                            <label class="target-field-label" style="margin: 0; font-weight: 700; color: var(--secondary); font-size: 0.88rem;">
+                                Target Dokter di Distrik
+                            </label>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">
+                                Pilih dokter sasaran rekomendasi di wilayah distrik Anda
+                            </span>
+                        </div>
+                        <span class="badge badge-success" style="font-size: 0.75rem; font-weight: 600;">
+                            <span id="campaignSelectedDocCount">0</span> Dokter Terpilih
+                        </span>
                     </div>
-                    <div id="campaignDoctorCheckboxes" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 160px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat dokter distrik...</span>
+
+                    <!-- Toolbar Pencarian & Aksi Cepat -->
+                    <div class="doctor-picker-toolbar">
+                        <div style="position: relative; flex: 1;">
+                            <i class="bi bi-search" style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted);"></i>
+                            <input type="text" id="campaignDoctorSearchInput" class="target-input" style="padding-left: 2rem; font-size: 0.8rem; height: 32px;" placeholder="Cari nama atau spesialisasi dokter...">
+                        </div>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnSelectAllCampaignDocs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Pilih Semua</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnClearAllCampaignDocs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Batal</button>
+                        </div>
+                    </div>
+
+                    <div id="campaignDoctorCheckboxes" class="doctor-chips-list">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); padding: 0.5rem; text-align: center;">
+                            Memuat dokter distrik...
+                        </span>
                     </div>
                 </div>
 
-                <div class="target-field">
-                    <label class="target-field-label">Catatan Tambahan (Opsional):</label>
-                    <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing ke MR..."></textarea>
+                <!-- Section 4: Catatan Strategis (Opsional) -->
+                <div class="modal-section-card" style="margin-bottom: 0;">
+                    <div class="target-field" style="margin: 0;">
+                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Catatan Tambahan (Opsional):</label>
+                        <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing untuk MR..."></textarea>
+                    </div>
                 </div>
             </div>
 
