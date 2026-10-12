@@ -1,4 +1,4 @@
-# Architecture Decision Records â€” MSF
+# Architecture Decision Records  -  MSF
 
 > **Status:** Catatan keputusan arsitektur dan trade-off yang dipakai proyek. Automated test terakhir: 65 passed, 239 assertions.
 > **Perubahan setelah baseline:** tambahkan ADR baru dengan tanggal, alasan, trade-off, dampak API/schema/testing. Jangan diam-diam mengubah aturan PDF.
@@ -9,7 +9,7 @@
 | ADR-002 | P0 meliputi 8 endpoint wajib dan 3 halaman | Deliverable PDF prioritas tertinggi | PDF |
 | ADR-003 | Auth via Laravel session + CSRF same-origin | Integrasi Blade dan JSON API sederhana | Design |
 | ADR-004 | Approval List satu level direct-manager dengan `manager_id` dan assigned approver | Mencegah approval role-only/lompatan hierarchy | PDF + Design |
-| ADR-005 | DM/RSM boleh membuat List pribadi | Demonstrasi chain MRâ†’DMâ†’RSMâ†’MM | Assumption |
+| ADR-005 | DM/RSM boleh membuat List pribadi | Demonstrasi chain MR->DM->RSM->MM | Assumption |
 | ADR-006 | List current status `draft`,`pending_approval`,`approved`; submitted/rejected di append-only logs | Histori PDF terjaga tanpa transient persistent states | Assumption |
 | ADR-007 | Rejected kembali ke Draft; UI menunjukkan *Perlu Revisi* dan reason | Memenuhi revisi + meningkatkan kejelasan | PDF + UX |
 | ADR-008 | Satu List per owner/month | Hindari dua target bulanan aktif | Assumption |
@@ -132,7 +132,7 @@
 ## Format ADR baru
 
 ```md
-### ADR-026 â€” [Decision title]
+### ADR-026  -  [Decision title]
 - Date:
 - Status: Proposed / Accepted / Rejected
 - Problem:

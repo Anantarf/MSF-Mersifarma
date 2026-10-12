@@ -119,11 +119,12 @@ Semua akun memakai password: `password`.
 |---|---|---|---|---|
 | MM | `mm` | `mm@mersi.com` | - | Puncak hierarki |
 | RSM | `rsm` | `rsm@mersi.com` | MM | Regional manager |
-| DM | `dm` | `dm@mersi.com` | RSM | Atasan MR Rudi dan Ahmad |
-| DM 2 | `dm2` | `dm2@mersi.com` | RSM | Atasan MR Bambang |
-| MR | `mr` | `mr@mersi.com` | DM | Akun utama demo |
+| DM | `dm` | `dm@mersi.com` | RSM | Jakarta Selatan; atasan MR Rudi dan Ahmad |
+| DM 2 | `dm2` | `dm2@mersi.com` | RSM | Jakarta Timur; atasan MR Nadia dan Bambang |
+| MR | `mr` | `mr@mersi.com` | DM | Akun demo Jakarta Selatan |
 | MR 2 | `mr2` | `mr2@mersi.com` | DM | Uji duplicate dan privacy |
-| MR 3 | `mr3` | `mr3@mersi.com` | DM 2 | Uji batas distrik |
+| MR 3 | `mr3` | `mr3@mersi.com` | DM 2 | Akun demo Jakarta Timur |
+| MR 4 | `mr4` | `mr4@mersi.com` | DM 2 | Pasangan MR kedua Jakarta Timur |
 
 ## Endpoint API
 

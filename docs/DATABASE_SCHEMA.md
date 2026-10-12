@@ -1,4 +1,4 @@
-# Database Schema & Constraint Specification â€” MSF
+# Database Schema & Constraint Specification  -  MSF
 
 > **Versi:** Baseline schema MSF; automated test lokal terakhir 65 passed, 239 assertions.
 > **DB:** MySQL **8.0.16+**, InnoDB, FK enabled, utf8mb4.
@@ -52,7 +52,7 @@ erDiagram
 
 **`call_actuals`**: `id PK`, `mr_id FK users`, `plan_id NULL FK call_plans`, `visit_session_id NULL FK visit_sessions`, `doctor_id FK master_customers`, `visit_date DATE`, `check_in_at DATETIME(6)`, `check_out_at DATETIME(6)`, `visit_type VARCHAR(20)` (`planned`,`unplanned`,`non_target`), `photo_url TEXT`, `signature_url TEXT`, `visit_reason TEXT NULL`, `deviation_reason TEXT NULL`, `created_at`, `updated_at`. `UNIQUE(doctor_id, visit_date)`, `UNIQUE(plan_id)`, `UNIQUE(visit_session_id)`.
 
-**`call_actual_products`**: `call_actual_id FK call_actuals`, `product_id FK products`, `PRIMARY KEY(call_actual_id, product_id)`. Tidak boleh membuat Actual final tanpa setidaknya satu relasi produkâ€”validasi dilakukan service dalam transaction.
+**`call_actual_products`**: `call_actual_id FK call_actuals`, `product_id FK products`, `PRIMARY KEY(call_actual_id, product_id)`. Tidak boleh membuat Actual final tanpa setidaknya satu relasi produk - validasi dilakukan service dalam transaction.
 
 ## 3. Constraint dan candidate keys
 
@@ -74,11 +74,11 @@ erDiagram
 
 **Composite FKs (migrasi berurutan):**
 
-- `call_plans(call_list_id,mr_id)` â†’ `call_lists(id,owner_id)`.
-- `call_plans(call_list_id,doctor_id)` â†’ `call_list_doctors(call_list_id,doctor_id)`.
-- `visit_sessions(plan_id,mr_id,doctor_id)` â†’ `call_plans(id,mr_id,doctor_id)` (jika plan_id non-null).
-- `call_actuals(plan_id,mr_id,doctor_id)` â†’ `call_plans(id,mr_id,doctor_id)` (jika plan_id non-null).
-- `call_actuals(visit_session_id,mr_id,doctor_id,visit_date)` â†’ `visit_sessions(id,mr_id,doctor_id,visit_date)` (jika session non-null).
+- `call_plans(call_list_id,mr_id)` -> `call_lists(id,owner_id)`.
+- `call_plans(call_list_id,doctor_id)` -> `call_list_doctors(call_list_id,doctor_id)`.
+- `visit_sessions(plan_id,mr_id,doctor_id)` -> `call_plans(id,mr_id,doctor_id)` (jika plan_id non-null).
+- `call_actuals(plan_id,mr_id,doctor_id)` -> `call_plans(id,mr_id,doctor_id)` (jika plan_id non-null).
+- `call_actuals(visit_session_id,mr_id,doctor_id,visit_date)` -> `visit_sessions(id,mr_id,doctor_id,visit_date)` (jika session non-null).
 
 **PENTING:** MySQL composite FK yang mempunyai `NULL` tidak memaksa seluruh hubungan; service tetap perlu memeriksa `visit_sessions.plan_id` **sama dengan** `call_actuals.plan_id` termasuk jika salah satu null. Foreign keys tidak memeriksa status parent Approved, role atau periode; validasi tersebut wajib di service.
 
@@ -135,12 +135,12 @@ Index/filter tambahan: `call_lists(owner_id,period_month,status)`, `call_lists(a
 
 Gunakan lock `master_customers` row dokter `FOR UPDATE` dalam transaksi setiap operasi kritis: create/cancel Plan, start/save/checkout/cancel Session, finalisasi Actual. Setelah lock, **cek ulang** existing Plan, Actual dan Session; jangan percaya hasil `GET availability` yang dibuat sebelumnya. Finalisasi Actual + pivot products + status Plan/Session harus commit/rollback bersama.
 
-Urutan lock untuk operasi visit: Doctor â†’ Plan (jika ada) â†’ Session (jika ada). Approval berbeda, lock Call List. Unique constraint adalah pertahanan terakhir setelah service check.
+Urutan lock untuk operasi visit: Doctor -> Plan (jika ada) -> Session (jika ada). Approval berbeda, lock Call List. Unique constraint adalah pertahanan terakhir setelah service check.
 
 ## 7. Seed/demo requirements
 
 - Roles `mr`, `dm`, `rsm`, `mm`.
-- Synthetic users membentuk jalur manager: MRâ†’DMâ†’RSMâ†’MM, dan MR kedua untuk negative test lintas user.
+- Synthetic users membentuk jalur manager: MR->DM->RSM->MM, dan MR kedua untuk negative test lintas user.
 - 5+ dokter MCL valid; 3+ products.
 - Contoh List draft/pending/approved dan Approved target dokter (bila diperlukan demo).
 - Hindari data pasien nyata, informasi perusahaan internal, atau secret dalam seed.
