@@ -1,0 +1,989 @@
+const pageEl = document.querySelector('[data-call-lists-page]');
+const currentUserRole = pageEl?.dataset.currentUserRole || '';
+let allDoctors = [];
+let myCallLists = [];
+let reviewCallLists = [];
+let currentSelectedDoctorIds = new Set();
+let isFilterOnlySelected = false;
+let pickerCurrentPage = 1;
+let pendingConfirmResolve = null;
+const PICKER_PAGE_SIZE = 4;
+
+document.addEventListener('DOMContentLoaded', () => {
+        bindCallListEvents();
+        loadDoctors();
+        if (currentUserRole === 'mr') {
+            loadMyCallLists();
+        } else {
+            loadReviewCallLists();
+            loadMyCallLists();
+        }
+    });
+
+document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeTargetModal();
+            closeDetailModal();
+            closeRejectModal();
+            closeConfirmModal(false);
+        }
+    });
+
+function showAlert(message, type = 'success') {
+        window.showToast(message, type);
+    }
+
+function requestConfirmation(message, title = 'Konfirmasi Aksi') {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+
+        if (!modal || !titleEl || !messageEl) {
+            showAlert('Dialog konfirmasi tidak tersedia. Muat ulang halaman lalu coba lagi.', 'danger');
+            return Promise.resolve(false);
+        }
+
+        if (pendingConfirmResolve) {
+            pendingConfirmResolve(false);
+        }
+
+        titleEl.innerText = title;
+        messageEl.innerText = message;
+        modal.style.display = 'flex';
+
+        return new Promise((resolve) => {
+            pendingConfirmResolve = resolve;
+        });
+    }
+
+function closeConfirmModal(confirmed = false) {
+        const modal = document.getElementById('confirmModal');
+        if (modal) modal.style.display = 'none';
+
+        if (pendingConfirmResolve) {
+            pendingConfirmResolve(confirmed);
+            pendingConfirmResolve = null;
+        }
+    }
+
+function bindCallListEvents() {
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-action]');
+            if (!trigger) return;
+
+            const callListId = trigger.dataset.callListId ? parseInt(trigger.dataset.callListId, 10) : null;
+
+            switch (trigger.dataset.action) {
+                case 'open-create':
+                    openCreateModal();
+                    break;
+                case 'switch-tab':
+                    switchTab(trigger.dataset.tab);
+                    break;
+                case 'close-target':
+                    closeTargetModal();
+                    break;
+                case 'picker-prev-page':
+                    prevPickerPage();
+                    break;
+                case 'picker-next-page':
+                    nextPickerPage();
+                    break;
+                case 'toggle-selected-filter':
+                    toggleShowOnlySelected();
+                    break;
+                case 'save-and-submit':
+                    handleSaveAndSubmit();
+                    break;
+                case 'close-detail':
+                    closeDetailModal();
+                    break;
+                case 'close-reject':
+                    closeRejectModal();
+                    break;
+                case 'close-confirm':
+                    closeConfirmModal(false);
+                    break;
+                case 'confirm-action':
+                    closeConfirmModal(true);
+                    break;
+                case 'open-detail':
+                    if (callListId) openDetailModal(callListId);
+                    break;
+                case 'open-edit':
+                    if (callListId) openEditModal(callListId);
+                    break;
+                case 'submit-call-list':
+                    if (callListId) submitCallList(callListId);
+                    break;
+                case 'approve-call-list':
+                    if (callListId) approveCallList(callListId);
+                    break;
+                case 'open-reject':
+                    if (callListId) openRejectModal(callListId);
+                    break;
+                case 'toggle-doctor-selection':
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleDoctorSelection(parseInt(trigger.dataset.doctorId, 10));
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        document.getElementById('targetForm')?.addEventListener('submit', handleTargetFormSubmit);
+        document.getElementById('rejectForm')?.addEventListener('submit', handleRejectSubmit);
+        document.getElementById('doctorSearchInput')?.addEventListener('input', (event) => onDoctorSearchInput(event.target.value));
+        document.getElementById('summaryMonthSelect')?.addEventListener('change', loadManagerSummary);
+        document.getElementById('periodMonthSelect')?.addEventListener('change', syncPeriodToHiddenInput);
+        document.getElementById('periodYearSelect')?.addEventListener('change', syncPeriodToHiddenInput);
+    }
+
+function syncPeriodToHiddenInput() {
+        const monthSelect = document.getElementById('periodMonthSelect');
+        const yearSelect = document.getElementById('periodYearSelect');
+        const hidden = document.getElementById('periodMonthInput');
+        if (monthSelect && yearSelect && hidden) {
+            hidden.value = `${yearSelect.value}-${monthSelect.value}`;
+        }
+    }
+
+function switchTab(tab, isManual = true) {
+        if (isManual) {
+            sessionStorage.setItem('call_list_tab_manual', '1');
+        }
+        if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.remove('active');
+        if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.remove('active');
+
+        if (tab === 'myLists') {
+            if (document.getElementById('tabMyLists')) document.getElementById('tabMyLists').classList.add('active');
+            document.getElementById('myListsContainer').style.display = 'flex';
+            if (document.getElementById('reviewContainer')) document.getElementById('reviewContainer').style.display = 'none';
+        } else {
+            if (document.getElementById('tabReview')) document.getElementById('tabReview').classList.add('active');
+            document.getElementById('myListsContainer').style.display = 'none';
+            if (document.getElementById('reviewContainer')) {
+                document.getElementById('reviewContainer').style.display = 'flex';
+                loadManagerSummary();
+            }
+        }
+    }
+
+async function loadDoctors() {
+        try {
+            const res = await window.apiFetch('/api/doctors');
+            const data = await res.json();
+            if (data.success) {
+                allDoctors = data.data;
+            }
+        } catch (err) {
+            console.error('Gagal memuat dokter', err);
+        }
+    }
+
+function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+async function loadMyCallLists() {
+        const loadingEl = document.getElementById('loadingMyLists');
+        if (loadingEl) {
+            loadingEl.innerHTML = window.renderTableSkeleton(3);
+            loadingEl.style.display = 'block';
+        }
+        try {
+            const res = await window.apiFetch('/api/call-lists');
+            const result = await res.json();
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            if (result.success) {
+                myCallLists = result.data;
+                const countEl = document.getElementById('myListCount');
+                if (countEl) countEl.innerText = myCallLists.length;
+                renderMyListsView();
+            }
+        } catch (err) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            console.error(err);
+        }
+    }
+
+function formatPeriodIndonesian(periodStr) {
+        if (!periodStr) return '-';
+        const parts = String(periodStr).split('-');
+        if (parts.length !== 2) return periodStr;
+        const year = parts[0];
+        const monthNum = parseInt(parts[1], 10);
+        const monthNames = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        return `${monthNames[monthNum - 1] || parts[1]} ${year}`;
+    }
+
+function renderMyListsView() {
+        const spotlight = document.getElementById('currentMonthSpotlight');
+        const tableWrap = document.getElementById('myListsTableWrap');
+        const tbody = document.getElementById('myListsTableBody');
+        const empty = document.getElementById('emptyMyLists');
+
+        if (!myCallLists.length) {
+            if (spotlight) spotlight.style.display = 'none';
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (empty) empty.style.display = 'block';
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+
+        // 1. Render Kartu Target Periode Berjalan / Utama
+        const activeList = myCallLists[0];
+        if (spotlight && activeList) {
+            spotlight.style.display = 'block';
+            document.getElementById('spotlightPeriod').innerText = formatPeriodIndonesian(activeList.period_month);
+            document.getElementById('spotlightDoctorCount').innerText = activeList.doctor_count;
+            document.getElementById('spotlightApprover').innerText = activeList.assigned_approver_name || 'Atasan Langsung';
+
+            const badgeEl = document.getElementById('spotlightStatusBadge');
+            const btnsEl = document.getElementById('spotlightActionBtns');
+            const rejBox = document.getElementById('spotlightRejectionBox');
+            const quickAddWrap = document.getElementById('spotlightQuickAddBtnWrap');
+            const doctorsTableBody = document.getElementById('spotlightDoctorsTableBody');
+
+            let badgeHtml = '';
+            let btnsHtml = '';
+
+            if (activeList.status === 'approved') {
+                badgeHtml = `<span class="target-title-tag target-tag-approved">Disetujui</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Histori</button>
+                    <a href="/call-plans" class="btn btn-primary btn-sm target-link-button">+ Jadwalkan Kunjungan</a>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) quickAddWrap.innerHTML = '';
+            } else if (activeList.status === 'pending_approval') {
+                badgeHtml = `<span class="target-title-tag target-tag-pending">Menunggu Persetujuan</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Detail Pengajuan</button>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) quickAddWrap.innerHTML = '';
+            } else if (activeList.status === 'draft' && activeList.is_rejected_revision) {
+                badgeHtml = `<span class="target-title-tag target-tag-rejected">Perlu Revisi</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Riwayat</button>
+                    <button class="btn btn-primary btn-sm" data-action="submit-call-list" data-call-list-id="${activeList.id}">Ajukan Ulang ke DM</button>
+                `;
+                if (rejBox) {
+                    rejBox.style.display = 'block';
+                    document.getElementById('spotlightRejectionReason').innerText = activeList.latest_rejection_reason || 'Perlu penyesuaian daftar dokter target.';
+                }
+                if (quickAddWrap) {
+                    quickAddWrap.innerHTML = `
+                        <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
+                            + Kelola Dokter Sasaran
+                        </button>
+                    `;
+                }
+            } else {
+                badgeHtml = `<span class="target-title-tag target-tag-draft">Draft</span>`;
+                btnsHtml = `
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Detail</button>
+                    <button class="btn btn-primary btn-sm" data-action="submit-call-list" data-call-list-id="${activeList.id}">Ajukan ke DM</button>
+                `;
+                if (rejBox) rejBox.style.display = 'none';
+                if (quickAddWrap) {
+                    quickAddWrap.innerHTML = `
+                        <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
+                            + Kelola Dokter Sasaran
+                        </button>
+                    `;
+                }
+            }
+
+            badgeEl.innerHTML = badgeHtml;
+            btnsEl.innerHTML = btnsHtml;
+
+            // Render Daftar Dokter Sasaran pada Kartu
+            const docs = activeList.doctors || [];
+            if (doctorsTableBody) {
+                if (docs.length === 0) {
+                    doctorsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="target-empty-cell">
+                                Belum ada dokter yang ditargetkan untuk periode ini.
+                                ${activeList.status === 'draft' ? `<div class="target-row-action-space"><button type="button" class="btn btn-primary btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">+ Pilih Dokter Sasaran</button></div>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    doctorsTableBody.innerHTML = docs.map((doc, idx) => `
+                        <tr>
+                            <td class="target-number-cell">${idx + 1}</td>
+                            <td>
+                                <strong class="target-doctor-name">${escapeHtml(doc.name)}</strong>
+                            </td>
+                            <td>
+                                <span class="badge target-specialty-badge">
+                                    ${escapeHtml(doc.specialization || 'Umum')}
+                                </span>
+                            </td>
+                            <td class="target-muted-cell">
+                                ${escapeHtml(doc.address || '-')}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        // 2. Render Tabel Riwayat Periode Sebelumnya (Hanya jika ada periode selain yang aktif)
+        if (myCallLists.length > 1) {
+            if (tableWrap) tableWrap.style.display = 'block';
+            if (tbody) {
+                const previousLists = myCallLists.slice(1);
+                tbody.innerHTML = previousLists.map(cl => {
+                    let statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
+                    let statusLabel = cl.status === 'pending_approval' ? 'Menunggu Persetujuan' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+                    if (cl.status === 'draft' && cl.is_rejected_revision) {
+                        statusClass = 'status-rejected';
+                        statusLabel = 'Perlu Revisi';
+                    }
+
+                    return `
+                        <tr>
+                            <td class="target-nowrap-cell target-cell-left">
+                                <strong class="target-doctor-name">${formatPeriodIndonesian(cl.period_month)}</strong>
+                            </td>
+                            <td class="target-nowrap-cell">
+                                <strong class="target-table-strong">${cl.doctor_count} Dokter</strong>
+                            </td>
+                            <td>
+                                <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                            </td>
+                            <td class="target-nowrap-cell target-main-cell">
+                                <span>${escapeHtml(cl.assigned_approver_name || '-')}</span>
+                            </td>
+                            <td class="target-action-cell">
+                                <div class="target-inline-actions">
+                                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${cl.id}">Detail</button>
+                                    ${cl.status === 'draft' ? `
+                                        <button class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${cl.id}">Ubah</button>
+                                        <button class="btn btn-primary btn-sm" data-action="submit-call-list" data-call-list-id="${cl.id}">Ajukan</button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        } else {
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (tbody) tbody.innerHTML = '';
+        }
+    }
+
+    // Modal Builder: Pemilihan Dokter yang Lega & Nyaman
+    async function openCreateModal() {
+        document.getElementById('editingCallListId').value = '';
+        document.getElementById('targetModalTitle').innerText = 'Susun Target Dokter Baru';
+        document.getElementById('targetModalSubtitle').innerText = 'Pilih dokter sasaran dari Master Customer List';
+
+        const periodInput = document.getElementById('periodMonthInput');
+        if (periodInput) periodInput.disabled = false;
+
+        // Default ke bulan berjalan atau bulan depan
+        const now = new Date();
+        const yyyy = String(now.getFullYear());
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        if (periodInput) periodInput.value = `${yyyy}-${mm}`;
+
+        const monthSelect = document.getElementById('periodMonthSelect');
+        const yearSelect = document.getElementById('periodYearSelect');
+        if (monthSelect) { monthSelect.value = mm; monthSelect.disabled = false; }
+        if (yearSelect) { yearSelect.value = yyyy; yearSelect.disabled = false; }
+
+        currentSelectedDoctorIds = new Set();
+        isFilterOnlySelected = false;
+        pickerCurrentPage = 1;
+        document.getElementById('doctorSearchInput').value = '';
+        document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+
+        const errEl = document.getElementById('targetModalError');
+        if (errEl) errEl.style.display = 'none';
+
+        if (!allDoctors.length) {
+            await loadDoctors();
+        }
+
+        renderDoctorPickerList();
+        updateSelectedCounter();
+        document.getElementById('targetModal').style.display = 'flex';
+    }
+
+    async function openEditModal(callListId) {
+        document.getElementById('editingCallListId').value = callListId;
+        document.getElementById('targetModalTitle').innerText = 'Ubah Target Dokter';
+        document.getElementById('targetModalSubtitle').innerText = 'Perbarui daftar dokter sasaran untuk periode ini';
+
+        const errEl = document.getElementById('targetModalError');
+        if (errEl) errEl.style.display = 'none';
+
+        if (!allDoctors.length) {
+            await loadDoctors();
+        }
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${callListId}`);
+            const result = await res.json();
+            if (result.success) {
+                const cl = result.data;
+                const periodInput = document.getElementById('periodMonthInput');
+                if (periodInput) {
+                    periodInput.value = cl.period_month;
+                    periodInput.disabled = true; // Periode tidak boleh diubah saat edit
+                }
+
+                if (cl.period_month) {
+                    const [y, m] = cl.period_month.split('-');
+                    const monthSelect = document.getElementById('periodMonthSelect');
+                    const yearSelect = document.getElementById('periodYearSelect');
+                    if (monthSelect) { monthSelect.value = m; monthSelect.disabled = true; }
+                    if (yearSelect) { yearSelect.value = y; yearSelect.disabled = true; }
+                }
+
+                currentSelectedDoctorIds = new Set(cl.doctors.map(d => d.id));
+                isFilterOnlySelected = false;
+                pickerCurrentPage = 1;
+                document.getElementById('doctorSearchInput').value = '';
+                document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+
+                renderDoctorPickerList();
+                updateSelectedCounter();
+                document.getElementById('targetModal').style.display = 'flex';
+            }
+        } catch (err) {
+            showAlert('Gagal memuat data target untuk diedit', 'danger');
+        }
+    }
+
+function closeTargetModal() {
+        document.getElementById('targetModal').style.display = 'none';
+    }
+
+function renderDoctorPickerList() {
+        const container = document.getElementById('doctorPickerList');
+        const paginationWrap = document.getElementById('doctorPickerPagination');
+        const pageInfo = document.getElementById('pickerPaginationInfo');
+        const prevBtn = document.getElementById('btnPickerPrevPage');
+        const nextBtn = document.getElementById('btnPickerNextPage');
+        const searchTerm = (document.getElementById('doctorSearchInput').value || '').toLowerCase().trim();
+
+        if (!allDoctors.length) {
+            container.innerHTML = '<span class="target-picker-loading">Memuat dokter...</span>';
+            if (paginationWrap) paginationWrap.style.display = 'none';
+            return;
+        }
+
+        let filtered = allDoctors.filter(doc => {
+            const matchesSearch = doc.name.toLowerCase().includes(searchTerm) ||
+                (doc.specialization || '').toLowerCase().includes(searchTerm) ||
+                (doc.address || '').toLowerCase().includes(searchTerm);
+
+            if (isFilterOnlySelected) {
+                return matchesSearch && currentSelectedDoctorIds.has(doc.id);
+            }
+            return matchesSearch;
+        });
+
+        if (!filtered.length) {
+            container.innerHTML = '<div class="target-picker-empty">Tidak ada dokter yang cocok dengan pencarian.</div>';
+            if (paginationWrap) paginationWrap.style.display = 'none';
+            return;
+        }
+
+        const totalPages = Math.ceil(filtered.length / PICKER_PAGE_SIZE);
+        if (pickerCurrentPage > totalPages) pickerCurrentPage = totalPages;
+        if (pickerCurrentPage < 1) pickerCurrentPage = 1;
+
+        const startIndex = (pickerCurrentPage - 1) * PICKER_PAGE_SIZE;
+        const endIndex = Math.min(startIndex + PICKER_PAGE_SIZE, filtered.length);
+        const pageDoctors = filtered.slice(startIndex, endIndex);
+
+        container.innerHTML = pageDoctors.map(doc => {
+            const isChecked = currentSelectedDoctorIds.has(doc.id);
+            return `
+                <div class="doctor-selectable-row ${isChecked ? 'selected' : ''}" data-action="toggle-doctor-selection" data-doctor-id="${doc.id}">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} data-action="toggle-doctor-selection" data-doctor-id="${doc.id}">
+                    <div class="target-picker-main">
+                        <div class="target-picker-name-line">
+                            <strong class="target-doctor-name">${escapeHtml(doc.name)}</strong>
+                            <span class="target-specialty-badge target-specialty-compact">
+                                ${escapeHtml(doc.specialization || 'Umum')}
+                            </span>
+                        </div>
+                        <div class="target-picker-address">
+                            ${escapeHtml(doc.address || '-')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (paginationWrap) {
+            if (totalPages > 1) {
+                paginationWrap.style.display = 'flex';
+                if (pageInfo) pageInfo.innerText = `Halaman ${pickerCurrentPage} dari ${totalPages} (${filtered.length} dokter)`;
+                if (prevBtn) prevBtn.disabled = (pickerCurrentPage <= 1);
+                if (nextBtn) nextBtn.disabled = (pickerCurrentPage >= totalPages);
+            } else {
+                paginationWrap.style.display = 'none';
+            }
+        }
+    }
+
+function prevPickerPage() {
+        if (pickerCurrentPage > 1) {
+            pickerCurrentPage--;
+            renderDoctorPickerList();
+        }
+    }
+
+function nextPickerPage() {
+        pickerCurrentPage++;
+        renderDoctorPickerList();
+    }
+
+function toggleDoctorSelection(doctorId, event) {
+        if (currentSelectedDoctorIds.has(doctorId)) {
+            currentSelectedDoctorIds.delete(doctorId);
+        } else {
+            currentSelectedDoctorIds.add(doctorId);
+        }
+        updateSelectedCounter();
+        renderDoctorPickerList();
+    }
+
+function updateSelectedCounter() {
+        const count = currentSelectedDoctorIds.size;
+        document.getElementById('selectedDoctorCount').innerText = count;
+        document.getElementById('footerCountText').innerText = count;
+    }
+
+function onDoctorSearchInput(val) {
+        pickerCurrentPage = 1;
+        renderDoctorPickerList();
+    }
+
+function toggleShowOnlySelected() {
+        isFilterOnlySelected = !isFilterOnlySelected;
+        pickerCurrentPage = 1;
+        document.getElementById('btnFilterToggleSelected').innerText = isFilterOnlySelected ? 'Tampilkan Semua' : 'Tampilkan Terpilih';
+        renderDoctorPickerList();
+    }
+
+async function handleTargetFormSubmit(e) {
+        e.preventDefault();
+        await saveCallList(false);
+    }
+
+async function handleSaveAndSubmit() {
+        await saveCallList(true);
+    }
+
+async function saveCallList(autoSubmit = false) {
+        const errEl = document.getElementById('targetModalError');
+        errEl.style.display = 'none';
+
+        const editingId = document.getElementById('editingCallListId').value;
+        const period = document.getElementById('periodMonthInput').value;
+        const selectedDoctors = Array.from(currentSelectedDoctorIds);
+
+        if (!selectedDoctors.length) {
+            errEl.innerText = 'Pilih minimal 1 target dokter.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        const btnDraft = document.getElementById('btnSubmitDraft');
+        const btnSend = document.getElementById('btnSubmitAndSend');
+        btnDraft.disabled = true;
+        btnSend.disabled = true;
+
+        try {
+            let res, data;
+            if (editingId) {
+                // Update draft yang sudah ada
+                res = await window.apiFetch(`/api/call-lists/${editingId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ doctor_ids: selectedDoctors })
+                });
+                data = await res.json();
+            } else {
+                // Buat draft baru
+                res = await window.apiFetch('/api/call-lists', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        period_month: period,
+                        doctor_ids: selectedDoctors
+                    })
+                });
+                data = await res.json();
+            }
+
+            if (!data.success) {
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                errEl.innerText = data.message || 'Gagal menyimpan target dokter.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const savedId = editingId || data.data.id;
+
+            if (autoSubmit) {
+                const subRes = await window.apiFetch(`/api/call-lists/${savedId}/submit`, { method: 'POST' });
+                const subData = await subRes.json();
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                closeTargetModal();
+                showAlert('Target dokter berhasil disimpan dan diajukan ke atasan!');
+                loadMyCallLists();
+            } else {
+                btnDraft.disabled = false;
+                btnSend.disabled = false;
+                closeTargetModal();
+                showAlert('Draft target dokter berhasil disimpan!');
+                loadMyCallLists();
+            }
+        } catch (err) {
+            btnDraft.disabled = false;
+            btnSend.disabled = false;
+            errEl.innerText = 'Terjadi kesalahan jaringan atau server.';
+            errEl.style.display = 'block';
+        }
+    }
+
+async function submitCallList(id) {
+        const confirmed = await requestConfirmation(
+            'Ajukan Target Dokter ini ke atasan langsung?',
+            'Ajukan Target Dokter'
+        );
+        if (!confirmed) return;
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}/submit`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Target dokter berhasil diajukan untuk persetujuan.');
+                loadMyCallLists();
+                if (['dm', 'rsm', 'mm'].includes(currentUserRole)) loadReviewCallLists();
+            } else {
+                showAlert(data.message || 'Gagal mengajukan target dokter.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
+        }
+    }
+
+function formatApprovalEvent(event) {
+        const labels = {
+            created_draft: 'Draft dibuat',
+            submitted: 'Diajukan',
+            approved: 'Disetujui',
+            rejected: 'Ditolak',
+            revised: 'Direvisi',
+        };
+
+        return labels[event] || String(event || '-').replaceAll('_', ' ');
+    }
+
+async function openDetailModal(id) {
+        document.getElementById('detailContent').innerHTML = '<div class="target-detail-loading">Memuat detail...</div>';
+        document.getElementById('detailModal').style.display = 'flex';
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}`);
+            const result = await res.json();
+            if (result.success) {
+                const cl = result.data;
+                document.getElementById('detailPeriodSubtitle').innerText = formatPeriodIndonesian(cl.period_month);
+
+                const statusClass = `status-${cl.status === 'pending_approval' ? 'pending' : cl.status}`;
+                const statusLabel = cl.status === 'pending_approval' ? 'Menunggu Persetujuan' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
+                const doctorCount = cl.doctors.length;
+
+                const historyHtml = cl.approval_history.length
+                    ? cl.approval_history.map(h => `
+                        <div class="target-detail-history-row">
+                            <strong>${escapeHtml(formatApprovalEvent(h.event))}</strong>
+                            <span>oleh ${escapeHtml(h.actor_name || 'Sistem')} pada ${window.formatDateTimeIndonesia ? window.formatDateTimeIndonesia(h.created_at) : h.created_at}</span>
+                            ${h.reason ? `<div>${escapeHtml(h.reason)}</div>` : ''}
+                        </div>
+                    `).join('')
+                    : '<div class="target-detail-history-row">Belum ada riwayat.</div>';
+
+                const html = `
+                    <div class="target-detail-meta">
+                        <div>
+                            Status
+                            <strong><span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></strong>
+                        </div>
+                        <div>
+                            Peninjau
+                            <strong>${escapeHtml(cl.assigned_approver ? cl.assigned_approver.name : '-')}</strong>
+                        </div>
+                        <div>
+                            Pengaju
+                            <strong>${escapeHtml(cl.owner ? cl.owner.name : '-')}</strong>
+                        </div>
+                        <div>
+                            Jumlah dokter
+                            <strong>${doctorCount} dokter</strong>
+                        </div>
+                    </div>
+
+                    <section>
+                        <h4 class="target-detail-section-title">Daftar dokter</h4>
+                        <div class="target-detail-list">
+                            ${cl.doctors.map(d => `
+                                <div class="target-detail-doctor">
+                                    <strong>${escapeHtml(d.name)}</strong>
+                                    <span>${escapeHtml(d.specialization || 'Umum')} - ${escapeHtml(d.address || '-')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+
+                    <section>
+                        <h4 class="target-detail-section-title">Riwayat</h4>
+                        <div class="target-detail-history">
+                            ${historyHtml}
+                        </div>
+                    </section>
+
+                    <div class="target-detail-actions">
+                        <button type="button" class="btn btn-outline btn-sm" data-action="close-detail">Tutup</button>
+                    </div>
+                `;
+                document.getElementById('detailContent').innerHTML = html;
+            }
+        } catch (err) {
+            document.getElementById('detailContent').innerHTML = '<div class="target-detail-error">Gagal memuat detail.</div>';
+        }
+    }
+
+function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // Manager Actions
+    async function loadReviewCallLists() {
+        const loadingEl = document.getElementById('loadingReview');
+        if (!loadingEl) return;
+        loadingEl.innerHTML = window.renderTableSkeleton(3);
+        loadingEl.style.display = 'block';
+        try {
+            const res = await window.apiFetch('/api/call-lists?mode=review');
+            const result = await res.json();
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            if (result.success) {
+                reviewCallLists = result.data;
+                const countEl = document.getElementById('reviewCount');
+                if (countEl) countEl.innerText = reviewCallLists.length;
+                renderReviewGrid();
+            }
+        } catch (err) {
+            if (loadingEl) loadingEl.style.display = 'none';
+            console.error(err);
+        }
+    }
+
+function renderReviewGrid() {
+        const tableWrap = document.getElementById('reviewTableWrap');
+        const tbody = document.getElementById('reviewTableBody');
+        const empty = document.getElementById('emptyReview');
+        if (!reviewCallLists.length) {
+            if (tbody) tbody.innerHTML = '';
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (empty) empty.style.display = 'block';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (tableWrap) tableWrap.style.display = 'block';
+        tbody.innerHTML = reviewCallLists.map(cl => `
+            <tr>
+                <td class="target-nowrap-cell">
+                    <strong class="target-review-period">${formatPeriodIndonesian(cl.period_month)}</strong>
+                </td>
+                <td class="target-nowrap-cell">
+                    <strong class="target-table-strong">${escapeHtml(cl.owner_name || '-')}</strong>
+                </td>
+                <td>
+                    <strong class="target-table-strong">${cl.doctor_count} Dokter</strong>
+                </td>
+                <td>
+                    <span class="status-badge status-pending">Menunggu Persetujuan</span>
+                </td>
+                <td class="target-action-cell">
+                    <div class="target-inline-actions">
+                        <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${cl.id}">Detail</button>
+                        <button class="btn btn-primary btn-sm" data-action="approve-call-list" data-call-list-id="${cl.id}">Setujui</button>
+                        <button class="btn btn-outline btn-sm target-danger-outline" data-action="open-reject" data-call-list-id="${cl.id}">Tolak</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+async function approveCallList(id) {
+        const confirmed = await requestConfirmation(
+            'Setujui Target Dokter ini?',
+            'Setujui Target Dokter'
+        );
+        if (!confirmed) return;
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'approved', reason: 'Disetujui' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Target dokter berhasil disetujui!');
+                loadReviewCallLists();
+                loadManagerSummary();
+            } else {
+                showAlert(data.message || 'Gagal menyetujui target dokter.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Terjadi kesalahan jaringan.', 'danger');
+        }
+    }
+
+function openRejectModal(id) {
+        document.getElementById('rejectCallListId').value = id;
+        document.getElementById('rejectReasonInput').value = '';
+        const errEl = document.getElementById('rejectModalError');
+        if (errEl) errEl.style.display = 'none';
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+
+function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+
+async function handleRejectSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('rejectCallListId').value;
+        const reason = document.getElementById('rejectReasonInput').value.trim();
+        const errEl = document.getElementById('rejectModalError');
+
+        if (!reason) {
+            errEl.innerText = 'Alasan penolakan wajib diisi.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/${id}/approve`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'rejected', reason: reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeRejectModal();
+                showAlert('Target dokter ditolak dan dikembalikan untuk direvisi.');
+                loadReviewCallLists();
+                loadManagerSummary();
+            } else {
+                errEl.innerText = data.message || 'Gagal menolak target.';
+                errEl.style.display = 'block';
+            }
+        } catch (err) {
+            errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.style.display = 'block';
+        }
+    }
+
+async function loadManagerSummary() {
+        const monthInput = document.getElementById('summaryMonthSelect');
+        const card = document.getElementById('monitoringSummaryCard');
+        if (!card) return;
+
+        let selectedMonth = monthInput.value;
+        if (!selectedMonth) {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            selectedMonth = `${yyyy}-${mm}`;
+            monthInput.value = selectedMonth;
+        }
+
+        try {
+            const res = await window.apiFetch(`/api/call-lists/summary?period_month=${selectedMonth}`);
+            const result = await res.json();
+            if (result.success) {
+                card.style.display = 'block';
+                const data = result.data;
+                document.getElementById('statTotalSubordinates').innerText = data.total_subordinates;
+                document.getElementById('statTotalDoctors').innerText = data.total_target_doctors;
+                document.getElementById('statApproved').innerText = `${data.approved_count} / ${data.total_subordinates}`;
+                document.getElementById('statPending').innerText = data.pending_count;
+
+                const listContainer = document.getElementById('subordinatesListContainer');
+                if (data.subordinates_detail && data.subordinates_detail.length) {
+                    listContainer.innerHTML = data.subordinates_detail.map(sub => {
+                        let statusTheme = 'status-none';
+                        let statusText = 'Belum Mengajukan';
+
+                        if (sub.status === 'approved') {
+                            statusTheme = 'status-approved';
+                            statusText = 'Disetujui';
+                        } else if (sub.status === 'pending_approval') {
+                            statusTheme = 'status-pending';
+                            statusText = 'Menunggu Persetujuan';
+                        } else if (sub.status === 'draft') {
+                            statusTheme = 'status-draft';
+                            statusText = 'Perlu Revisi';
+                        }
+
+                        const actionBtn = sub.call_list_id ? `
+                            <button type="button" class="btn btn-outline btn-sm target-roster-button" data-action="open-detail" data-call-list-id="${sub.call_list_id}">
+                                Lihat Target
+                            </button>
+                        ` : `
+                            <span class="target-roster-empty">Belum Ada Target</span>
+                        `;
+
+                        return `
+                            <div class="team-roster-item">
+                                <div class="target-roster-person">
+                                    <strong class="target-roster-name">${escapeHtml(sub.name)}</strong>
+                                    <span class="role-pill role-${sub.role}">${sub.role.toUpperCase()}</span>
+                                </div>
+                                <div class="target-roster-status">
+                                    <div class="target-roster-count">
+                                        <strong class="tabular-nums">${sub.doctor_count}</strong> Dokter
+                                    </div>
+                                    <span class="status-badge ${statusTheme}">${statusText}</span>
+                                    ${actionBtn}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    listContainer.innerHTML = '<div class="target-roster-none">Tidak ada anggota tim terdaftar.</div>';
+                }
+            }
+        } catch (err) {
+            console.error('Gagal mengambil ringkasan monitoring manajerial', err);
+        }
+    }

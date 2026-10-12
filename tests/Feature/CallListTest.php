@@ -196,6 +196,62 @@ class CallListTest extends TestCase
         ]);
     }
 
+    public function test_resubmit_preserves_original_assigned_approver(): void
+    {
+        $createRes = $this->actingAs($this->mr)->postJson('/api/call-lists', [
+            'period_month' => '2027-08',
+            'doctor_ids' => [1, 2],
+        ]);
+        $callListId = $createRes->json('data.id');
+
+        $this->actingAs($this->mr)->postJson("/api/call-lists/{$callListId}/submit")
+            ->assertStatus(200)
+            ->assertJsonPath('data.assigned_approver_id', $this->dm->id);
+
+        $this->actingAs($this->dm)->patchJson("/api/call-lists/{$callListId}/approve", [
+            'status' => 'rejected',
+            'reason' => 'Perlu revisi target',
+        ])->assertStatus(200);
+
+        $this->mr->update(['manager_id' => $this->dm2->id]);
+
+        $this->actingAs($this->mr)->postJson("/api/call-lists/{$callListId}/submit")
+            ->assertStatus(200)
+            ->assertJsonPath('data.assigned_approver_id', $this->dm->id);
+
+        $this->assertDatabaseHas('call_lists', [
+            'id' => $callListId,
+            'assigned_approver_id' => $this->dm->id,
+            'status' => 'pending_approval',
+        ]);
+    }
+
+    public function test_post_reject_endpoint_returns_list_to_draft(): void
+    {
+        $createRes = $this->actingAs($this->mr)->postJson('/api/call-lists', [
+            'period_month' => '2027-09',
+            'doctor_ids' => [1, 2],
+        ]);
+        $callListId = $createRes->json('data.id');
+        $this->actingAs($this->mr)->postJson("/api/call-lists/{$callListId}/submit");
+
+        $this->actingAs($this->dm)->postJson("/api/call-lists/{$callListId}/reject", [
+            'reason' => 'Target belum sesuai prioritas distrik',
+        ])->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'status' => 'draft',
+                    'decision' => 'rejected',
+                    'reason' => 'Target belum sesuai prioritas distrik',
+                ],
+            ]);
+
+        $this->assertDatabaseHas('call_lists', [
+            'id' => $callListId,
+            'status' => 'draft',
+        ]);
+    }
     /**
      * Skenario Uji Wajib PDF: PDF-05
      * RSM/MM (atau manager lain yang bukan direct manager tertugaskan) dilarang approve pengajuan MR.

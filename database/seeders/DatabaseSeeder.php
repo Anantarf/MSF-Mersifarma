@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // MR 2 (peer MR for negative cross-MR test)
+        // MR 2 (MR Jakarta Selatan 2 under DM Wisnu for subordinate monitoring tests)
         $mr2 = User::updateOrCreate(
             ['email' => 'mr2@mersi.com'],
             [
@@ -97,6 +97,18 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'role' => 'mr',
                 'manager_id' => $dm->id,
+            ]
+        );
+
+        // MR 3 (Medical Representative Jakarta Timur under DM2 Hendra)
+        $mr3 = User::updateOrCreate(
+            ['email' => 'mr3@mersi.com'],
+            [
+                'name' => 'Bambang Irawan',
+                'username' => 'mr3',
+                'password' => $defaultPassword,
+                'role' => 'mr',
+                'manager_id' => $dm2->id,
             ]
         );
 

@@ -3,12 +3,12 @@
 > **Versi:** 1.5 implementation sequence + UI label v1.6 + operational clarity v1.7; **status:** rencana kerja, belum ada kode implementasi.  
 > **Tujuan:** menghasilkan deliverable sesuai PDF secepat mungkin tanpa menjadikan enhancement P1 sebagai dependency P0.
 
-## 1. Workflow IDE yang diharapkan
+## 1. Workflow Implementasi
 
 1. Baca `AGENTS.md` → `DOCS_INDEX.md` → `DESIGN.md` → `PRD.md` → `API_CONTRACT.md` → `DATABASE_SCHEMA.md` → `TDD.md` → `TEST_PLAN.md`.
 2. Verifikasi environment Laravel/PHP/Composer/MySQL lokal.
 3. Implementasi per fase P0; **setelah tiap fase** tulis ringkasan file yang diubah, tes yang dijalankan, dan kegagalan yang ditemukan.
-4. Jangan mengklaim PASS tanpa mengeksekusi tes dan melihat hasilnya.
+4. Jangan mengklaim PASS tanpa menjalankan test dan melihat hasilnya.
 5. Tulis asumsi yang diperlukan jika spesifikasi belum menentukan suatu detail. Hindari menambah fitur.
 6. Pada **heading tiga halaman** tampilkan nama Indonesia lengkap **Target Dokter**, **Jadwal Kunjungan**, **Pelaksanaan Kunjungan**, disertai subtitle **Call List Bulanan**, **Call Plan**, **Call Actual**. Desktop navigation gunakan nama lengkap, mobile sempit boleh ringkas menjadi Target/Jadwal/Kunjungan dengan accessible name lengkap.
 7. **P0 Call Actual:** tombol **Isi Laporan Kunjungan**, waktu manual, **Simpan Laporan**. Tombol **Mulai/Akhiri Kunjungan** dengan timestamp server **hanya** saat P1 Session benar-benar dibangun.

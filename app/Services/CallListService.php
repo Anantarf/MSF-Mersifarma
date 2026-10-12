@@ -97,14 +97,29 @@ class CallListService
             ]);
         }
 
-        if (! $user->manager_id) {
-            throw ValidationException::withMessages([
-                'manager_id' => ['Pengguna tidak memiliki atasan langsung (direct manager) untuk persetujuan.'],
-            ]);
-        }
-
         return DB::transaction(function () use ($callList, $user) {
             $lockedList = CallList::where('id', $callList->id)->lockForUpdate()->first();
+
+            if ($lockedList->owner_id !== $user->id) {
+                throw new AccessDeniedHttpException('Hanya pemilik yang dapat mengajukan Call List ini.');
+            }
+
+            if ($lockedList->status !== 'draft') {
+                throw new ConflictHttpException('Hanya Call List berstatus draft yang dapat diajukan.');
+            }
+
+            if ($lockedList->doctors()->count() === 0) {
+                throw ValidationException::withMessages([
+                    'doctor_ids' => ['Call List harus memiliki minimal 1 dokter target sebelum diajukan.'],
+                ]);
+            }
+
+            $assignedApproverId = $lockedList->assigned_approver_id ?: $user->manager_id;
+            if (! $assignedApproverId) {
+                throw ValidationException::withMessages([
+                    'manager_id' => ['Pengguna tidak memiliki atasan langsung (direct manager) untuk persetujuan.'],
+                ]);
+            }
 
             // Cek apakah pernah di-reject sebelumnya (resubmission)
             $hasBeenRejected = $lockedList->approvalLogs()
@@ -115,7 +130,7 @@ class CallListService
 
             $lockedList->update([
                 'status' => 'pending_approval',
-                'assigned_approver_id' => $user->manager_id,
+                'assigned_approver_id' => $assignedApproverId,
                 'submitted_at' => Carbon::now(),
             ]);
 
@@ -157,7 +172,15 @@ class CallListService
         }
 
         return DB::transaction(function () use ($callList, $approver, $decision, $reason) {
-            $lockedList = CallList::where('id', $callList->id)->lockForUpdate()->first();
+            $lockedList = CallList::with('owner')->where('id', $callList->id)->lockForUpdate()->first();
+
+            if ($lockedList->assigned_approver_id !== $approver->id || $lockedList->owner->manager_id !== $approver->id) {
+                throw new AccessDeniedHttpException('Hanya atasan langsung (direct manager) yang ditugaskan yang dapat menyetujui atau menolak Call List ini.');
+            }
+
+            if ($lockedList->status !== 'pending_approval') {
+                throw new ConflictHttpException("Call List tidak dalam status menunggu persetujuan (status saat ini: {$lockedList->status}).");
+            }
 
             if ($decision === 'approved') {
                 $lockedList->update([

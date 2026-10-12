@@ -1,15 +1,15 @@
 # PRD - Mobile Sales Force (MSF)
 
-> **Versi:** 1.8 (Konsolidasi Peran Manajerial, Hierarki Wilayah, dan Tata Kelola Kunjungan)  
-> **Status:** Spesifikasi baseline v1.8; P0 telah diimplementasikan dan diverifikasi (60 tests pass).  
-> **Sumber utama:** Dokumen studi kasus MSF PT Mersifarma dan dokumen konsolidasi `MSF_Change_Impact_v1.8_Proposal.md`.  
+> **Versi:** 1.8 (Konsolidasi Peran Manajerial, Hierarki Wilayah, dan Tata Kelola Kunjungan)
+> **Status:** Spesifikasi produk yang sudah disesuaikan dengan implementasi; automated test terakhir 65 passed, 239 assertions.
+> **Sumber utama:** Dokumen studi kasus MSF PT Mersifarma dan dokumen konsolidasi `MSF_Change_Impact_v1.8_Proposal.md`.
 > **Revisi yang digabung:** PRD v1.2/v1.3, Logic Flow v1.4, Operational UX v1.5, UI Label v1.6, Operational Correction v1.7, Consolidation Proposal v1.8.
 
 ## 1. Ringkasan produk
 
-MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat target dokter bulanan, merencanakan kunjungan, dan menyampaikan realisasi kunjungan dengan bukti foto, tanda tangan, serta produk yang didetailkan. Manager melakukan approval terhadap **Call List** bawahannya dalam satu tingkat hierarki langsung.
+MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat target dokter bulanan, merencanakan kunjungan, dan menyampaikan realisasi kunjungan dengan bukti foto, tanda tangan, serta produk yang didetailkan. Manager menyetujui atau menolak **Call List** bawahan langsungnya. Approval tidak boleh melompat role atau melewati atasan yang ditugaskan.
 
-**Struktur Peran Strategis ke Operasional (v1.8):**
+**Pembagian Peran:**
 1. **MM:** Menentukan fokus produk dan target spesialisasi kampanye 3 bulanan (bukan kuota MR individu), serta menyetujui Call List manajerial RSM.
 2. **RSM:** Menerjemahkan fokus produk menjadi arahan dokter prioritas regional, serta menyetujui Call List manajerial DM.
 3. **DM:** Menetapkan arahan dokter prioritas bulanan tingkat distrik sebagai arahan non-eksklusif (bukan kuota kaku), serta menyetujui Call List MR bawahannya.
@@ -43,7 +43,7 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 - `CL-07`: List Approved immutable pada MVP; tidak dapat direject kembali setelah Plan dibuat.
 - `CL-08`: Manager melihat tab *Pengajuan untuk Disetujui* pada halaman Call List, bukan halaman utama keempat.
 
-**Representasi status desain:** database menyimpan state aktif `draft`, `pending_approval`, `approved`, sedangkan status/transisi `submitted` dan `rejected` disimpan sebagai event log. Ini **asumsi representasi**, bukan persis lima nilai status tersimpan yang ditulis di PDF. UI menampilkan *Perlu Revisi — Ditolak* berdasarkan riwayat setelah reject.
+**Representasi status desain:** database menyimpan state aktif `draft`, `pending_approval`, `approved`, sedangkan status/transisi `submitted` dan `rejected` disimpan sebagai event log. Ini **asumsi representasi**, bukan persis lima nilai status tersimpan yang ditulis di PDF. UI menampilkan *Perlu Revisi â€” Ditolak* berdasarkan riwayat setelah reject.
 
 ### 3.2 Call Plan (P0)
 
@@ -135,20 +135,20 @@ MSF adalah aplikasi web mobile-first untuk Medical Representative (MR) mencatat 
 - Penamaan modul ini adalah **keputusan UX**, bukan perubahan requirement PDF atau API contract.
 
 ### Call List
-Pilih bulan → pilih dokter → Draft → Submit → direct manager Approve/Reject → jika rejected, revisi dan resubmit.
+Pilih bulan â†’ pilih dokter â†’ Draft â†’ Submit â†’ direct manager Approve/Reject â†’ jika rejected, revisi dan resubmit.
 
 ### Call Plan
-Pilih Approved List → dokter yang termasuk List → tanggal/jam → simpan. Pesan duplikat harus mudah dipahami.
+Pilih Approved List â†’ dokter yang termasuk List â†’ tanggal/jam â†’ simpan. Pesan duplikat harus mudah dipahami.
 
 ### Call Actual: satu halaman, dua opsi
 
 1. Tampilkan **Kunjungan Sedang Berlangsung** jika ada (P1).
 2. Tampilkan **Jadwal Hari Ini** dengan tombol **Isi Laporan Kunjungan** untuk P0, atau **Mulai Kunjungan** untuk P1 saat Check-in server benar-benar diimplementasikan.
 3. Tampilkan opsi sekunder **Kunjungan di Luar Rencana**; pilih dokter MCL, sistem merekomendasikan Plan jika relevan, dan minta alasan melalui UI.
-4. **P0:** Isi Laporan Kunjungan → Waktu Mulai/Selesai manual → Foto + TTD + Produk → Simpan Laporan. **P1:** Mulai (server Check-in) → Foto + TTD + Produk → Akhiri (server Check-out) → Simpan Laporan.
+4. **P0:** Isi Laporan Kunjungan â†’ Waktu Mulai/Selesai manual â†’ Foto + TTD + Produk â†’ Simpan Laporan. **P1:** Mulai (server Check-in) â†’ Foto + TTD + Produk â†’ Akhiri (server Check-out) â†’ Simpan Laporan.
 5. Tampilkan **Riwayat Selesai**.
 
-Sistem menentukan Planned/Unplanned/Non Target; MR tidak memilih nama klasifikasi. Field ID dan istilah `visit_session_id` tidak tampak kepada pengguna. **P0:** In Progress → Completed dapat berupa state form lokal dengan input waktu; **P1:** Session persisten memakai timestamp server dan dapat dilanjutkan.
+Sistem menentukan Planned/Unplanned/Non Target; MR tidak memilih nama klasifikasi. Field ID dan istilah `visit_session_id` tidak tampak kepada pengguna. **P0:** In Progress â†’ Completed dapat berupa state form lokal dengan input waktu; **P1:** Session persisten memakai timestamp server dan dapat dilanjutkan.
 
 ## 5. Recovery / pengecualian (P1)
 
@@ -178,12 +178,12 @@ Sistem menentukan Planned/Unplanned/Non Target; MR tidak memilih nama klasifikas
 
 ## 8. Acceptance criteria dan bukti
 
-1. MR membuat List, Submit, DM direct manager Approve, MR Plan, MR Actual → sukses.
-2. Plan dari List belum Approved → error.
-3. Dua Actual dokter/tanggal sama walaupun mode atau MR berbeda → hanya satu boleh tersimpan.
-4. Actual tanpa foto → error.
-5. RSM/MM mencoba approve List milik MR → ditolak.
-6. Direct API dengan `plan_id=null`, dokter MCL, bukti lengkap → diterima.
+1. MR membuat List, Submit, DM direct manager Approve, MR Plan, MR Actual â†’ sukses.
+2. Plan dari List belum Approved â†’ error.
+3. Dua Actual dokter/tanggal sama walaupun mode atau MR berbeda â†’ hanya satu boleh tersimpan.
+4. Actual tanpa foto â†’ error.
+5. RSM/MM mencoba approve List milik MR â†’ ditolak.
+6. Direct API dengan `plan_id=null`, dokter MCL, bukti lengkap â†’ diterima.
 7. Frontend 3 halaman terintegrasi dengan API, loading/error dan responsif; label navigasi Indonesia dan subtitle terminologi PDF pada judul masing-masing halaman. P0 memakai waktu manual dan tidak menampilkan aksi Check-in/Check-out server palsu.
 8. Bukti tes manual berupa screenshot/screen recording dan hasil expected-vs-actual.
 

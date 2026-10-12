@@ -1,7 +1,7 @@
 # DESIGN.md - Mobile Sales Force (MSF)
 
-> **Status:** Design baseline v1.8 (Konsolidasi Peran Manajerial, Hierarki Wilayah, dan Tata Kelola Kunjungan) · **Implementasi:** P0 telah selesai dan terverifikasi 100% automated tests · **Bahasa:** Indonesia  
-> **Acuan:** studi kasus Software Engineer MSF PT Mersifarma; dokumen proposal `MSF_Change_Impact_v1.8_Proposal.md`; API Contract v1.0; Database Constraint Specification v1.0; ADR-001 hingga ADR-034.  
+> **Status:** Baseline teknis yang disesuaikan dengan implementasi saat ini. Automated test terakhir: 65 passed, 239 assertions.
+> **Acuan:** studi kasus Software Engineer MSF PT Mersifarma; dokumen proposal `MSF_Change_Impact_v1.8_Proposal.md`; API Contract v1.0; Database Constraint Specification v1.0; ADR-001 hingga ADR-034.
 > **Kegunaan dokumen:** spesifikasi teknis induk untuk implementasi, code review, testing, dan demo. `README.md` tetap digunakan untuk instruksi instalasi dan laporan hasil pengujian.
 
 ## 1. Ringkasan desain
@@ -20,7 +20,7 @@ Prinsip: **pengalaman MR sederhana, validasi backend ketat**. Kunjungan tanpa Pl
 
 | Prioritas | Cakupan | Keputusan |
 |---|---|---|
-| **P0 - wajib** | 8 endpoint studi kasus, master data + migration/seed, Call List + approval, Call Plan, Call Actual termasuk `plan_id=null`, 3 halaman responsif, input check-in/out, loading/error, 5 tes manual, README | Telah selesai & terverifikasi (60 tests pass) |
+| **P0 - wajib** | 8 endpoint studi kasus, master data + migration/seed, Call List + approval, Call Plan, Call Actual termasuk `plan_id=null`, 3 halaman responsif, input check-in/out, loading/error, 5 tes manual, README | Selesai; automated test terakhir 65 passed, 239 assertions |
 | **P1 - setelah P0 stabil** | Status Plan Expired/Tidak Terlaksana, pengetatan tanggal Plan, filter wilayah MCL, Visit Session persisten/recovery, Handover Plan intra-distrik | Tidak boleh merusak baseline P0 |
 | **P2 - opsional** | Form CRUD campaign produk 3 bulan, modul reporting insentif, GPS, deployment | Tidak menjadi dependency MVP |
 
@@ -113,11 +113,11 @@ erDiagram
 
 ### 4.2 Referential integrity dan kandidat FK
 
-- `call_plans(call_list_id, mr_id)` → `call_lists(id, owner_id)`; parent mempunyai unique `(id, owner_id)`.
-- `call_plans(call_list_id, doctor_id)` → `call_list_doctors(call_list_id, doctor_id)`.
-- `visit_sessions(plan_id, mr_id, doctor_id)` → `call_plans(id, mr_id, doctor_id)` dengan candidate unique key pada parent; nullable `plan_id` untuk Without Plan.
-- `call_actuals(plan_id, mr_id, doctor_id)` → `call_plans(id, mr_id, doctor_id)`.
-- `call_actuals(visit_session_id, mr_id, doctor_id, visit_date)` → `visit_sessions(id, mr_id, doctor_id, visit_date)` bila Session dipakai.
+- `call_plans(call_list_id, mr_id)` -> `call_lists(id, owner_id)`; parent mempunyai unique `(id, owner_id)`.
+- `call_plans(call_list_id, doctor_id)` -> `call_list_doctors(call_list_id, doctor_id)`.
+- `visit_sessions(plan_id, mr_id, doctor_id)` -> `call_plans(id, mr_id, doctor_id)` dengan candidate unique key pada parent; nullable `plan_id` untuk Without Plan.
+- `call_actuals(plan_id, mr_id, doctor_id)` -> `call_plans(id, mr_id, doctor_id)`.
+- `call_actuals(visit_session_id, mr_id, doctor_id, visit_date)` -> `visit_sessions(id, mr_id, doctor_id, visit_date)` bila Session dipakai.
 - Pastikan tipe dan urutan kolom pada composite FK identik serta parent mempunyai indeks unik yang sesuai. Replikasi primary ID pada unique candidate key dimaksudkan untuk constraint kombinasi, bukan mengubah identitas entitas.
 - Perbandingan `Session.plan_id` dengan `Actual.plan_id` harus **NULL-safe** di service karena composite FK di atas belum memverifikasi kesamaan kedua field tersebut.
 - Semua penghapusan yang merusak histori menggunakan `RESTRICT` / tidak diberi endpoint delete dalam MVP; jangan cascade-delete Actual, Approval History, atau master yang sudah direferensikan.
@@ -171,15 +171,15 @@ stateDiagram-v2
     Approved --> [*]
 ```
 
-**Status aktif database:** `draft`, `pending_approval`, `approved`. Event `submitted`, `rejected`, `returned_to_draft`, `resubmitted` **tetap dicatat eksplisit**, karena alur PDF menyebutnya sebagai status/transisi. Approval log menyimpan `actor_id` pelaku dan `event_origin` agar transisi sistem tidak tampak seperti persetujuan manajer. Saat Reject, `current_status = draft` namun UI menampilkan **“Perlu Revisi — Ditolak”** beserta alasan terbaru. **Prioritas rendering: approved → Disetujui; pending_approval → Menunggu Persetujuan; draft yang pernah direject dan belum resubmit → Perlu Revisi; draft baru → Draft.** Histori reject lama tidak boleh menimpa state pending/approved setelah resubmit. Setelah submit ulang, approver tetap sama. Approved tidak dapat diedit ataupun direject kembali pada MVP; ini mencegah Plan berlandaskan List yang kemudian dibatalkan.
+**Status aktif database:** `draft`, `pending_approval`, `approved`. Event `submitted`, `rejected`, `returned_to_draft`, `resubmitted` **tetap dicatat eksplisit**, karena alur PDF menyebutnya sebagai status/transisi. Approval log menyimpan `actor_id` pelaku dan `event_origin` agar transisi sistem tidak tampak seperti persetujuan manajer. Saat Reject, `current_status = draft` namun UI menampilkan **"Perlu Revisi - Ditolak"** beserta alasan terbaru. **Prioritas rendering: approved -> Disetujui; pending_approval -> Menunggu Persetujuan; draft yang pernah direject dan belum resubmit -> Perlu Revisi; draft baru -> Draft.** Histori reject lama tidak boleh menimpa state pending/approved setelah resubmit. Setelah submit ulang, approver tetap sama. Approved tidak dapat diedit ataupun direject kembali pada MVP; ini mencegah Plan berlandaskan List yang kemudian dibatalkan.
 
 **Penting:** representasi 3 status aktif + full transition log adalah **asumsi desain**, bukan representasi literal lima status persisten. Jelaskan di README dan buktikan history pada demo.
 
 ### 5.2 Call Plan
 
-`Scheduled → Completed` saat Actual **dengan plan_id tersebut** final; atau `Scheduled → Cancelled` dengan alasan dan izin owner. Plan yang sudah Completed/Cancelled tidak bisa kembali Scheduled. Tidak boleh Cancel apabila ada Session aktif yang terkait atau Actual final terhubung; **Actual yang tidak terkait (MR lain / Without Plan) tidak otomatis membatalkan Plan**. UI menampilkan derived indicator **Conflict — Visit Already Recorded** dan memungkinkan cancel Plan yang belum terlaksana jika syarat terpenuhi.
+`Scheduled -> Completed` saat Actual **dengan plan_id tersebut** final; atau `Scheduled -> Cancelled` dengan alasan dan izin owner. Plan yang sudah Completed/Cancelled tidak bisa kembali Scheduled. Tidak boleh Cancel apabila ada Session aktif yang terkait atau Actual final terhubung; **Actual yang tidak terkait (MR lain / Without Plan) tidak otomatis membatalkan Plan**. UI menampilkan derived indicator **Conflict - Visit Already Recorded** dan memungkinkan cancel Plan yang belum terlaksana jika syarat terpenuhi.
 
-Plan hanya boleh dibuat dari Call List Approved **milik MR**, dokternya harus anggota Call List, tanggalnya dalam bulan List, dan tidak ada Plan non-Cancelled / Actual final pada pasangan dokter–tanggal. Untuk Planned Actual pada tanggal berbeda, pergeseran hanya boleh dalam periode bulan sumber dan membutuhkan `deviation_reason`; `plan_date` asli tidak diubah. **Jika MR mempunyai Plan Scheduled lain untuk dokter yang sama tepat pada tanggal Actual**, Planned Visit yang menggunakan Plan lama harus ditolak dan MR diarahkan ke Plan pada tanggal tersebut (aturan FTR-01). **Pengecekan ini tidak diberlakukan sebagai hard block terhadap Direct API `plan_id=null`**.
+Plan hanya boleh dibuat dari Call List Approved **milik MR**, dokternya harus anggota Call List, tanggalnya dalam bulan List, dan tidak ada Plan non-Cancelled / Actual final pada pasangan dokter-tanggal. Untuk Planned Actual pada tanggal berbeda, pergeseran hanya boleh dalam periode bulan sumber dan membutuhkan `deviation_reason`; `plan_date` asli tidak diubah. **Jika MR mempunyai Plan Scheduled lain untuk dokter yang sama tepat pada tanggal Actual**, Planned Visit yang menggunakan Plan lama harus ditolak dan MR diarahkan ke Plan pada tanggal tersebut (aturan FTR-01). **Pengecekan ini tidak diberlakukan sebagai hard block terhadap Direct API `plan_id=null`**.
 
 ### 5.3 Call Actual dan kategori
 
@@ -195,11 +195,11 @@ Plan hanya boleh dibuat dari Call List Approved **milik MR**, dokternya harus an
 
 ### 5.4 Visit Session (P1, bukan dependency API wajib)
 
-`In Progress → Completed` atau `In Progress → Cancelled`. Check-out adalah timestamp persisten, **bukan status terminal**. Check-in/out Session menggunakan waktu server dan tidak boleh diedit client. Satu Session In Progress maksimum per dokter/tanggal global; MR yang sama dapat Resume sesi identik, tetapi tidak diam-diam mengganti Plan atau dokter. `draft_revision` untuk optimistic concurrency; stale Save Draft 409, begitu juga Save Draft setelah Completed/Cancelled.
+`In Progress -> Completed` atau `In Progress -> Cancelled`. Check-out adalah timestamp persisten, **bukan status terminal**. Check-in/out Session menggunakan waktu server dan tidak boleh diedit client. Satu Session In Progress maksimum per dokter/tanggal global; MR yang sama dapat Resume sesi identik, tetapi tidak diam-diam mengganti Plan atau dokter. `draft_revision` untuk optimistic concurrency; stale Save Draft 409, begitu juga Save Draft setelah Completed/Cancelled.
 
-Direct Actual tanpa Session **tetap diperbolehkan**. Jika sebuah Session aktif ditemukan pada dokter/tanggal, request Direct Actual dari MR lain ditolak; untuk MR sendiri harus mengikuti Session yang ada atau membatalkannya lebih dahulu—jangan diam-diam melewati timestamp Session.
+Direct Actual tanpa Session **tetap diperbolehkan**. Jika sebuah Session aktif ditemukan pada dokter/tanggal, request Direct Actual dari MR lain ditolak; untuk MR sendiri harus mengikuti Session yang ada atau membatalkannya lebih dahulu-jangan diam-diam melewati timestamp Session.
 
-## 6. Alur operasional UX — tiga halaman
+## 6. Alur operasional UX - tiga halaman
 
 ### 6.0 Nama menu untuk pengguna non-IT (penyempurnaan UX v1.7)
 
@@ -209,36 +209,36 @@ Direct Actual tanpa Session **tetap diperbolehkan**. Jika sebuah Session aktif d
 | Call Plan | **Jadwal Kunjungan** | Call Plan |
 | Call Actual | **Pelaksanaan Kunjungan** | Call Actual |
 
-Tiga halaman wajib **tetap sama secara fungsi**. Navigasi desktop menampilkan nama Indonesia lengkap; navigasi mobile sempit boleh memakai **Target / Jadwal / Kunjungan** dengan accessible label yang lengkap. **Heading ketiga halaman** selalu memakai nama Indonesia lengkap dengan subtitle istilah PDF. Subtitle tidak wajib di setiap item menu mobile. Semua model, route, service, state internal, dan tabel database tetap memakai terminologi PDF. Seluruh copy frontend mengikuti `PRD.md` §4.0.
+Tiga halaman wajib **tetap sama secara fungsi**. Navigasi desktop menampilkan nama Indonesia lengkap; navigasi mobile sempit boleh memakai **Target / Jadwal / Kunjungan** dengan accessible label yang lengkap. **Heading ketiga halaman** selalu memakai nama Indonesia lengkap dengan subtitle istilah PDF. Subtitle tidak wajib di setiap item menu mobile. Semua model, route, service, state internal, dan tabel database tetap memakai terminologi PDF. Seluruh copy frontend mengikuti `PRD.md` section 4.0.
 
 **P0 vs P1:** Pada **P0**, CTA **Isi Laporan Kunjungan** membuka form **Waktu Mulai/Waktu Selesai** manual, bukti foto, TTD, dan produk; **Simpan Laporan** memfinalisasi Actual. P0 tidak boleh menampilkan Check-in/Check-out server palsu. Pada **P1**, **Mulai Kunjungan** benar-benar menyimpan Check-in server dan **Akhiri Kunjungan** menyimpan Check-out server. **Simpan Laporan** tetap aksi final terpisah; Check-out tidak otomatis menandai Actual/Plan Completed.
 
 ### 6.1 Call List
 
-MR memilih bulan → multi-select dokter → Save Draft → Submit → DM menerima pengajuan → Approve atau Reject dengan alasan. Jika Reject, form Draft dapat direvisi dan di-Submit kembali. DM/RSM/MM menggunakan tab **“Pengajuan untuk Disetujui”** pada konteks Call List, bukan halaman keempat.
+MR memilih bulan -> multi-select dokter -> Save Draft -> Submit -> DM menerima pengajuan -> Approve atau Reject dengan alasan. Jika Reject, form Draft dapat direvisi dan di-Submit kembali. DM/RSM/MM menggunakan tab **"Pengajuan untuk Disetujui"** pada konteks Call List, bukan halaman keempat.
 
 ### 6.2 Call Plan
 
-MR memilih Call List Approved → dokter anggota List → tanggal dan jam → Save Plan. UI menunjukkan duplicate/error, Plan list, serta indicator Terjadwal/Selesai/Dibatalkan/Belum Dilaporkan/Tidak Dapat Direalisasikan. Label Conflict/Unreported **tidak** menjadi status baru database.
+MR memilih Call List Approved -> dokter anggota List -> tanggal dan jam -> Save Plan. UI menunjukkan duplicate/error, Plan list, serta indicator Terjadwal/Selesai/Dibatalkan/Belum Dilaporkan/Tidak Dapat Direalisasikan. Label Conflict/Unreported **tidak** menjadi status baru database.
 
 ### 6.3 Call Actual (mobile-first)
 
 Urutan tampilan landing:
 
-1. **Kunjungan Sedang Berlangsung** → Lanjutkan Kunjungan (jika P1 Session aktif).
-2. **Jadwal Hari Ini** → kartu dokter + jam + tombol **Isi Laporan Kunjungan** untuk P0, atau **Mulai Kunjungan** jika fitur Session server P1 telah nyata diimplementasikan.
-3. **Kunjungan di Luar Rencana** → satu entry point sekunder; dokter dari MCL dan alasan; klasifikasi otomatis.
-4. **Riwayat Selesai** → Actual milik MR.
+1. **Kunjungan Sedang Berlangsung** -> Lanjutkan Kunjungan (jika P1 Session aktif).
+2. **Jadwal Hari Ini** -> kartu dokter + jam + tombol **Isi Laporan Kunjungan** untuk P0, atau **Mulai Kunjungan** jika fitur Session server P1 telah nyata diimplementasikan.
+3. **Kunjungan di Luar Rencana** -> satu entry point sekunder; dokter dari MCL dan alasan; klasifikasi otomatis.
+4. **Riwayat Selesai** -> Actual milik MR.
 
-Di dalam satu halaman/panel: **P0:** Isi Laporan Kunjungan → Waktu Mulai/Selesai manual → Foto + TTD + Produk → Simpan Laporan. **P1:** Mulai Kunjungan (server Check-in) → Foto + TTD + Produk → Akhiri Kunjungan (server Check-out) → Simpan Laporan. Pada P0, In Progress → Completed hanya state form lokal; pada P1 Session persisten dapat di-Resume. User tidak harus melihat `plan_id`, `visit_session_id`, atau istilah internal lain.
+Di dalam satu halaman/panel: **P0:** Isi Laporan Kunjungan -> Waktu Mulai/Selesai manual -> Foto + TTD + Produk -> Simpan Laporan. **P1:** Mulai Kunjungan (server Check-in) -> Foto + TTD + Produk -> Akhiri Kunjungan (server Check-out) -> Simpan Laporan. Pada P0, In Progress -> Completed hanya state form lokal; pada P1 Session persisten dapat di-Resume. User tidak harus melihat `plan_id`, `visit_session_id`, atau istilah internal lain.
 
-**Jika dokter ada dalam Plan sendiri:** UI menyarankan Planned (termasuk Schedule Deviation untuk tanggal bergeser); pilihan `plan_id=null` tetap legal sesuai PDF—warning dan alasan pada UI, bukan hard block seluruh API. **Jika Plan dokter MR lain ada:** dapat memberi warning; aturan hard block berlaku untuk Actual duplikat atau active Session, bukan semata keberadaan Plan MR lain.
+**Jika dokter ada dalam Plan sendiri:** UI menyarankan Planned (termasuk Schedule Deviation untuk tanggal bergeser); pilihan `plan_id=null` tetap legal sesuai PDF-warning dan alasan pada UI, bukan hard block seluruh API. **Jika Plan dokter MR lain ada:** dapat memberi warning; aturan hard block berlaku untuk Actual duplikat atau active Session, bukan semata keberadaan Plan MR lain.
 
 ### 6.4 Recovery tanpa alur teknis yang membingungkan (P1)
 
 - **Resume:** kembali ke form berdasarkan Session tersimpan; beri label Saved/Unsaved/Saving/Save Failed sesuai hasil server.
-- **Lupa Check-out:** bila timestamp sesi tidak merepresentasikan waktu yang benar, tampilkan *“Perbaiki melalui Pencatatan Manual”*. UI mengonfirmasi Cancel Session (dengan alasan), lalu membuka form Manual Actual, membawa data form yang aman ke tahap berikutnya. Ini **dua operasi HTTP, bukan satu transaksi lintas request**. Jika finalisasi manual gagal, Session lama tetap Cancelled; form manual harus mempertahankan input selama layar masih aktif, dan pengguna dapat mengulang dari form manual jika reload.
-- **Submit timeout / response hilang:** status **“Belum Dapat Dikonfirmasi”**; `GET /api/call-actuals` milik MR untuk tanggal/dokter/Plan, jika sudah tercatat buka laporan; jika belum ada sediakan Retry. 409 untuk duplicate tetap mungkin dan **tidak** diartikan sebagai gagal tersimpan.
+- **Lupa Check-out:** bila timestamp sesi tidak merepresentasikan waktu yang benar, tampilkan *"Perbaiki melalui Pencatatan Manual"*. UI mengonfirmasi Cancel Session (dengan alasan), lalu membuka form Manual Actual, membawa data form yang aman ke tahap berikutnya. Ini **dua operasi HTTP, bukan satu transaksi lintas request**. Jika finalisasi manual gagal, Session lama tetap Cancelled; form manual harus mempertahankan input selama layar masih aktif, dan pengguna dapat mengulang dari form manual jika reload.
+- **Submit timeout / response hilang:** status **"Belum Dapat Dikonfirmasi"**; `GET /api/call-actuals` milik MR untuk tanggal/dokter/Plan, jika sudah tercatat buka laporan; jika belum ada sediakan Retry. 409 untuk duplicate tetap mungkin dan **tidak** diartikan sebagai gagal tersimpan.
 - **Existing Actual milik MR lain:** hanya tampilkan pesan konflik, jangan kirim detail/foto/signature/Actual ID pengguna lain.
 - **Partial panel failure:** jika satu GET gagal, panel lain yang berhasil tetap tampil dengan error terlokalisasi.
 
@@ -246,9 +246,9 @@ Di dalam satu halaman/panel: **P0:** Isi Laporan Kunjungan → Waktu Mulai/Seles
 
 | Kondisi | Pesan yang terlihat |
 |---|---|
-| Rejected Call List | Perlu Revisi — lihat alasan penolakan |
+| Rejected Call List | Perlu Revisi - lihat alasan penolakan |
 | Plan duplicate | Dokter sudah memiliki jadwal pada tanggal ini |
-| Actual duplicate milik sendiri | Kunjungan sudah tercatat — Lihat laporan |
+| Actual duplicate milik sendiri | Kunjungan sudah tercatat - Lihat laporan |
 | Actual duplicate milik MR lain | Dokter sudah memiliki kunjungan pada tanggal ini |
 | Missing photo | Foto kunjungan wajib diisi |
 | Session stale draft | Ada perubahan yang lebih baru. Muat kembali progres terakhir |
@@ -319,11 +319,11 @@ Pada `VISIT_ALREADY_EXISTS`, **hanya bila Actual existing milik user login** ser
 
 **Masalah penting:** unique index masing-masing pada `visit_sessions` dan `call_actuals` tidak otomatis mencegah satu Session aktif bersamaan dengan satu Actual final untuk dokter/tanggal yang sama. Gunakan **shared doctor row lock** pada operasi kritis.
 
-**Pola transaksi:** resolve doctor ID → `BEGIN` → lock `master_customers` via `SELECT ... FOR UPDATE` → lock Plan lalu Session terkait dengan urutan konsisten → validasi ulang kondisi database **setelah memperoleh lock** → insert/update → `COMMIT`.
+**Pola transaksi:** resolve doctor ID -> `BEGIN` -> lock `master_customers` via `SELECT ... FOR UPDATE` -> lock Plan lalu Session terkait dengan urutan konsisten -> validasi ulang kondisi database **setelah memperoleh lock** -> insert/update -> `COMMIT`.
 
 Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel Session, dan finalisasi Actual. Approval berbeda: lock baris Call List, lalu validasi assigned approver + current state, append log dan update status pada satu transaksi. Hindari panggilan jaringan saat transaksi berjalan. Deadlock/transient failure dapat di-retry terbatas dengan validasi ulang; unique key violation dijadikan 409 dan tidak disembunyikan.
 
-### 8.1 Finalisasi Actual — satu sumber aturan
+### 8.1 Finalisasi Actual - satu sumber aturan
 
 1. Autentikasi MR dan validasi bentuk payload.
 2. Resolve doctor serta Session/Plan ID yang relevan; mulai transaksi dan lock doctor.
@@ -331,7 +331,7 @@ Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel
 4. Pastikan tidak ada Actual pada `(doctor_id, visit_date)` dan tidak ada Session aktif yang saling bertentangan.
 5. Planned: List Approved, dokter dalam List, periode valid, Plan Scheduled, owner cocok; apabila tanggal berbeda butuh deviation reason.
 6. Without Plan: dokter MCL; klasifikasi Unplanned/Non Target dari status Approved pada timestamp Check-in.
-7. Verifikasi waktu, foto, signature, products ≥1 valid, larangan duplikat produk.
+7. Verifikasi waktu, foto, signature, products >=1 valid, larangan duplikat produk.
 8. Insert Actual + seluruh `call_actual_products`.
 9. Update Plan Completed **hanya jika Actual memakai Plan tersebut**; update Session Completed **hanya jika dipakai**.
 10. Commit; kirim 201. Semua error harus rollback total.
@@ -353,7 +353,7 @@ Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel
 
 | ID | Langkah | Expected |
 |---|---|---|
-| `PDF-01` | MR buat List → Submit → DM direct manager Approve → Plan → Actual | Seluruh alur berhasil |
+| `PDF-01` | MR buat List -> Submit -> DM direct manager Approve -> Plan -> Actual | Seluruh alur berhasil |
 | `PDF-02` | Buat Plan dari List belum Approved | Error |
 | `PDF-03` | Simpan Actual kedua pada dokter/tanggal sama, termasuk lintas mode | Error |
 | `PDF-04` | Submit Actual tanpa photo_url | Error |
@@ -366,7 +366,7 @@ Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel
 | ID | Test | Expected |
 |---|---|---|
 | `AUTH-01` | Role benar, bukan manager langsung | Approve ditolak |
-| `CL-01` | Reject → revisi → resubmit | ID sama, approver sama, histori lengkap |
+| `CL-01` | Reject -> revisi -> resubmit | ID sama, approver sama, histori lengkap |
 | `CL-02` | Submit/Reject bersamaan | Hanya satu transisi sah |
 | `CP-01` | Plan tanggal sama dokter sama lintas MR | Unique/conflict |
 | `CP-02` | Cancel Plan lalu buat Plan pengganti | Allowed jika belum ada Actual final |
@@ -381,7 +381,7 @@ Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel
 | `UX-02` | Without Plan frontend | Alasan diminta, klasifikasi ditentukan server |
 | `UX-03` | Direct API Without Plan tanpa alasan | Tidak ditolak hanya karena alasan absen |
 | `UX-04` | Submit timeout lalu retry | Recovery own Actual, tidak duplikat |
-| `VS-01` **P1** | Sesi yang waktunya salah dibatalkan → Actual manual | Bisa selesai, histori cancel tersimpan |
+| `VS-01` **P1** | Sesi yang waktunya salah dibatalkan -> Actual manual | Bisa selesai, histori cancel tersimpan |
 | `VS-02` **P1** | Save Draft setelah Session Completed | 409; tidak mengubah data final |
 | `VS-03` **P1** | Check-in dan Direct Actual bersamaan | Tidak menghasilkan state silang bertentangan |
 | `SEC-01` | MR membaca Actual/Session orang lain | Akses ditolak / data tidak bocor |
@@ -392,7 +392,7 @@ Alur ini dipakai pada pembuatan/pembatalan Plan, Check-in, Save/Check-out/Cancel
 
 | Area | Keputusan | Kategori |
 |---|---|---|
-| Single-level approval MR→DM, DM→RSM, RSM→MM | Sesuai studi kasus | PDF |
+| Single-level approval MR -> DM, DM -> RSM, RSM -> MM | Sesuai studi kasus | PDF |
 | `plan_id=null` dan dokter MCL | Harus diterima jika valid | PDF |
 | Satu Actual per dokter/tanggal global, bukti dan produk | Harus dijaga | PDF |
 | Tiga halaman Call List/Plan/Actual dengan mobile loading/error | Harus dibuat | PDF |

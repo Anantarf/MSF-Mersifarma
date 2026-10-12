@@ -5,7 +5,7 @@
 **Acuan:** PDF studi kasus *Mobile Sales Force (MSF)* Mersifarma dan paket dokumen desain v1.7 (`DESIGN.md`, `PRD.md`, `TDD.md`, `API_CONTRACT.md`, `DATABASE_SCHEMA.md`, `TEST_PLAN.md`, `DECISIONS.md`, `IMPLEMENTATION_PLAN.md`, `AGENTS.md`)  
 **Tujuan:** Menyatukan hasil diskusi mengenai fungsi MM/RSM/DM/MR, prioritas dokter dan produk, hierarki wilayah MCL, perubahan Call Plan, pengalihan kunjungan, serta dampak terhadap desain lama.
 
-> **PENTING:** Dokumen ini adalah *change proposal*, bukan bukti fitur sudah diimplementasikan. Aturan PDF tetap menjadi persyaratan utama. Usulan baru yang lebih ketat atau memperluas sistem harus ditandai sebagai asumsi dan dijelaskan di README. Jangan meminta AI IDE mengimplementasikan seluruh usulan P1/P2 sebelum P0 terbukti berjalan.
+> **PENTING:** Dokumen ini adalah *change proposal*, bukan bukti fitur sudah diimplementasikan. Aturan PDF tetap menjadi persyaratan utama. Usulan baru yang lebih ketat atau memperluas sistem harus ditandai sebagai asumsi dan dijelaskan di README. Jangan mengimplementasikan seluruh usulan P1/P2 sebelum P0 terbukti berjalan.
 
 ## 1. Ringkasan keputusan
 
@@ -246,7 +246,7 @@ Untuk kedua mode: foto dan tanda tangan wajib, minimal satu produk, validasi tan
 | **P1c** | Handover MR satu distrik dengan perubahan relasi ownership/Actual, audit, acceptance, race-condition tests | **Paling kompleks; terakhir** |
 | **P2** | Campaign produk 3 bulan, mapping specialty yang dikurasi, UI rekomendasi dan KPI produk prioritas | Bila waktu dan data master memadai |
 
-## 13. Keputusan tersisa sebelum meminta AI IDE melakukan refactor
+## 13. Keputusan tersisa sebelum refactor
 
 1. **Apakah fitur kampanye benar-benar harus mempunyai form/MM CRUD dan persistence**, atau cukup uraian bisnis + data demo? Rekomendasi: uraian/seed dahulu.
 2. **Bentuk Call List DM/RSM:** putuskan formalnya sebagai *rangkuman prioritas bulanan* untuk menguji ketiga approval, dengan status independen dari List MR. Ini **asumsi**, bukan detail PDF.

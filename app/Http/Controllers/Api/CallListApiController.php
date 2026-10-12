@@ -262,6 +262,35 @@ class CallListApiController extends Controller
         ]);
     }
 
+    public function reject(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:1'],
+        ], [
+            'reason.required' => 'Alasan penolakan wajib diisi.',
+            'reason.min' => 'Alasan penolakan wajib diisi.',
+        ]);
+
+        $callList = CallList::with('owner')->findOrFail($id);
+        $reviewedList = $this->callListService->review(
+            $callList,
+            Auth::user(),
+            'rejected',
+            $validated['reason']
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Call List rejected and returned to draft',
+            'data' => [
+                'id' => $reviewedList->id,
+                'status' => 'draft',
+                'decision' => 'rejected',
+                'reason' => $validated['reason'],
+            ],
+        ]);
+    }
+
     /**
      * GET /api/call-lists/summary
      * Rangkuman monitoring manajerial (read-only) untuk atasan (DM, RSM, MM).

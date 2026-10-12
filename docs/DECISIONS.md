@@ -1,6 +1,6 @@
-# Architecture Decision Records — MSF
+# Architecture Decision Records â€” MSF
 
-> **Design baseline:** v1.5 + UX label v1.6 + operational clarity v1.7. **Status:** keputusan desain diterima, belum diuji pada runtime.  
+> **Status:** Catatan keputusan arsitektur dan trade-off yang dipakai proyek. Automated test terakhir: 65 passed, 239 assertions.
 > **Perubahan setelah baseline:** tambahkan ADR baru dengan tanggal, alasan, trade-off, dampak API/schema/testing. Jangan diam-diam mengubah aturan PDF.
 
 | ADR | Decision | Rationale | Type |
@@ -9,7 +9,7 @@
 | ADR-002 | P0 meliputi 8 endpoint wajib dan 3 halaman | Deliverable PDF prioritas tertinggi | PDF |
 | ADR-003 | Auth via Laravel session + CSRF same-origin | Integrasi Blade dan JSON API sederhana | Design |
 | ADR-004 | Approval List satu level direct-manager dengan `manager_id` dan assigned approver | Mencegah approval role-only/lompatan hierarchy | PDF + Design |
-| ADR-005 | DM/RSM boleh membuat List pribadi | Demonstrasi chain MR→DM→RSM→MM | Assumption |
+| ADR-005 | DM/RSM boleh membuat List pribadi | Demonstrasi chain MRâ†’DMâ†’RSMâ†’MM | Assumption |
 | ADR-006 | List current status `draft`,`pending_approval`,`approved`; submitted/rejected di append-only logs | Histori PDF terjaga tanpa transient persistent states | Assumption |
 | ADR-007 | Rejected kembali ke Draft; UI menunjukkan *Perlu Revisi* dan reason | Memenuhi revisi + meningkatkan kejelasan | PDF + UX |
 | ADR-008 | Satu List per owner/month | Hindari dua target bulanan aktif | Assumption |
@@ -61,7 +61,7 @@
 - Session cancel lalu manual entry adalah dua request terpisah sehingga kegagalan di tengah membutuhkan pengguna melanjutkan pengisian.
 - Pending approval tua tidak otomatis di-escalate; tampilkan usia dan lakukan follow-up manual.
 - Tidak ada offline mode/GPS/photo content verification/insentif calculations.
-- Generated indexes, composite FK, CHECK dan transaksi **belum diverifikasi di MySQL** sampai implementasi.
+- Constraint dan transaksi sudah tercakup automated test lokal. Verifikasi concurrency pada MySQL nyata tetap perlu dijalankan jika reviewer meminta bukti database-level.
 
 ### ADR-029: Role-Based Supervisory Context & Clean Role Isolation
 - Date: 2026-10-11
@@ -71,7 +71,7 @@
 - Source of requirement: Business reality / UX
 - API/DB/UX impact: Backend API tetap utuh; Blade UI sepenuhnya mencerminkan peran operasional lapangan tanpa membingungkan manajer.
 - Risks/trade-offs: Tidak ada.
-- Tests to update: Mempertahankan 100% kelulusan tes PHPUnit.
+- Tests to update: Pertahankan seluruh test terkait role isolation tetap hijau.
 
 ### ADR-030: Managerial Monitoring of Team Call Actuals & Audit Evidence
 - Date: 2026-10-11
@@ -95,7 +95,7 @@
 - Source of requirement: v1.8 Change Proposal / PDF Invariant
 - API/DB/UX impact: Tidak merusak 8 endpoint wajib PDF. UI Call List menampilkan arahan prioritas distrik sebagai badge/info tanpa memblokir dokter MCL lain.
 - Risks/trade-offs: Call List manajerial (DM dan RSM) diperlakukan sebagai ringkasan target wilayah bulanan, terpisah dari eksekusi visit.
-- Tests to update: Skenario otorisasi approval tetap 100% independen antar-tingkat.
+- Tests to update: Skenario otorisasi approval tetap independen antar-tingkat.
 
 ### ADR-032: Centralized Master Customer List (MCL) with Territory Hierarchy Context (v1.8)
 - Date: 2026-10-11
@@ -111,7 +111,7 @@
 - Date: 2026-10-11
 - Status: Accepted
 - Problem: Deviasi tanggal pada kunjungan terencana berpotensi membingungkan pelaporan, dan jadwal yang terlewat hari tanpa realisasi menggantung tanpa kejelasan status.
-- Decision: 
+- Decision:
   1. Planned Actual harus mencocokkan tanggal yang sama persis dengan tanggal Plan (`visit_date == plan_date`). Jika tanggal kunjungan bergeser, MR harus menjadwalkan ulang atau menggunakan jalur Kunjungan di Luar Rencana (`plan_id = null`).
   2. Plan berstatus `scheduled` yang melewati akhir hari (Asia/Jakarta) tanpa record Actual otomatis bertransisi menjadi `expired` (Tidak Terlaksana) melalui scheduled command. Dokter yang plan-nya expired tetap tercatat di histori dan dapat dijadwalkan kembali pada tanggal lain dalam bulan yang sama jika masih ada di Call List Approved.
 - Source of requirement: v1.8 Change Proposal / Operational Reality
@@ -126,13 +126,13 @@
 - Decision: Produk yang dicatat pada `call_actuals` adalah produk yang benar-benar dipresentasikan MR saat visit (minimal 1 produk master). Rekomendasi produk berbasis spesialisasi dokter bersifat saran non-blokir di UI dan tidak boleh otomatis disuntikkan ke dalam database tanpa pilihan eksplisit MR.
 - Source of requirement: PDF Requirement / Compliance Integrity
 - API/DB/UX impact: Backend tetap menolak laporan jika array produk kosong (422), dan tidak melakukan auto-fill produk.
-- Risks/trade-offs: Tidak ada. Integritas data pelaporan lapangan terjaga 100%.
+- Risks/trade-offs: Tidak ada risiko tambahan yang disengaja; integritas data pelaporan tetap dijaga oleh validasi backend.
 - Tests to update: Automated test memastikan laporan tanpa produk ditolak dan produk yang tersimpan sesuai input MR.
 
 ## Format ADR baru
 
 ```md
-### ADR-026 — [Decision title]
+### ADR-026 â€” [Decision title]
 - Date:
 - Status: Proposed / Accepted / Rejected
 - Problem:

@@ -1,70 +1,55 @@
-# MSF — Documentation Index / IDE Handoff
+# Dokumentasi MSF
 
-> **Package:** MSF Design Baseline **v1.5 + Terminologi UI v1.6 + Operational UX v1.7** (10 Oktober 2026).  
-> **Project:** Mobile Sales Force — PT Mersifarma.  
-> **Status:** **DESIGN READY; CODE NOT STARTED; TESTS NOT RUN.**  
-> Semua dokumen `.md` ini adalah spesifikasi untuk IDE, bukan kode aplikasi.
+Dokumen ini adalah peta baca untuk proyek Mobile Sales Force PT Mersifarma. Isinya memisahkan aturan studi kasus, keputusan desain, kontrak API, struktur data, dan bukti pengujian.
 
-## 1. File di paket
+## Status Singkat
 
-| File | Fungsi / kapan dibaca |
+| Area | Status |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | Aturan ringkas untuk AI IDE agar tidak keluar scope |
-| [`DESIGN.md`](DESIGN.md) | **Dokumen induk** arsitektur, ERD, business logic, end-to-end operational flow |
-| [`PRD.md`](PRD.md) | Persyaratan bisnis, aktor, UX, acceptance, P0/P1 |
-| [`TDD.md`](TDD.md) | Services, transaction flows, approval/Plan/Actual/Session states |
-| [`API_CONTRACT.md`](API_CONTRACT.md) | **8 API wajib**, request/response, supporting APIs, errors |
-| [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md) | 11 tabel, composite FKs, unique/check, lock strategy, migrations |
-| [`TEST_PLAN.md`](TEST_PLAN.md) | 5 mandatory PDF tests + skenario negatif dan acceptance gates |
-| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Prioritas implementasi Laravel dari setup hingga evidence |
-| [`DECISIONS.md`](DECISIONS.md) | Asumsi, decisions, trade-offs dan keterbatasan |
-| [`README_REQUIREMENTS.md`](README_REQUIREMENTS.md) | Persyaratan README repository sesudah aplikasi selesai |
+| Backend API wajib | Selesai dan tercakup automated test |
+| Frontend utama | Selesai untuk Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan |
+| Automated test terakhir | 65 passed, 239 assertions |
+| Manual evidence | Tersedia di `docs/evidence/ui-smoke` |
+| Batasan | Browser click-through penuh dan MySQL concurrency nyata tetap perlu diverifikasi jika diminta sebagai bukti akhir |
 
-## 2. Instruksi singkat untuk IDE
+## Urutan Baca
 
-> Baca seluruh dokumen, prioritaskan aturan PDF dan P0. Implementasikan Laravel + Blade + MySQL dengan delapan endpoint wajib dan tiga halaman. Mulai dari migration/seed, Call List approval, Call Plan, lalu **Direct Call Actual** Planned dan `plan_id=null` tanpa Visit Session. Setelah P0 berfungsi, kerjakan UI mobile-first dan tes wajib. Visit Session, recovery, cancel Plan adalah P1 opsional. Jangan membuat PASS/evidence palsu. Jika ada konflik spesifikasi, jelaskan sebelum mengubah requirement.
+| Dokumen | Isi |
+|---|---|
+| [`../README.md`](../README.md) | Cara menjalankan proyek, akun demo, endpoint, hasil test, dan catatan demo |
+| [`../AGENTS.md`](../AGENTS.md) | Aturan kerja engineering untuk proyek ini |
+| [`PRD.md`](PRD.md) | Scope produk, aktor, aturan bisnis, dan UX yang disetujui |
+| [`API_CONTRACT.md`](API_CONTRACT.md) | Delapan endpoint wajib, payload, response, status code, dan error code |
+| [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md) | Tabel, relasi, constraint, index, dan catatan MySQL |
+| [`TDD.md`](TDD.md) | Service boundary, workflow transaksi, locking, dan state transition |
+| [`TEST_PLAN.md`](TEST_PLAN.md) | Skenario wajib PDF, negative case, dan acceptance gate |
+| [`DECISIONS.md`](DECISIONS.md) | ADR, asumsi, trade-off, dan batasan yang diterima |
+| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Catatan urutan implementasi dan delivery gate |
+| [`README_REQUIREMENTS.md`](README_REQUIREMENTS.md) | Checklist isi README final |
+| [`MANAGERIAL_PLAN.md`](MANAGERIAL_PLAN.md) | Catatan tambahan untuk mode monitoring manajerial |
+| [`MSF_Change_Impact_v1.8_Proposal.md`](MSF_Change_Impact_v1.8_Proposal.md) | Proposal historis v1.8; bukan sumber klaim implementasi |
 
-### Hierarki referensi
+## Prioritas Aturan
 
-- **Ketentuan wajib PDF asli** mendahului setiap asumsi engineering.
-- **`API_CONTRACT.md`** utama untuk kontrak HTTP.
-- **`DATABASE_SCHEMA.md`** utama untuk struktur dan constraint DB.
-- **`PRD.md`** utama untuk aturan bisnis dan UX.
-- **`TDD.md`** utama untuk service, locking, workflow.
-- **`DESIGN.md`** adalah overview terintegrasi/rujukan desain.
-- **`DECISIONS.md`** mencatat asumsi dan perubahan yang diizinkan.
+1. Aturan studi kasus PDF tetap sumber utama.
+2. `API_CONTRACT.md` dipakai untuk kontrak HTTP.
+3. `DATABASE_SCHEMA.md` dipakai untuk struktur data dan constraint.
+4. `PRD.md` dipakai untuk aturan bisnis dan pengalaman pengguna.
+5. `TDD.md` dipakai untuk workflow service dan transaksi.
+6. `DECISIONS.md` menjelaskan asumsi yang tidak eksplisit di PDF.
 
-Jika terdapat ketidakcocokan, **jangan diam-diam memilih**. Gunakan ketentuan PDF dan catat trade-off, kemudian minta keputusan pengguna bila mengubah kewajiban atau business rule.
+Jika ada konflik, gunakan aturan studi kasus dulu. Jangan mengubah invariant seperti approval satu tingkat, `plan_id=null`, atau satu Actual final per dokter/tanggal hanya demi menyederhanakan implementasi.
 
-## 3. Non-negotiable quick reference
+## Ringkasan Invariant
 
-1. Single-level hierarchy MR→DM, DM→RSM, RSM→MM; verify **direct manager** identity.
-2. Call Plan hanya dari Approved List, dokter anggota List, dan tanggal dalam periode.
-3. Global doctor/date uniqueness untuk final Actual.
-4. Actual photo URL, signature URL, product list minimal 1.
-5. `plan_id` nullable: Without Plan tetap bisa mencatat dokter MCL.
-6. UI Planned-first dengan satu opsi Di Luar Rencana. Heading tiga halaman menampilkan **Target Dokter** (Call List Bulanan), **Jadwal Kunjungan** (Call Plan), dan **Pelaksanaan Kunjungan** (Call Actual); subtitle di heading, tidak wajib dalam mobile menu.
-7. **P0**: Isi Laporan Kunjungan + Waktu Mulai/Selesai manual + Simpan Laporan. **P1**: Mulai/Akhiri Kunjungan dengan server timestamps; tidak boleh memalsukan Check-in server pada P0.
-8. Label Call List **Perlu Revisi** hanya untuk Draft setelah reject; pending/approved mengikuti status terkini, bukan histori reject lama.
-9. Session-based flows P1 **tidak boleh menjadi syarat** untuk 8 endpoint mandatory P0.
-10. Jangan mengklaim fitur dibangun atau dites sebelum benar-benar dilakukan.
+- Approval Call List selalu satu tingkat langsung: MR ke DM, DM ke RSM, RSM ke MM.
+- Call Plan hanya dibuat dari Call List Approved dan dokter anggota List.
+- Actual final wajib punya dokter valid, foto, tanda tangan/stempel, minimal satu produk, dan waktu masuk/keluar yang valid.
+- `plan_id` boleh `null`; Direct Actual tanpa Plan tetap bagian dari kontrak wajib.
+- Satu dokter hanya boleh memiliki satu Actual final pada tanggal yang sama, lintas MR dan lintas mode.
+- UI harus Planned-first, dengan opsi sekunder `Kunjungan di Luar Rencana`.
+- Frontend membantu pengguna, tetapi backend tetap sumber kebenaran authorization, ownership, dan uniqueness.
 
-## 4. Letak dokumen dalam repo
+## Catatan Kejujuran
 
-**Disarankan:** Letakkan dokumen di root repo (`DESIGN.md`, `PRD.md`, dan seterusnya) bersama source Laravel agar coding assistant membaca semuanya. `README.md` aplikasi dibuat ketika project telah berjalan; lihat `README_REQUIREMENTS.md`.
-
-Dokumen dapat disimpan dalam `/docs` jika IDE/agent diperintahkan membaca `/docs/DOCS_INDEX.md`; tetapi tempatkan `AGENTS.md` di root karena sejumlah coding assistant akan membaca file instruksi itu secara otomatis.
-
-## 5. Checklist penyerahan dan kejujuran status
-
-- [x] Business/technical baseline v1.5 + terminology v1.6 + operational UX v1.7 tersusun.
-- [x] HTTP contract, DB, dan test plan tersusun.
-- [x] Laravel project dibuat.
-- [x] MySQL migration dijalankan.
-- [x] 8 API wajib diimplementasikan.
-- [x] 3 halaman berfungsi secara responsif.
-- [x] 5 manual test PDF + 60 automated tests dijalankan, 100% PASS dan evidence dicatat.
-- [x] README aplikasi final + panduan demo disiapkan.
-- [x] Proposal Konsolidasi v1.8 (Peran Manajerial, Wilayah, Tata Kelola Kunjungan) diadopsi ke ADR-031 hingga ADR-034.
-
-**Catatan:** Baseline P0 telah terverifikasi penuh dan stabil. Proposal v1.8 memberikan penyelarasan peran manajerial dan alur lanjutan (P1) tanpa merusak 8 endpoint wajib PDF dan invariant sistem yang telah berjalan.
+Dokumen di folder ini menjelaskan spesifikasi dan keputusan. Klaim proyek yang benar-benar dijalankan ada di `README.md` dan hasil command terakhir. Jika angka test atau evidence berbeda, gunakan data terbaru dari command, bukan angka lama di dokumen historis.

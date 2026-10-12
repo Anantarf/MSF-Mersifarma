@@ -26,7 +26,7 @@
 ## 3. Spesifikasi Teknis Backend API
 
 ### Endpoint: `GET /api/call-actuals`
-- **Aktor MR:** Mengembalikan data kunjungan milik MR sendiri (perilaku eksisting tetap 100% kompatibel).
+- **Aktor MR:** Mengembalikan data kunjungan milik MR sendiri (perilaku eksisting tetap dipertahankan).
 - **Aktor Manajer (DM, RSM, MM):**
   - Mengambil daftar ID bawahan (*subordinate user IDs*) berdasarkan hierarki `users.manager_id`.
   - Mengembalikan daftar `CallActual` di mana `mr_id IN (subordinate_ids)`.
@@ -40,7 +40,7 @@
 ---
 
 ## 4. Spesifikasi Desain Antarmuka (UI) Manajerial
-Desain mematuhi prinsip **Clean & Data-First** (tanpa teks tutorial, tanpa banner AI yang menggurui):
+Desain mematuhi prinsip **Clean & Data-First**:
 
 1. **Header Kompak:**
    - Judul: **Pelaksanaan Kunjungan**

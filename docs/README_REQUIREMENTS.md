@@ -1,53 +1,82 @@
-# README Requirements — untuk repository MSF yang sudah diimplementasikan
+# Checklist README Final
 
-> **Bukan README final aplikasi.** IDE harus membuat `README.md` yang sesuai *hasil implementasi sebenarnya*; jangan menyalin status PASS/demo dari dokumen ini sebelum benar-benar ada bukti.
+File ini hanya checklist. README utama tetap harus mengikuti kondisi proyek yang benar-benar berjalan.
 
-## 1. Identitas proyek
+## Identitas Proyek
 
 - Nama proyek dan tujuan singkat.
-- Scope dikerjakan: P0 mana sudah lengkap; P1 mana jika ada.
-- Stack aktual dan versi PHP, Laravel, MySQL, serta kebutuhan browser.
-- Arsitektur ringkas dengan tautan ke `DESIGN.md`.
+- Scope yang selesai: P0 wajib, P1 yang ikut dikerjakan, dan batasan yang masih ada.
+- Stack aktual: PHP, Laravel, database, Node/Vite, dan browser yang dipakai untuk demo.
+- Link ringkas ke dokumen teknis utama.
 
-## 2. Menjalankan secara lokal
+## Menjalankan Lokal
 
-Tulis command yang benar-benar sudah diuji:
+README perlu memuat langkah yang sudah diuji:
 
-1. Clone repository.
-2. `composer install` dan langkah instalasi asset frontend yang sesuai (jika ada).
-3. Copy `.env.example` menjadi `.env` dan atur koneksi DB.
-4. Buat APP_KEY.
-5. `php artisan migrate:fresh --seed` (**hanya untuk database demo**, dengan peringatan menghapus data).
-6. Jalankan Laravel server/asset bundler.
-7. Akses URL lokal dan login dengan **akun demo sintetis**.
-8. Cara mengambil cookie/CSRF bila menguji API via Postman/cURL; atau berikan petunjuk browser session.
+1. Install dependency backend dan frontend.
+2. Salin `.env.example` ke `.env`.
+3. Atur database demo.
+4. Generate `APP_KEY`.
+5. Jalankan migrate/seed hanya pada database disposable.
+6. Build asset atau jalankan Vite.
+7. Jalankan server Laravel.
+8. Login memakai akun demo sintetis.
 
-Jangan menaruh password asli atau `.env` pada repo.
+Jangan menaruh secret, password asli, atau `.env` di repository.
 
-## 3. Skenario login dan demo
+## Data Demo
 
-- Seed actor MR-A, MR-B, DM-A, DM-B, RSM, MM, dan relasi manager langsung.
-- Dokter MCL dan produk sintetis.
-- Demo happy path MR List→DM approve→Plan→Actual; reject/resubmit; duplicate protection; Without Plan; negative role.
+Cantumkan akun sintetis minimal:
 
-## 4. Daftar API
+- MR utama dan MR pembanding.
+- DM yang menjadi atasan langsung MR.
+- DM/RSM/MM untuk skenario approval negatif dan monitoring.
+- Dokter MCL dan produk demo.
 
-Link ke `API_CONTRACT.md`. Tandai endpoint **sudah dikerjakan**, **belum dikerjakan**, dan optional P1 secara jujur.
+## API
 
-## 5. Business assumptions & limitations
+README cukup menautkan `docs/API_CONTRACT.md`, lalu tulis status singkat:
 
-Tuliskan asumsi yang benar-benar dipakai, minimal mengacu pada `DECISIONS.md`: status List 3 aktif+event, global Plan uniqueness, owner/month List, DM/RSM personal List, classification as-of Check-in, schedule deviation, UI reason vs optional API, manual time tidak membuktikan kehadiran, P1 nondependency.
+- endpoint wajib yang sudah tersedia,
+- endpoint pendukung yang dibuat untuk UI,
+- fitur P1 jika ada,
+- batasan yang belum diverifikasi di environment nyata.
 
-## 6. Manual test evidence
+## Aturan Bisnis dan Asumsi
 
-Sediakan tabel PDF-01..PDF-05 dengan: Steps, Expected, Actual, PASS/FAIL, bukti screenshot atau screen recording. Jangan mengubah `NOT RUN` menjadi PASS hanya karena kode tampak benar.
+Tuliskan asumsi yang dipakai, terutama:
 
-## 7. Tools reflection
+- Call List satu pemilik per bulan.
+- Approval memakai atasan langsung, bukan hanya role.
+- Call Plan memakai Approved List.
+- Direct Actual tanpa Plan tetap valid.
+- Duplicate Actual dokter/tanggal dicegah global.
+- Manual time tidak membuktikan kehadiran fisik.
+- Tidak ada GPS, offline mode, insentif, atau verifikasi foto asli.
 
-Untuk setiap alat yang dipakai (AI coding assistant, coding tools, linter, DB tools, test runner): tujuan, contoh output diterima dan ditolak, alasan, serta bagaimana kebenarannya diverifikasi sebelum digabung ke source code.
+## Bukti Pengujian
 
-## 8. Submission
+README final harus memisahkan:
 
-- Link repository dan jika tersedia live deployment (opsional).
-- Petunjuk presentasi 30 menit dan test/demo.
-- **Confidentiality:** jangan commit PDF soal asli, data nyata, secret, atau materi sensitif. Gunakan seed dummy. Jika ketentuan public repo vs kerahasiaan bahan tidak jelas, minta klarifikasi penyelenggara.
+- automated test yang benar-benar dijalankan,
+- manual test PDF-01 sampai PDF-05,
+- screenshot atau screen recording yang tersedia,
+- test yang belum dijalankan atau masih perlu environment tertentu.
+
+Jangan mengubah `NOT RUN` menjadi `PASS` tanpa eksekusi nyata.
+
+## Refleksi Tools
+
+Tulis singkat, konkret, dan berbasis bukti:
+
+- tool yang dipakai,
+- output yang diterima setelah diverifikasi,
+- output yang ditolak atau dikoreksi,
+- command/test yang membuktikan hasilnya.
+
+## Submission
+
+- Link repository.
+- Link deployment jika ada.
+- Panduan demo 30 menit.
+- Catatan kerahasiaan: jangan commit PDF soal asli, data nyata, secret, atau materi sensitif.

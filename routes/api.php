@@ -7,8 +7,6 @@ use App\Http\Controllers\Api\DoctorApiController;
 use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\Api\VisitSessionApiController;
 use App\Http\Controllers\AuthController;
-use App\Http\Requests\ReviewCallListRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/csrf-token', [AuthController::class, 'csrfToken']);
@@ -27,11 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/call-lists/monitoring-summary', [CallListApiController::class, 'summary']);
     Route::get('/call-lists/{id}', [CallListApiController::class, 'show']);
     Route::patch('/call-lists/{id}/approve', [CallListApiController::class, 'approve']);
-    Route::post('/call-lists/{id}/reject', function (Request $request, int $id, CallListApiController $controller) {
-        $request->merge(['status' => 'rejected']);
-
-        return $controller->approve(app(ReviewCallListRequest::class), $id);
-    });
+    Route::post('/call-lists/{id}/reject', [CallListApiController::class, 'reject']);
 
     Route::match(['patch', 'put'], '/call-lists/{id}', [CallListApiController::class, 'update']);
     Route::post('/call-lists/{id}/submit', [CallListApiController::class, 'submit']);
