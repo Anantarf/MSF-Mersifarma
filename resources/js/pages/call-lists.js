@@ -822,7 +822,9 @@ async function submitCallList(id) {
                         return;
                     }
                 }
-            } catch (reconErr) {}
+            } catch (reconErr) {
+                console.warn('Gagal memverifikasi status pengajuan target setelah gangguan koneksi.', reconErr);
+            }
 
             showAlert('Koneksi jaringan terputus saat menunggu konfirmasi pengajuan. Status belum dapat dipastikan; silakan muat ulang daftar sebelum mencoba lagi.', 'warning');
         }

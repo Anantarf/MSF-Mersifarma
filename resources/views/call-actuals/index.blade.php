@@ -317,14 +317,11 @@
                 </div>
 
                 <div id="stepSection2" class="ca-step-panel" style="display: none;">
-                    <h4 class="ca-step-title">Bukti Kunjungan</h4>
-                    <p class="ca-helper">Lengkapi bukti minimum sebelum lanjut: foto kunjungan, verifikasi dokter, dan minimal satu produk.</p>
-
                     <div class="ca-evidence">
                         <div class="ca-evidence-head">
                             <span class="ca-evidence-icon"><i class="bi bi-camera" aria-hidden="true"></i></span>
                             <div class="ca-evidence-meta">
-                                <b>Foto kunjungan <span class="ca-req" aria-hidden="true">*</span></b><em class="ca-required-chip">Wajib</em>
+                                <b>Foto kunjungan <span class="ca-req" aria-hidden="true">*</span></b>
                                 <span id="photoStatusText">Belum ada foto</span>
                             </div>
                             <label class="ca-btn ca-btn-soft ca-btn-sm" for="photoFileInput" id="photoPickLabel">Pilih Foto</label>
@@ -342,7 +339,7 @@
                         <div class="ca-evidence-head">
                             <span class="ca-evidence-icon"><i class="bi bi-pencil-square" aria-hidden="true"></i></span>
                             <div class="ca-evidence-meta">
-                                <b>Verifikasi dokter <span class="ca-req" aria-hidden="true">*</span></b><em class="ca-required-chip">Wajib</em>
+                                <b>Verifikasi dokter <span class="ca-req" aria-hidden="true">*</span></b>
                                 <span><span id="sigBadgeRecorded" style="display: none;">Tanda tangan tersimpan</span><span id="sigStatusText">Belum ada tanda tangan</span></span>
                             </div>
                         </div>
@@ -373,8 +370,12 @@
 
                     <div class="ca-split"></div>
 
-                    <h4 class="ca-step-title">Produk yang Dibahas <span class="ca-req" aria-hidden="true">*</span></h4>
-                    <p class="ca-helper">Pilih setidaknya satu produk yang dijelaskan selama kunjungan.</p>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label class="ca-label" style="margin-bottom: 0.2rem; font-weight: 700;">
+                            Produk yang Dibahas <span class="ca-req" aria-hidden="true">*</span>
+                        </label>
+                        <p class="ca-field-note" style="margin: 0 0 0.5rem 0;">Pilih setidaknya satu produk yang dipresentasikan.</p>
+                    </div>
                     <div class="ca-search">
                         <i class="bi bi-search" aria-hidden="true"></i>
                         <input type="text" id="productSearchInput" class="ca-input" placeholder="Cari produk..." aria-label="Cari produk">
@@ -385,10 +386,8 @@
                 </div>
 
                 <div id="stepSection3" class="ca-step-panel" style="display: none;">
-                    <h4 class="ca-step-title">Konfirmasi Laporan</h4>
-                    <p class="ca-helper">Pastikan data sudah sesuai. Setelah disimpan, laporan menjadi kunjungan final.</p>
                     <div id="actualSummary" class="ca-summary"></div>
-                    <p class="ca-field-note" style="text-align: center; margin: 0.5rem 0 0;">Data kunjungan akan divalidasi dan dicatat ke sistem.</p>
+                    <p class="ca-field-note" style="text-align: center; margin: 0.65rem 0 0;">Data kunjungan akan divalidasi dan dicatat ke sistem.</p>
                 </div>
             </div>
 

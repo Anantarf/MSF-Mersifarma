@@ -376,12 +376,16 @@ async function onCallListChange() {
             try {
                 const recRes = await window.apiFetch('/api/managerial-campaigns/recommendations');
                 const recData = await recRes.json();
-                if (recData.success && Array.isArray(recData.data)) {
+                if (recRes.ok && recData.success && Array.isArray(recData.data)) {
                     recData.data.forEach((item) => {
                         recMap[item.doctor_id] = item;
                     });
+                } else {
+                    console.warn('Rekomendasi produk tidak tersedia untuk target dokter ini.', recData.message || recRes.status);
                 }
-            } catch (e) {}
+            } catch (err) {
+                console.warn('Gagal memuat rekomendasi produk untuk target dokter.', err);
+            }
             if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
 
             doctorSelect.innerHTML = '<option value="">-- Pilih Target Dokter --</option>' +
