@@ -67,6 +67,35 @@ class CallListTest extends TestCase
         ]);
     }
 
+    public function test_mr_cannot_create_call_list_with_doctor_from_another_district(): void
+    {
+        $response = $this->actingAs($this->mr)->postJson('/api/call-lists', [
+            'period_month' => '2027-10',
+            'doctor_ids' => [1, 6],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['doctor_ids']);
+
+        $this->assertDatabaseMissing('call_lists', [
+            'owner_id' => $this->mr->id,
+            'period_month' => '2027-10-01',
+        ]);
+    }
+
+    public function test_doctor_picker_is_scoped_to_user_district_for_mr(): void
+    {
+        $response = $this->actingAs($this->mr)->getJson('/api/doctors');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        $districts = collect($response->json('data'))->pluck('district')->unique()->values()->all();
+
+        $this->assertSame(['Jakarta Selatan'], $districts);
+        $this->assertNotContains(6, collect($response->json('data'))->pluck('id')->all());
+    }
+
     public function test_cannot_create_duplicate_call_list_for_same_owner_and_period(): void
     {
         $period = '2027-02';
@@ -252,6 +281,7 @@ class CallListTest extends TestCase
             'status' => 'draft',
         ]);
     }
+
     /**
      * Skenario Uji Wajib PDF: PDF-05
      * RSM/MM (atau manager lain yang bukan direct manager tertugaskan) dilarang approve pengajuan MR.

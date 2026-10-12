@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CallList;
 use App\Models\CallListApprovalLog;
+use App\Models\MasterCustomer;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ class CallListService
     {
         // Normalisasi format period_month menjadi tanggal awal bulan (YYYY-MM-01)
         $normalizedDate = Carbon::createFromFormat('Y-m', $periodMonth)->startOfMonth()->format('Y-m-d');
+
+        $this->ensureDoctorsWithinOwnerDistrict($owner, $doctorIds);
 
         return DB::transaction(function () use ($owner, $normalizedDate, $periodMonth, $doctorIds) {
             // Cek apakah owner sudah memiliki Call List di periode bulan yang sama
@@ -71,11 +74,38 @@ class CallListService
             throw new ConflictHttpException('Hanya Call List berstatus draft yang dapat diubah.');
         }
 
+        $this->ensureDoctorsWithinOwnerDistrict($user, $doctorIds);
+
         return DB::transaction(function () use ($callList, $doctorIds) {
             $callList->doctors()->sync($doctorIds);
 
             return $callList->fresh(['doctors', 'approvalLogs']);
         });
+    }
+
+    private function ensureDoctorsWithinOwnerDistrict(User $owner, array $doctorIds): void
+    {
+        if ($owner->role !== 'mr' || blank($owner->district)) {
+            return;
+        }
+
+        $outOfDistrict = MasterCustomer::whereIn('id', $doctorIds)
+            ->where(function ($query) use ($owner) {
+                $query->whereNull('district')
+                    ->orWhere('district', '!=', $owner->district);
+            })
+            ->pluck('name')
+            ->values();
+
+        if ($outOfDistrict->isEmpty()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'doctor_ids' => [
+                'Dokter target harus berada dalam distrik MR yang sama: '.$outOfDistrict->implode(', '),
+            ],
+        ]);
     }
 
     /**

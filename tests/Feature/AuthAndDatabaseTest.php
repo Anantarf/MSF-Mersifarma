@@ -149,25 +149,56 @@ class AuthAndDatabaseTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_expired_query_shows_session_message(): void
+    {
+        $response = $this->get('/login?expired=session');
+
+        $response->assertStatus(200);
+        $response->assertSee('Sesi sudah kedaluwarsa. Silakan masuk kembali.');
+    }
+
+    public function test_login_demo_picker_shows_management_and_one_mr_per_area(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertStatus(200);
+        $response->assertSee('data-account="dm@mersi.com"', false);
+        $response->assertSee('data-account="dm2@mersi.com"', false);
+        $response->assertSee('data-account="mr@mersi.com"', false);
+        $response->assertSee('data-account="mr3@mersi.com"', false);
+        $response->assertSee('data-account="mm@mersi.com"', false);
+        $response->assertSee('data-account="rsm@mersi.com"', false);
+        $response->assertDontSee('data-account="mr2@mersi.com"', false);
+        $response->assertDontSee('data-account="mr4@mersi.com"', false);
+    }
+
     public function test_database_hierarchy_and_seeds_integrity(): void
     {
         $this->assertEquals(4, Role::count());
 
         $mr = User::where('email', 'mr@mersi.com')->first();
+        $mr4 = User::where('email', 'mr4@mersi.com')->first();
         $dm = User::where('email', 'dm@mersi.com')->first();
+        $dm2 = User::where('email', 'dm2@mersi.com')->first();
         $rsm = User::where('email', 'rsm@mersi.com')->first();
         $mm = User::where('email', 'mm@mersi.com')->first();
 
         $this->assertNotNull($mr);
         $this->assertNotNull($dm);
+        $this->assertNotNull($dm2);
+        $this->assertNotNull($mr4);
         $this->assertNotNull($rsm);
         $this->assertNotNull($mm);
 
         // Verify hierarchy: MR -> DM -> RSM -> MM
         $this->assertEquals($dm->id, $mr->manager_id);
+        $this->assertEquals($dm2->id, $mr4->manager_id);
         $this->assertEquals($rsm->id, $dm->manager_id);
+        $this->assertEquals($rsm->id, $dm2->manager_id);
         $this->assertEquals($mm->id, $rsm->manager_id);
         $this->assertNull($mm->manager_id);
+        $this->assertEquals(2, User::where('role', 'mr')->where('district', 'Jakarta Selatan')->count());
+        $this->assertEquals(2, User::where('role', 'mr')->where('district', 'Jakarta Timur')->count());
 
         // Verify doctors and products
         $this->assertGreaterThanOrEqual(6, MasterCustomer::count());

@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'role',
         'region_id',
+        'district',
         'manager_id',
     ];
 
@@ -150,6 +151,7 @@ class User extends Authenticatable
             'mr' => 'MR Jakarta Selatan',
             'mr2' => 'MR Jakarta Selatan',
             'mr3' => 'MR Jakarta Timur',
+            'mr4' => 'MR Jakarta Timur',
             'dm' => 'District Manager Jakarta Selatan',
             'dm2' => 'District Manager Jakarta Timur',
             'rsm' => 'Regional Sales Manager DKI Jakarta',

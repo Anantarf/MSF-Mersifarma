@@ -14,6 +14,7 @@ class MasterCustomer extends Model
     protected $fillable = [
         'name',
         'specialization',
+        'district',
         'address',
         'phone',
     ];
