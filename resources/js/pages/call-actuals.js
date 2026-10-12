@@ -179,7 +179,7 @@ function bindStaticEvents() {
         await loadDoctors(event.target.checked);
     });
 
-    ['filterManagerMr', 'filterManagerMonth', 'filterManagerVisitType'].forEach((id) => {
+    ['filterManagerMr', 'filterManagerDistrict', 'filterManagerMonth', 'filterManagerVisitType'].forEach((id) => {
         byId(id)?.addEventListener('change', loadActuals);
     });
 
@@ -249,7 +249,7 @@ function closeEvidenceModal() {
 function renderTodayLabel() {
     const label = byId('actualTodayLabel');
     if (!label) return;
-    label.innerText = 'Hari ini - ' + formatVisitDateIndonesian(todayString());
+    label.innerText = 'Hari ini: ' + formatVisitDateIndonesian(todayString());
 }
 
 function openActualDatePicker() {
@@ -829,9 +829,11 @@ async function loadActuals() {
     if (currentUserRole !== 'mr') {
         const params = new URLSearchParams();
         const mrId = byId('filterManagerMr')?.value;
+        const district = byId('filterManagerDistrict')?.value;
         const month = byId('filterManagerMonth')?.value;
         const visitType = byId('filterManagerVisitType')?.value;
         if (mrId) params.set('mr_id', mrId);
+        if (district) params.set('district', district);
         if (month) params.set('month', month);
         if (visitType) params.set('visit_type', visitType);
         const queryStr = params.toString();
@@ -882,9 +884,11 @@ function updateManagerMetrics() {
 
 function resetManagerFilters() {
     const mrSelect = byId('filterManagerMr');
+    const districtSelect = byId('filterManagerDistrict');
     const monthInput = byId('filterManagerMonth');
     const visitTypeSelect = byId('filterManagerVisitType');
     if (mrSelect) mrSelect.value = '';
+    if (districtSelect) districtSelect.value = '';
     if (monthInput) monthInput.value = todayString().slice(0, 7);
     if (visitTypeSelect) visitTypeSelect.value = '';
     loadActuals();
@@ -1270,7 +1274,7 @@ function validateStep(step) {
             valid = false;
         }
         if (!selectedProductIds().length) {
-            setFieldError('products', 'Pilih minimal satu produk detailing.');
+            setFieldError('products', 'Pilih minimal satu produk yang dibahas.');
             valid = false;
         }
         return valid;
@@ -1352,7 +1356,7 @@ function renderSummary() {
         ['Tanggal & waktu', when],
         ['Foto kunjungan', byId('photoUrlInput').value ? 'Terlampir' : 'Belum ada'],
         [verificationMode === 'stamp' ? 'Stempel / resep' : 'Tanda tangan', byId('signatureUrlInput').value ? 'Terlampir' : 'Belum ada'],
-        ['Produk detailing', productNames || '-'],
+        ['Produk yang dibahas', productNames || '-'],
     ];
     if (mode !== 'plan' && reason) rows.push(['Alasan', reason]);
 

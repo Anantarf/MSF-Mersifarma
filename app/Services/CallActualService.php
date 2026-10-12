@@ -205,7 +205,8 @@ class CallActualService
         ?int $doctorId = null,
         ?int $targetMrId = null,
         ?string $month = null,
-        ?string $visitType = null
+        ?string $visitType = null,
+        ?string $district = null
     ): Collection {
         $query = CallActual::with(['doctor', 'products', 'mr']);
 
@@ -224,6 +225,10 @@ class CallActualService
             } else {
                 $query->whereIn('mr_id', $allowedMrIds);
             }
+        }
+
+        if ($district) {
+            $query->whereHas('mr', fn ($q) => $q->where('district', $district));
         }
 
         if ($date) {
@@ -264,8 +269,8 @@ class CallActualService
         }
 
         if (empty($data['products']) || ! is_array($data['products'])) {
-            throw ApiException::validation('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', [
-                'products' => ['Minimal satu produk detailing wajib dipilih.'],
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Pilih minimal satu produk yang dibahas.', [
+                'products' => ['Pilih minimal satu produk yang dibahas.'],
             ]);
         }
     }
@@ -280,12 +285,12 @@ class CallActualService
     private function ensureProductsExist(Collection $productIds): void
     {
         if ($productIds->isEmpty()) {
-            throw ApiException::validation('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.');
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Pilih minimal satu produk yang dibahas.');
         }
 
         $validCount = Product::whereIn('id', $productIds)->count();
         if ($validCount !== $productIds->count()) {
-            throw ApiException::validation('PRODUCT_REQUIRED', 'Produk detailing tidak valid.');
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Produk yang dipilih tidak valid.');
         }
     }
 

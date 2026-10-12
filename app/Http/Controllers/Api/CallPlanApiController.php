@@ -115,11 +115,12 @@ class CallPlanApiController extends Controller
     {
         $request->validate([
             'plan_date' => 'required|date_format:Y-m-d',
-            'planned_time' => 'nullable|string',
+            'planned_time' => 'nullable|date_format:H:i,H:i:s',
             'reason' => 'required|string|min:3|max:500',
         ], [
             'plan_date.required' => 'Tanggal rencana baru wajib diisi.',
             'plan_date.date_format' => 'Format tanggal harus YYYY-MM-DD.',
+            'planned_time.date_format' => 'Format waktu harus HH:MM atau HH:MM:SS.',
             'reason.required' => 'Alasan penjadwalan ulang rencana kunjungan wajib diisi.',
             'reason.min' => 'Alasan minimal 3 karakter.',
         ]);

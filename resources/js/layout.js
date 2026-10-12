@@ -173,9 +173,57 @@ function autoFormatTimeInput(el) {
     el.value = digits.length >= 3 ? `${digits.substring(0, 2)}.${digits.substring(2)}` : digits;
 }
 
+function describeApiError(resOrError, fallback = 'Terjadi kesalahan sistem.', statusOverride = null) {
+    if (!resOrError) return fallback;
+
+    if (typeof resOrError === 'string') return resOrError;
+
+    if (resOrError instanceof Error || resOrError.networkError) {
+        if (resOrError.name === 'TypeError' || resOrError.message?.includes('fetch') || resOrError.networkError) {
+            return 'Koneksi ke server terputus. Periksa jaringan internet Anda lalu coba lagi.';
+        }
+        return resOrError.message || fallback;
+    }
+
+    const status = statusOverride ?? resOrError.status;
+    const body = resOrError.body || (resOrError.errors || resOrError.error_code || resOrError.message ? resOrError : null);
+
+    if (status === 401) {
+        return 'Sesi login Anda telah berakhir. Silakan muat ulang halaman dan masuk kembali.';
+    }
+    if (status === 419) {
+        return 'Sesi formulir kedaluwarsa (CSRF). Silakan muat ulang halaman lalu coba lagi.';
+    }
+    if (status === 403) {
+        return body?.message || 'Anda tidak memiliki hak akses untuk tindakan ini.';
+    }
+    if (status === 404) {
+        return body?.message || 'Data tidak ditemukan atau sudah tidak tersedia.';
+    }
+    if (status === 409) {
+        return body?.message || 'Terjadi konflik status data. Silakan muat ulang halaman.';
+    }
+    if (status === 422) {
+        if (body?.errors && typeof body.errors === 'object') {
+            const firstErr = Object.values(body.errors).flat()[0];
+            if (firstErr) return String(firstErr);
+        }
+        return body?.message || 'Data yang dimasukkan tidak memenuhi ketentuan.';
+    }
+    if (status >= 500) {
+        return 'Server sedang mengalami gangguan internal (500). Silakan coba beberapa saat lagi.';
+    }
+
+    if (body?.message) return body.message;
+    if (resOrError.message) return resOrError.message;
+
+    return fallback;
+}
+
 Object.assign(MSF, {
     apiFetch,
     autoFormatTimeInput,
+    describeApiError,
     escapeHtml,
     formatDateTimeIndonesia,
     formatPeriodIndonesian,
@@ -191,6 +239,7 @@ window.MSF = MSF;
 // Backward-compatible aliases for existing page scripts.
 window.apiFetch = apiFetch;
 window.autoFormatTimeInput = autoFormatTimeInput;
+window.describeApiError = describeApiError;
 window.escapeHtml = escapeHtml;
 window.formatDateTimeIndonesia = formatDateTimeIndonesia;
 window.formatPeriodIndonesian = formatPeriodIndonesian;

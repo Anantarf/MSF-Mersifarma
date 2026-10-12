@@ -1,6 +1,7 @@
 let approvedCallLists = [];
 let currentCallListDoctors = [];
 let currentPlans = [];
+let plansLoadError = null;
 
 const escapeHtml = window.MSF.escapeHtml;
 const formatPeriodMonth = window.MSF.formatPeriodIndonesian;
@@ -59,6 +60,9 @@ function bindPlanEvents() {
             case 'close-plan-detail':
                 closePlanDetailModal();
                 break;
+            case 'retry-load-plans':
+                loadPlans();
+                break;
             default:
                 break;
         }
@@ -110,8 +114,13 @@ function setQuickDate(type) {
 
 async function loadPlans() {
     const loading = document.getElementById('loadingPlans');
-    loading.innerHTML = window.renderTableSkeleton(3);
-    loading.style.display = 'block';
+    const errorEl = document.getElementById('errorPlans');
+    if (errorEl) errorEl.style.display = 'none';
+
+    if (loading) {
+        loading.innerHTML = window.renderTableSkeleton(3);
+        loading.style.display = 'block';
+    }
 
     const filterDate = document.getElementById('filterDateInput').value;
     const filterStatus = document.getElementById('filterStatusSelect').value;
@@ -124,12 +133,19 @@ async function loadPlans() {
     try {
         const res = await window.apiFetch(`/api/call-plans${queryString}`);
         const result = await res.json();
-        currentPlans = (result && result.success && Array.isArray(result.data)) ? result.data : [];
+        if (res.ok && result && result.success && Array.isArray(result.data)) {
+            currentPlans = result.data;
+            plansLoadError = null;
+        } else {
+            currentPlans = [];
+            plansLoadError = window.describeApiError(result || res, 'Gagal memuat jadwal kunjungan dari server.', res.status);
+        }
     } catch (err) {
         currentPlans = [];
+        plansLoadError = window.describeApiError(err, 'Terjadi gangguan jaringan saat memuat jadwal.');
         console.error('Gagal memuat jadwal', err);
     } finally {
-        loading.style.display = 'none';
+        if (loading) loading.style.display = 'none';
         renderPlansGrid();
     }
 }
@@ -138,6 +154,21 @@ function renderPlansGrid() {
     const tableWrap = document.getElementById('planTableWrap');
     const tbody = document.getElementById('planTableBody');
     const empty = document.getElementById('emptyPlans');
+    const errorEl = document.getElementById('errorPlans');
+    const errorText = document.getElementById('errorPlansText');
+
+    if (plansLoadError) {
+        if (tbody) tbody.innerHTML = '';
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+        if (errorEl) {
+            if (errorText) errorText.innerText = plansLoadError;
+            errorEl.style.display = 'block';
+        }
+        return;
+    }
+
+    if (errorEl) errorEl.style.display = 'none';
 
     if (!currentPlans.length) {
         if (tbody) tbody.innerHTML = '';
@@ -227,7 +258,7 @@ async function loadApprovedCallLists() {
     try {
         const res = await window.apiFetch('/api/call-lists?status=approved');
         const result = await res.json();
-        if (result.success) {
+        if (res.ok && result.success) {
             approvedCallLists = result.data;
             if (!approvedCallLists.length) {
                 select.innerHTML = '<option value="">-- Belum ada target dokter yang disetujui --</option>';
@@ -239,9 +270,11 @@ async function loadApprovedCallLists() {
                         ${escapeHtml(formatPeriodMonth(cl.period_month))}
                     </option>
                 `).join('');
+        } else {
+            select.innerHTML = `<option value="">${escapeHtml(window.describeApiError(result || res, 'Gagal memuat target', res.status))}</option>`;
         }
     } catch (err) {
-        select.innerHTML = '<option value="">Gagal memuat target</option>';
+        select.innerHTML = `<option value="">${escapeHtml(window.describeApiError(err, 'Gagal memuat target'))}</option>`;
     }
 }
 
@@ -492,18 +525,18 @@ async function handleCreatePlanSubmit(e) {
         btn.disabled = false;
         btn.innerText = 'Simpan';
 
-        if (data.success) {
+        if (res.ok && data.success) {
             closeCreatePlanModal();
             showAlert('Jadwal disimpan.');
             loadPlans();
         } else {
-            errEl.innerText = data.message || 'Gagal menyimpan jadwal.';
+            errEl.innerText = window.describeApiError(data || res, 'Gagal menyimpan jadwal.', res.status);
             errEl.style.display = 'block';
         }
     } catch (err) {
         btn.disabled = false;
         btn.innerText = 'Simpan';
-        errEl.innerText = 'Terjadi kesalahan jaringan.';
+        errEl.innerText = window.describeApiError(err, 'Terjadi kesalahan jaringan.');
         errEl.style.display = 'block';
     }
 }
@@ -553,18 +586,18 @@ async function handleCancelPlanSubmit(e) {
         btn.disabled = false;
         btn.innerText = 'Batalkan Jadwal';
 
-        if (result.success) {
+        if (res.ok && result.success) {
             closeCancelPlanModal();
             showAlert('Jadwal dibatalkan.');
             loadPlans();
         } else {
-            errEl.innerText = result.message || 'Gagal membatalkan jadwal.';
+            errEl.innerText = window.describeApiError(result || res, 'Gagal membatalkan jadwal.', res.status);
             errEl.style.display = 'block';
         }
     } catch (err) {
         btn.disabled = false;
         btn.innerText = 'Batalkan Jadwal';
-        errEl.innerText = 'Gagal membatalkan jadwal. Coba lagi.';
+        errEl.innerText = window.describeApiError(err, 'Gagal membatalkan jadwal. Coba lagi.');
         errEl.style.display = 'block';
     }
 }
@@ -613,6 +646,10 @@ async function openReschedulePlanModal(planId) {
     const timeStr = formatWaktuIndonesia(plan.planned_time);
     const dateStr = formatDateLabel(plan.plan_date);
     document.getElementById('reschedulePlanCurrentSchedule').innerText = `${dateStr} pukul ${timeStr}`;
+
+    const dateInput = document.getElementById('reschedulePlanDateInput');
+    const [year, mm] = (plan.plan_date || '').substring(0, 7).split('-');
+    const lastDay = new Date(parseInt(year, 10), parseInt(mm, 10), 0).getDate();
 
     const today = new Date();
     const yyyyNow = today.getFullYear();
@@ -734,18 +771,18 @@ async function handleReschedulePlanSubmit(e) {
         btn.disabled = false;
         btn.innerText = 'Simpan Perubahan Jadwal';
 
-        if (result.success) {
+        if (res.ok && result.success) {
             closeReschedulePlanModal();
             showAlert('Jadwal berhasil di-reschedule.');
             loadPlans();
         } else {
-            errEl.innerText = result.message || 'Gagal reschedule jadwal.';
+            errEl.innerText = window.describeApiError(result || res, 'Gagal reschedule jadwal.', res.status);
             errEl.style.display = 'block';
         }
     } catch (err) {
         btn.disabled = false;
         btn.innerText = 'Simpan Perubahan Jadwal';
-        errEl.innerText = 'Terjadi kesalahan jaringan.';
+        errEl.innerText = window.describeApiError(err, 'Terjadi kesalahan jaringan.');
         errEl.style.display = 'block';
     }
 }

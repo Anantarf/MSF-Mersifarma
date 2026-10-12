@@ -45,29 +45,37 @@ export function describeApiError(result, fallbackMessage) {
     const info = { message: fallbackMessage, fields: {}, step: null };
 
     if (networkError) {
-        info.message = 'Koneksi ke server terputus. Periksa jaringan Anda lalu coba lagi.';
+        info.message = 'Koneksi ke server terputus. Periksa jaringan internet Anda lalu coba lagi.';
         return info;
     }
     if (status === 401) {
-        info.message = 'Sesi login Anda berakhir. Muat ulang halaman dan masuk kembali.';
+        info.message = 'Sesi login Anda telah berakhir. Silakan muat ulang halaman dan masuk kembali.';
         return info;
     }
     if (status === 419) {
-        info.message = 'Sesi halaman kedaluwarsa. Muat ulang halaman lalu coba lagi.';
-        return info;
-    }
-    if (status >= 500 || !body) {
-        info.message = 'Server sedang bermasalah. Coba lagi beberapa saat.';
+        info.message = 'Sesi formulir kedaluwarsa (CSRF). Silakan muat ulang halaman lalu coba lagi.';
         return info;
     }
     if (status === 403) {
-        info.message = body.message || 'Anda tidak memiliki akses untuk tindakan ini.';
+        info.message = body?.message || 'Anda tidak memiliki hak akses untuk tindakan ini.';
+        return info;
+    }
+    if (status === 404) {
+        info.message = body?.message || 'Data tidak ditemukan atau sudah tidak tersedia.';
+        return info;
+    }
+    if (status >= 500 || !body) {
+        info.message = 'Server sedang mengalami gangguan internal (500). Silakan coba beberapa saat lagi.';
         return info;
     }
     if (body.error_code === 'VISIT_ALREADY_EXISTS') {
         info.message = body.data?.owned_by_me
             ? 'Kunjungan ini sudah tercatat atas nama Anda. Periksa Riwayat Kunjungan.'
             : 'Dokter sudah memiliki kunjungan pada tanggal ini.';
+        return info;
+    }
+    if (status === 409) {
+        info.message = body.message || 'Terjadi konflik status data. Silakan muat ulang halaman.';
         return info;
     }
 

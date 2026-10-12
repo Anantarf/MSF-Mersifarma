@@ -38,8 +38,8 @@ class ManagerialCampaignService
 
         $productIds = $data['product_ids'] ?? [];
         if (empty($productIds) || count($productIds) > 5) {
-            throw ApiException::validation('INVALID_PRODUCTS', 'Pilih minimal 1 dan maksimal 5 obat fokus promosi.', [
-                'product_ids' => ['Pilih minimal 1 dan maksimal 5 obat fokus.'],
+            throw ApiException::validation('INVALID_PRODUCTS', 'Pilih minimal 1 dan maksimal 5 produk prioritas.', [
+                'product_ids' => ['Pilih minimal 1 dan maksimal 5 produk prioritas.'],
             ]);
         }
 
@@ -50,7 +50,9 @@ class ManagerialCampaignService
             ]);
         }
 
-        $districtName = trim($data['district_name'] ?? ($creator->district ?? ''));
+        $districtName = $creator->role === 'dm'
+            ? trim($creator->district ?? '')
+            : trim($data['district_name'] ?? ($creator->district ?? ''));
         if (empty($districtName)) {
             $districtName = $creator->role === 'rsm' ? 'Regional' : ($creator->district ?? 'Nasional');
         }
@@ -122,12 +124,11 @@ class ManagerialCampaignService
             throw ApiException::validation('INVALID_DECISION', 'Keputusan harus berupa approved atau rejected.');
         }
 
-        // Wajib direct manager dari pembuat kampanye, atau MM jika pembuatnya RSM
+        // Wajib direct manager dari pembuat kampanye (DM diapprove oleh RSM)
         $isDirectManager = (int) $campaign->creator->manager_id === (int) $reviewer->id;
-        $isNationalMM = $reviewer->role === 'mm';
 
-        if (! $isDirectManager && ! $isNationalMM) {
-            throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Hanya atasan langsung yang berhak meninjau program rekomendasi ini.');
+        if (! $isDirectManager) {
+            throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Hanya atasan langsung (RSM) yang berhak meninjau program rekomendasi ini.');
         }
 
         if ($campaign->status !== 'pending_approval') {
@@ -153,6 +154,13 @@ class ManagerialCampaignService
      */
     public function getCampaignProgress(ManagerialCampaign $campaign): array
     {
+        [$progress] = $this->calculateCampaignProgress($campaign);
+
+        return $progress;
+    }
+
+    private function calculateCampaignProgress(ManagerialCampaign $campaign): array
+    {
         $totalDoctors = $campaign->doctors()->count();
         $doctorIds = $campaign->doctors()->pluck('master_customers.id')->toArray();
         $productIds = $campaign->products()->pluck('products.id')->toArray();
@@ -171,13 +179,21 @@ class ManagerialCampaignService
         $reachPercentage = $totalDoctors > 0 ? round(($visitedCount / $totalDoctors) * 100, 1) : 0;
         $totalCalls = $actuals->count();
 
-        // Hitung berapa kali produk fokus didetailkan
-        $focusDetailingCount = DB::table('call_actual_products')
+        // Count each visit once, even when it includes multiple campaign products.
+        $priorityProductVisitCount = $actuals
+            ->filter(fn ($actual) => $actual->products->contains(fn ($product) => in_array((int) $product->id, $productIds, true)))
+            ->count();
+
+        // Track distinct visit IDs for a non-duplicated summary across campaigns.
+        $priorityProductVisitIds = DB::table('call_actual_products')
             ->join('call_actuals', 'call_actuals.id', '=', 'call_actual_products.call_actual_id')
             ->whereIn('call_actuals.doctor_id', $doctorIds)
             ->whereBetween('call_actuals.visit_date', [$startDate, $endDate])
             ->whereIn('call_actual_products.product_id', $productIds)
-            ->count();
+            ->distinct()
+            ->pluck('call_actuals.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
         // Daftar dokter yang belum dikunjungi sama sekali
         $unvisitedDoctors = $campaign->doctors()
@@ -193,7 +209,7 @@ class ManagerialCampaignService
             })
             ->values();
 
-        return [
+        $progress = [
             'campaign_id' => $campaign->id,
             'title' => $campaign->title,
             'district_name' => $campaign->district_name,
@@ -207,9 +223,11 @@ class ManagerialCampaignService
             'unvisited_doctors_count' => $totalDoctors - $visitedCount,
             'reach_percentage' => $reachPercentage,
             'total_calls' => $totalCalls,
-            'focus_detailing_count' => $focusDetailingCount,
+            'focus_detailing_count' => $priorityProductVisitCount,
             'unvisited_doctors' => $unvisitedDoctors,
         ];
+
+        return [$progress, $priorityProductVisitIds];
     }
 
     /**
@@ -236,13 +254,13 @@ class ManagerialCampaignService
         $districtSummaries = [];
         $totalTargetNational = 0;
         $totalVisitedNational = 0;
-        $totalDetailingNational = 0;
+        $priorityProductVisitIds = [];
 
         foreach ($campaigns as $campaign) {
-            $progress = $this->getCampaignProgress($campaign);
+            [$progress, $campaignPriorityVisitIds] = $this->calculateCampaignProgress($campaign);
             $totalTargetNational += $progress['total_doctors'];
             $totalVisitedNational += $progress['visited_doctors_count'];
-            $totalDetailingNational += $progress['focus_detailing_count'];
+            $priorityProductVisitIds = array_merge($priorityProductVisitIds, $campaignPriorityVisitIds);
 
             $districtSummaries[] = [
                 'campaign_id' => $campaign->id,
@@ -268,7 +286,7 @@ class ManagerialCampaignService
             'total_target_doctors' => $totalTargetNational,
             'total_visited_doctors' => $totalVisitedNational,
             'overall_reach_percentage' => $nationalReachPercentage,
-            'total_focus_detailing' => $totalDetailingNational,
+            'total_focus_detailing' => count(array_unique($priorityProductVisitIds)),
             'district_breakdown' => $districtSummaries,
         ];
     }

@@ -10,9 +10,7 @@ let masterProducts = [];
 let campaignSelectedDoctorIds = new Set();
 let currentSelectedDoctorIds = new Set();
 let isFilterOnlySelected = false;
-let pickerCurrentPage = 1;
 let pendingConfirmResolve = null;
-const PICKER_PAGE_SIZE = 4;
 const escapeHtml = window.MSF.escapeHtml;
 const formatPeriodIndonesian = window.MSF.formatPeriodIndonesian;
 
@@ -21,9 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDoctors();
         if (currentUserRole === 'mr') {
             loadMyCallLists();
-        } else {
+        } else if (currentUserRole === 'dm') {
             loadReviewCallLists();
-            loadMyCallLists();
+            loadManagerSummary();
+        } else {
+            // RSM dan MM: langsung muat program rekomendasi & executive summary
+            loadCampaigns();
         }
     });
 
@@ -90,12 +91,6 @@ function bindCallListEvents() {
                 case 'close-target':
                     closeTargetModal();
                     break;
-                case 'picker-prev-page':
-                    prevPickerPage();
-                    break;
-                case 'picker-next-page':
-                    nextPickerPage();
-                    break;
                 case 'toggle-selected-filter':
                     toggleShowOnlySelected();
                     break;
@@ -159,6 +154,15 @@ function bindCallListEvents() {
                 case 'clear-all-campaign-docs':
                     event.preventDefault();
                     clearAllCampaignDoctors();
+                    break;
+                case 'retry-load-my-lists':
+                    loadMyCallLists();
+                    break;
+                case 'retry-load-review':
+                    loadReviewCallLists();
+                    break;
+                case 'retry-manager-summary':
+                    loadExecutiveSummary();
                     break;
                 default:
                     break;
@@ -243,6 +247,7 @@ function switchTab(tab, isManual = true) {
             if (myListsEl) myListsEl.style.display = 'none';
             if (reviewEl) {
                 reviewEl.style.display = 'flex';
+                loadReviewCallLists();
                 loadManagerSummary();
             }
             if (campEl) campEl.style.display = 'none';
@@ -276,7 +281,12 @@ async function loadDoctors() {
     }
 
 async function loadMyCallLists() {
-        const loadingEl = document.getElementById('loadingMyLists');
+    if (currentUserRole !== 'mr') return;
+
+    const loadingEl = document.getElementById('loadingMyLists');
+        const errorEl = document.getElementById('errorMyLists');
+        if (errorEl) errorEl.style.display = 'none';
+
         if (loadingEl) {
             loadingEl.innerHTML = window.renderTableSkeleton(3);
             loadingEl.style.display = 'block';
@@ -286,15 +296,38 @@ async function loadMyCallLists() {
             const result = await res.json();
             if (loadingEl) loadingEl.style.display = 'none';
 
-            if (result.success) {
+            if (res.ok && result.success && Array.isArray(result.data)) {
                 myCallLists = result.data;
                 const countEl = document.getElementById('myListCount');
                 if (countEl) countEl.innerText = myCallLists.length;
                 renderMyListsView();
+            } else {
+                const msg = window.describeApiError(result || res, 'Gagal memuat target dokter dari server.', res.status);
+                showMyListsError(msg);
             }
         } catch (err) {
             if (loadingEl) loadingEl.style.display = 'none';
-            console.error(err);
+            const msg = window.describeApiError(err, 'Terjadi gangguan jaringan saat memuat target dokter.');
+            showMyListsError(msg);
+        }
+    }
+
+    function showMyListsError(message) {
+        const spotlight = document.getElementById('currentMonthSpotlight');
+        const tableWrap = document.getElementById('myListsTableWrap');
+        const empty = document.getElementById('emptyMyLists');
+        const errorEl = document.getElementById('errorMyLists');
+        const errorText = document.getElementById('errorMyListsText');
+
+        if (spotlight) spotlight.style.display = 'none';
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+
+        if (errorEl) {
+            if (errorText) errorText.innerText = message;
+            errorEl.style.display = 'block';
+        } else {
+            showAlert(message, 'danger');
         }
     }
 
@@ -303,6 +336,9 @@ function renderMyListsView() {
         const tableWrap = document.getElementById('myListsTableWrap');
         const tbody = document.getElementById('myListsTableBody');
         const empty = document.getElementById('emptyMyLists');
+        const errorEl = document.getElementById('errorMyLists');
+
+        if (errorEl) errorEl.style.display = 'none';
 
         if (!myCallLists.length) {
             if (spotlight) spotlight.style.display = 'none';
@@ -550,15 +586,10 @@ function closeTargetModal() {
 
 function renderDoctorPickerList() {
         const container = document.getElementById('doctorPickerList');
-        const paginationWrap = document.getElementById('doctorPickerPagination');
-        const pageInfo = document.getElementById('pickerPaginationInfo');
-        const prevBtn = document.getElementById('btnPickerPrevPage');
-        const nextBtn = document.getElementById('btnPickerNextPage');
         const searchTerm = (document.getElementById('doctorSearchInput').value || '').toLowerCase().trim();
 
         if (!allDoctors.length) {
             container.innerHTML = '<span class="target-picker-loading">Memuat dokter...</span>';
-            if (paginationWrap) paginationWrap.style.display = 'none';
             return;
         }
 
@@ -575,19 +606,10 @@ function renderDoctorPickerList() {
 
         if (!filtered.length) {
             container.innerHTML = '<div class="target-picker-empty">Tidak ada dokter yang cocok dengan pencarian.</div>';
-            if (paginationWrap) paginationWrap.style.display = 'none';
             return;
         }
 
-        const totalPages = Math.ceil(filtered.length / PICKER_PAGE_SIZE);
-        if (pickerCurrentPage > totalPages) pickerCurrentPage = totalPages;
-        if (pickerCurrentPage < 1) pickerCurrentPage = 1;
-
-        const startIndex = (pickerCurrentPage - 1) * PICKER_PAGE_SIZE;
-        const endIndex = Math.min(startIndex + PICKER_PAGE_SIZE, filtered.length);
-        const pageDoctors = filtered.slice(startIndex, endIndex);
-
-        container.innerHTML = pageDoctors.map(doc => {
+        container.innerHTML = filtered.map(doc => {
             const isChecked = currentSelectedDoctorIds.has(doc.id);
             const rec = doctorRecommendationsMap[doc.id];
             const recBadge = rec ? `
@@ -613,29 +635,6 @@ function renderDoctorPickerList() {
                 </div>
             `;
         }).join('');
-
-        if (paginationWrap) {
-            if (totalPages > 1) {
-                paginationWrap.style.display = 'flex';
-                if (pageInfo) pageInfo.innerText = `Halaman ${pickerCurrentPage} dari ${totalPages} (${filtered.length} dokter)`;
-                if (prevBtn) prevBtn.disabled = (pickerCurrentPage <= 1);
-                if (nextBtn) nextBtn.disabled = (pickerCurrentPage >= totalPages);
-            } else {
-                paginationWrap.style.display = 'none';
-            }
-        }
-    }
-
-function prevPickerPage() {
-        if (pickerCurrentPage > 1) {
-            pickerCurrentPage--;
-            renderDoctorPickerList();
-        }
-    }
-
-function nextPickerPage() {
-        pickerCurrentPage++;
-        renderDoctorPickerList();
     }
 
 function toggleDoctorSelection(doctorId, event) {
@@ -715,10 +714,10 @@ async function saveCallList(autoSubmit = false) {
                 data = await res.json();
             }
 
-            if (!data.success) {
+            if (!res.ok || !data.success) {
                 btnDraft.disabled = false;
                 btnSend.disabled = false;
-                errEl.innerText = data.message || 'Gagal menyimpan target dokter.';
+                errEl.innerText = window.describeApiError(data || res, 'Gagal menyimpan target dokter.', res.status);
                 errEl.style.display = 'block';
                 return;
             }
@@ -726,13 +725,56 @@ async function saveCallList(autoSubmit = false) {
             const savedId = editingId || data.data.id;
 
             if (autoSubmit) {
-                const subRes = await window.apiFetch(`/api/call-lists/${savedId}/submit`, { method: 'POST' });
-                const subData = await subRes.json();
+                let subRes = null;
+                let subData = null;
+                let isNetworkError = false;
+                try {
+                    subRes = await window.apiFetch(`/api/call-lists/${savedId}/submit`, { method: 'POST' });
+                    subData = await subRes.json();
+                } catch (subErr) {
+                    isNetworkError = true;
+                }
+
                 btnDraft.disabled = false;
                 btnSend.disabled = false;
                 closeTargetModal();
-                showAlert('Target dokter berhasil disimpan dan diajukan ke atasan!');
+
+                if (!isNetworkError && subRes && subRes.ok && subData && subData.success) {
+                    showAlert('Target dokter berhasil disimpan dan diajukan ke atasan!');
+                } else {
+                    // A failed response can arrive after the server already changed the state.
+                    let reconciled = false;
+                    try {
+                        const checkRes = await window.apiFetch(`/api/call-lists/${savedId}`);
+                        const checkData = await checkRes.json();
+                        if (checkRes.ok && checkData.success && checkData.data) {
+                            if (checkData.data.status === 'pending_approval') {
+                                reconciled = true;
+                                showAlert('Target dokter berhasil disimpan dan diajukan ke atasan (terverifikasi setelah rekonsiliasi koneksi).');
+                            } else if (checkData.data.status === 'draft') {
+                                reconciled = true;
+                                const isClientError = subRes && subRes.status >= 400 && subRes.status < 500;
+                                if (!isNetworkError && isClientError && subRes.status !== 409) {
+                                    const message = window.describeApiError(subData || subRes, 'Pengajuan belum diterima.', subRes.status);
+                                    showAlert(`Draft tersimpan, tetapi pengajuan belum diterima: ${message} Periksa lalu ajukan kembali dari kartu draf.`, 'warning');
+                                } else {
+                                    showAlert('Draft tersimpan dan masih berstatus Draft. Pengajuan belum terkonfirmasi; Anda dapat memeriksa daftar sebelum mencoba lagi.', 'warning');
+                                }
+                            }
+                        }
+                    } catch (reconErr) {
+                        // Keep the outcome unconfirmed if reconciliation also fails.
+                    }
+
+                    if (!reconciled) {
+                        const reason = isNetworkError
+                            ? 'Koneksi terputus.'
+                            : `Server merespons dengan status ${subRes?.status || 'tidak diketahui'}.`;
+                        showAlert(`Draft target dokter tersimpan, tetapi status pengajuan belum dapat dipastikan. ${reason} Muat ulang daftar sebelum mencoba lagi.`, 'warning');
+                    }
+                }
                 loadMyCallLists();
+                if (currentUserRole === 'dm') loadReviewCallLists();
             } else {
                 btnDraft.disabled = false;
                 btnSend.disabled = false;
@@ -743,7 +785,7 @@ async function saveCallList(autoSubmit = false) {
         } catch (err) {
             btnDraft.disabled = false;
             btnSend.disabled = false;
-            errEl.innerText = 'Terjadi kesalahan jaringan atau server.';
+            errEl.innerText = window.describeApiError(err, 'Terjadi kesalahan jaringan atau server saat menyimpan target dokter.');
             errEl.style.display = 'block';
         }
     }
@@ -758,15 +800,31 @@ async function submitCallList(id) {
         try {
             const res = await window.apiFetch(`/api/call-lists/${id}/submit`, { method: 'POST' });
             const data = await res.json();
-            if (data.success) {
+            if (res.ok && data.success) {
                 showAlert('Target dokter berhasil diajukan untuk persetujuan.');
                 loadMyCallLists();
-                if (['dm', 'rsm', 'mm'].includes(currentUserRole)) loadReviewCallLists();
+                if (currentUserRole === 'dm') loadReviewCallLists();
             } else {
-                showAlert(data.message || 'Gagal mengajukan target dokter.', 'danger');
+                showAlert(window.describeApiError(data || res, 'Gagal mengajukan target dokter.', res.status), 'danger');
             }
         } catch (err) {
-            showAlert('Terjadi kesalahan koneksi jaringan.', 'danger');
+            // Rekonsiliasi status ke server jika koneksi sempat terputus saat request submit
+            let reconciled = false;
+            try {
+                const checkRes = await window.apiFetch(`/api/call-lists/${id}`);
+                const checkData = await checkRes.json();
+                if (checkRes.ok && checkData.success && checkData.data) {
+                    if (checkData.data.status === 'pending_approval') {
+                        reconciled = true;
+                        showAlert('Target dokter berhasil diajukan untuk persetujuan (terverifikasi setelah rekonsiliasi koneksi).');
+                        loadMyCallLists();
+                        if (currentUserRole === 'dm') loadReviewCallLists();
+                        return;
+                    }
+                }
+            } catch (reconErr) {}
+
+            showAlert('Koneksi jaringan terputus saat menunggu konfirmasi pengajuan. Status belum dapat dipastikan; silakan muat ulang daftar sebelum mencoba lagi.', 'warning');
         }
     }
 
@@ -812,8 +870,10 @@ async function openDetailModal(id) {
 
                         return `
                             <div class="target-detail-history-row">
-                                <div class="target-history-main">
-                                    <strong>${escapeHtml(eventTitle)}</strong> &middot; <span>${escapeHtml(actor)}</span> &middot; <span class="tabular-nums">${escapeHtml(timeStr)}</span>
+                                <div class="target-history-main" style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                                    <strong>${escapeHtml(eventTitle)}</strong>
+                                    <span>${escapeHtml(actor)}</span>
+                                    <span class="tabular-nums" style="font-size: 0.775rem;">${escapeHtml(timeStr)}</span>
                                 </div>
                                 ${!isRedundantReason ? `<div class="target-history-note">Catatan: "${escapeHtml(h.reason)}"</div>` : ''}
                             </div>
@@ -865,9 +925,13 @@ async function openDetailModal(id) {
                     </div>
                 `;
                 document.getElementById('detailContent').innerHTML = html;
+            } else {
+                const errMsg = window.describeApiError(result || res, 'Gagal memuat detail.', res.status);
+                document.getElementById('detailContent').innerHTML = `<div class="target-detail-error">${escapeHtml(errMsg)}</div>`;
             }
         } catch (err) {
-            document.getElementById('detailContent').innerHTML = '<div class="target-detail-error">Gagal memuat detail.</div>';
+            const errMsg = window.describeApiError(err, 'Gagal memuat detail.');
+            document.getElementById('detailContent').innerHTML = `<div class="target-detail-error">${escapeHtml(errMsg)}</div>`;
         }
     }
 
@@ -877,7 +941,12 @@ function closeDetailModal() {
 
     // Manager Actions
     async function loadReviewCallLists() {
+        if (currentUserRole !== 'dm') return;
+
         const loadingEl = document.getElementById('loadingReview');
+        const errorEl = document.getElementById('errorReviewQueue');
+        if (errorEl) errorEl.style.display = 'none';
+
         if (!loadingEl) return;
         loadingEl.innerHTML = window.renderTableSkeleton(3);
         loadingEl.style.display = 'block';
@@ -886,15 +955,36 @@ function closeDetailModal() {
             const result = await res.json();
             if (loadingEl) loadingEl.style.display = 'none';
 
-            if (result.success) {
+            if (res.ok && result.success && Array.isArray(result.data)) {
                 reviewCallLists = result.data;
                 const countEl = document.getElementById('reviewCount');
                 if (countEl) countEl.innerText = reviewCallLists.length;
                 renderReviewGrid();
+            } else {
+                const errMsg = window.describeApiError(result || res, 'Gagal memuat antrean persetujuan.', res.status);
+                showReviewQueueError(errMsg);
             }
         } catch (err) {
             if (loadingEl) loadingEl.style.display = 'none';
-            console.error(err);
+            const errMsg = window.describeApiError(err, 'Terjadi gangguan jaringan saat memuat antrean persetujuan.');
+            showReviewQueueError(errMsg);
+        }
+    }
+
+    function showReviewQueueError(message) {
+        const tableWrap = document.getElementById('reviewTableWrap');
+        const empty = document.getElementById('emptyReview');
+        const errorEl = document.getElementById('errorReviewQueue');
+        const errorText = document.getElementById('errorReviewQueueText');
+
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+
+        if (errorEl) {
+            if (errorText) errorText.innerText = message;
+            errorEl.style.display = 'block';
+        } else {
+            showAlert(message, 'danger');
         }
     }
 
@@ -902,6 +992,10 @@ function renderReviewGrid() {
         const tableWrap = document.getElementById('reviewTableWrap');
         const tbody = document.getElementById('reviewTableBody');
         const empty = document.getElementById('emptyReview');
+        const errorEl = document.getElementById('errorReviewQueue');
+
+        if (errorEl) errorEl.style.display = 'none';
+
         if (!reviewCallLists.length) {
             if (tbody) tbody.innerHTML = '';
             if (tableWrap) tableWrap.style.display = 'none';
@@ -948,15 +1042,15 @@ async function approveCallList(id) {
                 body: JSON.stringify({ status: 'approved', reason: 'Disetujui' })
             });
             const data = await res.json();
-            if (data.success) {
+            if (res.ok && data.success) {
                 showAlert('Target dokter berhasil disetujui!');
                 loadReviewCallLists();
                 loadManagerSummary();
             } else {
-                showAlert(data.message || 'Gagal menyetujui target dokter.', 'danger');
+                showAlert(window.describeApiError(data || res, 'Gagal menyetujui target dokter.', res.status), 'danger');
             }
         } catch (err) {
-            showAlert('Terjadi kesalahan jaringan.', 'danger');
+            showAlert(window.describeApiError(err, 'Terjadi kesalahan jaringan.'), 'danger');
         }
     }
 
@@ -990,23 +1084,25 @@ async function handleRejectSubmit(e) {
                 body: JSON.stringify({ status: 'rejected', reason: reason })
             });
             const data = await res.json();
-            if (data.success) {
+            if (res.ok && data.success) {
                 closeRejectModal();
                 showAlert('Target dokter ditolak dan dikembalikan untuk direvisi.');
                 loadReviewCallLists();
                 loadManagerSummary();
             } else {
-                errEl.innerText = data.message || 'Gagal menolak target.';
+                errEl.innerText = window.describeApiError(data || res, 'Gagal menolak target.', res.status);
                 errEl.style.display = 'block';
             }
         } catch (err) {
-            errEl.innerText = 'Terjadi kesalahan jaringan.';
+            errEl.innerText = window.describeApiError(err, 'Terjadi kesalahan jaringan.');
             errEl.style.display = 'block';
         }
     }
 
 async function loadManagerSummary() {
-        const monthInput = document.getElementById('summaryMonthSelect');
+    if (currentUserRole !== 'dm') return;
+
+    const monthInput = document.getElementById('summaryMonthSelect');
         const card = document.getElementById('monitoringSummaryCard');
         if (!card) return;
 
@@ -1102,18 +1198,20 @@ async function loadCampaigns() {
         const result = await res.json();
         if (loadingEl) loadingEl.style.display = 'none';
 
-        if (result.success && Array.isArray(result.data)) {
+        if (res.ok && result.success && Array.isArray(result.data)) {
             allCampaigns = result.data;
             if (!allCampaigns.length) {
                 if (emptyEl) emptyEl.style.display = 'block';
                 return;
             }
             renderCampaignCards(allCampaigns);
+        } else {
+            showAlert(window.describeApiError(result || res, 'Gagal memuat program rekomendasi.', res.status), 'danger');
         }
     } catch (err) {
         if (loadingEl) loadingEl.style.display = 'none';
         console.error('Gagal memuat program kampanye', err);
-        showAlert('Gagal memuat data program rekomendasi.', 'danger');
+        showAlert(window.describeApiError(err, 'Gagal memuat data program rekomendasi.'), 'danger');
     }
 }
 
@@ -1122,8 +1220,14 @@ async function renderCampaignCards(campaigns) {
     if (!cardsStack) return;
 
     cardsStack.innerHTML = campaigns.map(camp => {
+        const isRegionalDirective = camp.district_name === 'Regional';
+        const isNationalDirective = camp.district_name === 'Nasional';
+        const isPolicyDirective = isRegionalDirective || isNationalDirective;
+
         let statusBadge = '<span class="status-badge status-draft">Draft</span>';
-        if (camp.status === 'approved') {
+        if (isPolicyDirective) {
+            statusBadge = '<span class="status-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600;"><i class="bi bi-check-circle-fill"></i> Arahan Aktif</span>';
+        } else if (camp.status === 'approved') {
             statusBadge = '<span class="status-badge status-approved">Disetujui</span>';
         } else if (camp.status === 'pending_approval') {
             statusBadge = '<span class="status-badge status-pending">Menunggu Persetujuan</span>';
@@ -1134,9 +1238,13 @@ async function renderCampaignCards(campaigns) {
         const productNames = camp.products && camp.products.length
             ? camp.products.map(p => p.name).join(', ')
             : '-';
+        const districtInfo = isPolicyDirective
+            ? ''
+            : `<span>Distrik: ${escapeHtml(camp.district_name || '-')}</span>`;
 
+        // Approval hanya untuk atasan langsung (RSM), MM tidak perlu approval (hanya monitoring)
         let actionButtons = '';
-        if (camp.status === 'pending_approval' && (currentUserRole === 'rsm' || currentUserRole === 'mm')) {
+        if (camp.status === 'pending_approval' && currentUserRole === 'rsm') {
             actionButtons = `
                 <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
                     <button type="button" class="btn btn-primary btn-sm" data-action="approve-campaign" data-campaign-id="${camp.id}">
@@ -1155,25 +1263,46 @@ async function renderCampaignCards(campaigns) {
             </div>
         ` : '';
 
+        const cardClass = isPolicyDirective ? 'target-card regional-directive-card' : 'target-card district-proposal-card';
+        const typeHeader = isPolicyDirective
+            ? `<div style="margin-bottom: 0.5rem;">
+                   <span class="regional-directive-pill">
+                       <i class="bi bi-info-circle-fill"></i>
+                       <span>${isNationalDirective ? 'Arahan Nasional' : 'Arahan Regional'}</span>
+                   </span>
+               </div>`
+            : `<div style="margin-bottom: 0.5rem;">
+                   <span class="district-proposal-pill">
+                       <i class="bi bi-file-earmark-text"></i>
+                       <span>Usulan Rekomendasi Distrik</span>
+                   </span>
+               </div>`;
+
+        const creatorPrefix = isPolicyDirective ? 'Diterbitkan oleh:' : 'Diajukan oleh:';
+        const targetBadge = !isPolicyDirective
+            ? `<span class="badge-priority">★ ${camp.doctor_count} Dokter Sasaran</span>`
+            : '';
+
         return `
-            <div class="target-card" id="campaignCard_${camp.id}" style="padding: 1rem 1.25rem;">
+            <div class="${cardClass}" id="campaignCard_${camp.id}" style="padding: 1rem 1.25rem;">
+                ${typeHeader}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
                             <h4 style="font-size: 1.05rem; color: var(--secondary); margin: 0;">${escapeHtml(camp.title)}</h4>
                             ${statusBadge}
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">
-                            Distrik: <strong>${escapeHtml(camp.district_name || '-')}</strong> • 
-                            Durasi: <strong>${camp.duration_months} Bulan</strong> (${camp.start_date || '-'} s.d. ${camp.end_date || '-'}) • 
-                            Diajukan oleh: <strong>${escapeHtml(camp.creator_name || '-')}</strong>
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.2rem;">
+                            ${districtInfo}
+                            <span>Durasi: ${camp.duration_months} Bulan <span style="font-size: 0.75rem;">(${camp.start_date || '-'} s.d. ${camp.end_date || '-'})</span></span>
+                            <span>${creatorPrefix} ${escapeHtml(camp.creator_name || '-')}</span>
                         </div>
                     </div>
                 </div>
 
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; font-size: 0.8rem;">
-                    <span class="badge-priority">★ ${camp.doctor_count} Dokter Target</span>
-                    <span class="badge-focus-product">Obat Fokus: ${escapeHtml(productNames)}</span>
+                    ${targetBadge}
+                    <span class="badge-focus-product" style="${isPolicyDirective ? 'background: #ffffff; border-color: #bae6fd;' : ''}">Produk prioritas: ${escapeHtml(productNames)}</span>
                     ${camp.specialization ? `<span class="target-specialty-badge">${escapeHtml(camp.specialization)}</span>` : ''}
                 </div>
 
@@ -1201,24 +1330,42 @@ async function loadSingleCampaignProgress(campaignId) {
         const result = await res.json();
         if (result.success && result.data) {
             const p = result.data;
+
+            // Jika kebijakan arahan regional tanpa daftar dokter sasaran, tampilkan status kebijakan regional
+            if (p.total_doctors === 0 && ['Regional', 'Nasional'].includes(p.district_name)) {
+                const scopeLabel = p.district_name === 'Nasional'
+                    ? 'Berlaku secara nasional'
+                    : 'Berlaku untuk seluruh distrik di bawah koordinasi RSM';
+                wrap.innerHTML = `
+                    <div style="margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px solid #e0f2fe; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8125rem;">
+                        <span style="color: var(--text-muted);">${scopeLabel}</span>
+                        <span style="color: var(--secondary);">Kunjungan dengan produk prioritas: <strong style="color: #0284c7;">${p.focus_detailing_count || 0} kali</strong></span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Untuk program rekomendasi distrik dengan dokter sasaran
+            const completionIndicator = (p.unvisited_doctors_count === 0 && p.total_doctors > 0)
+                ? '<span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">✓ Seluruh dokter target telah dikunjungi</span>'
+                : (p.unvisited_doctors_count > 0
+                    ? `<button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;" data-action="show-unvisited-doctors" data-campaign-id="${campaignId}">
+                          Lihat ${p.unvisited_doctors_count} Dokter Belum Dikunjungi
+                       </button>`
+                    : '');
+
             wrap.innerHTML = `
-                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; margin-top: 0.5rem;">
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; margin-top: 0.65rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.8rem;">
                         <span>Progres Kunjungan Dokter: <strong>${p.visited_doctors_count} dari ${p.total_doctors} Dokter (${p.reach_percentage}%)</strong></span>
-                        <span>Detailing Obat Fokus: <strong style="color: var(--primary);">${p.focus_detailing_count}x Terlaksana</strong></span>
+                        <span>Kunjungan dengan Produk Prioritas: <strong style="color: var(--primary);">${p.focus_detailing_count}</strong></span>
                     </div>
                     <div class="progress-bar-container" style="margin-bottom: 0.5rem;">
                         <div class="progress-bar-fill" style="width: ${p.reach_percentage}%;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 0.75rem; color: var(--text-muted);">Total Kunjungan Lapangan: ${p.total_calls} kali</span>
-                        ${p.unvisited_doctors_count > 0 ? `
-                            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;" data-action="show-unvisited-doctors" data-campaign-id="${campaignId}">
-                                Lihat ${p.unvisited_doctors_count} Dokter Belum Dikunjungi
-                            </button>
-                        ` : `
-                            <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">✓ Seluruh dokter target telah dikunjungi</span>
-                        `}
+                        ${completionIndicator}
                     </div>
                 </div>
             `;
@@ -1232,12 +1379,15 @@ async function loadExecutiveSummary() {
     const section = document.getElementById('executiveSummarySection');
     const metricGrid = document.getElementById('executiveMetricGrid');
     const tableBody = document.getElementById('districtBreakdownTableBody');
+    const errorBox = document.getElementById('managerSummaryError');
     if (!section || !metricGrid || !tableBody) return;
+    if (errorBox) errorBox.style.display = 'none';
+    section.style.display = 'none';
 
     try {
         const res = await window.apiFetch('/api/managerial-campaigns/summary');
         const result = await res.json();
-        if (result.success && result.data) {
+        if (res.ok && result.success && result.data) {
             const sum = result.data;
             section.style.display = 'block';
 
@@ -1245,23 +1395,23 @@ async function loadExecutiveSummary() {
                 <div class="metric-card">
                     <span class="metric-card-label">Total Dokter Target</span>
                     <strong class="metric-card-value">${sum.total_target_doctors}</strong>
-                    <span class="metric-card-sub">${sum.summary_scope}</span>
                 </div>
                 <div class="metric-card">
-                    <span class="metric-card-label">Cakupan Kunjungan</span>
-                    <strong class="metric-card-value" style="color: var(--primary);">${sum.overall_reach_percentage}%</strong>
+                    <span class="metric-card-label">Dokter target dikunjungi</span>
+                    <strong class="metric-card-value" style="color: var(--primary);">${Number(sum.total_target_doctors) > 0 ? `${sum.overall_reach_percentage}%` : '-'}</strong>
                     <span class="metric-card-sub">${sum.total_visited_doctors} dokter unik telah dikunjungi</span>
                 </div>
                 <div class="metric-card">
-                    <span class="metric-card-label">Detailing Produk Fokus</span>
+                    <span class="metric-card-label">Kunjungan dengan Produk Prioritas</span>
                     <strong class="metric-card-value" style="color: var(--success);">${sum.total_focus_detailing}</strong>
-                    <span class="metric-card-sub">Presentasi produk pada kunjungan</span>
+                    <span class="metric-card-sub">Laporan kunjungan unik lintas program</span>
                 </div>
             `;
 
             if (sum.district_breakdown && sum.district_breakdown.length) {
                 tableBody.innerHTML = sum.district_breakdown.map(d => {
                     const reachPct = Number(d.reach_percentage) || 0;
+                    const hasTarget = Number(d.total_doctors) > 0;
                     const badgeClass = reachPct >= 80 ? 'badge-success' : (reachPct >= 50 ? 'badge-info' : 'badge-warning');
                     const fillBg = reachPct >= 80 ? 'background: linear-gradient(90deg, #16a34a, #22c55e);' : '';
 
@@ -1280,18 +1430,14 @@ async function loadExecutiveSummary() {
                             </td>
                             <td>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                                    <strong style="color: var(--secondary); font-size: 0.82rem;">${d.visited_doctors_count}/${d.total_doctors}</strong>
-                                    <span class="badge ${badgeClass}" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">
-                                        ${reachPct}%
-                                    </span>
+                                    <strong style="color: var(--secondary); font-size: 0.82rem;">${hasTarget ? `${d.visited_doctors_count}/${d.total_doctors}` : '-'}</strong>
+                                    ${hasTarget ? `<span class="badge ${badgeClass}" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">${reachPct}%</span>` : ''}
                                 </div>
-                                <div class="progress-bar-container" style="height: 6px;">
-                                    <div class="progress-bar-fill" style="width: ${reachPct}%; ${fillBg}"></div>
-                                </div>
+                                ${hasTarget ? `<div class="progress-bar-container" style="height: 6px;"><div class="progress-bar-fill" style="width: ${reachPct}%; ${fillBg}"></div></div>` : ''}
                             </td>
                             <td style="text-align: right;">
                                 <span class="tabular-nums font-bold" style="font-size: 0.92rem; color: var(--success);">${d.focus_detailing_count}x</span>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">diskusi detailing</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">kunjungan dengan produk prioritas</div>
                             </td>
                         </tr>
                     `;
@@ -1303,15 +1449,18 @@ async function loadExecutiveSummary() {
                             <i class="bi bi-inbox" style="font-size: 2.25rem; color: #94a3b8; display: block; margin-bottom: 0.65rem;"></i>
                             <div style="font-weight: 700; color: var(--secondary); font-size: 0.95rem; margin-bottom: 0.35rem;">Belum Ada Program Distrik yang Disetujui</div>
                             <div style="font-size: 0.825rem; color: var(--text-muted); max-width: 460px; margin: 0 auto; line-height: 1.5;">
-                                Data capaian reach dan detailing obat fokus antar-distrik akan terakumulasi secara otomatis setelah program rekomendasi distrik berstatus disetujui.
+                                Data kunjungan yang membahas produk prioritas akan terakumulasi setelah program distrik disetujui.
                             </div>
                         </td>
                     </tr>
                 `;
             }
+        } else {
+            throw new Error(window.describeApiError(result || res, 'Ringkasan belum dapat dimuat.', res.status));
         }
     } catch (e) {
-        console.warn('Gagal memuat Executive Summary', e);
+        console.warn('Gagal memuat ringkasan program', e);
+        if (errorBox) errorBox.style.display = 'block';
     }
 }
 
@@ -1322,6 +1471,7 @@ async function openCreateCampaignModal() {
     const headingEl = document.getElementById('campaignModalHeading');
     const subheadingEl = document.getElementById('campaignModalSubheading');
     const districtLabelEl = document.getElementById('campaignDistrictLabel');
+    const districtLabelPrefixEl = document.getElementById('campaignDistrictLabelPrefix');
     const rsmGuidanceField = document.getElementById('campaignRsmGuidanceField');
     const rsmGuidanceSelect = document.getElementById('campaignRsmGuidanceSelect');
     const doctorSection = document.getElementById('campaignDoctorSection');
@@ -1379,10 +1529,11 @@ async function openCreateCampaignModal() {
 
     // Penyesuaian antarmuka berdasarkan peran pengguna (RSM vs DM)
     if (currentUserRole === 'rsm' || currentUserRole === 'mm') {
-        // RSM/MM: Arahan strategis regional (Waktu & Obat Fokus)
-        if (headingEl) headingEl.innerText = 'Buat Arahan Kampanye Regional (Obat Fokus & Periode)';
-        if (subheadingEl) subheadingEl.innerText = 'Tentukan obat fokus promosi dan rentang waktu program untuk seluruh distrik';
-        if (districtLabelEl) districtLabelEl.innerText = 'Regional (DKI Jakarta)';
+        // RSM/MM: arahan kebijakan berlaku di seluruh distrik dalam cakupannya.
+        if (headingEl) headingEl.innerText = 'Buat Arahan Kampanye Regional (Produk Prioritas & Periode)';
+        if (subheadingEl) subheadingEl.innerText = 'Tentukan produk prioritas dan periode program untuk seluruh distrik';
+        if (districtLabelPrefixEl) districtLabelPrefixEl.innerText = 'Wilayah:';
+        if (districtLabelEl) districtLabelEl.innerText = 'Seluruh distrik di bawah RSM';
         if (rsmGuidanceField) rsmGuidanceField.style.display = 'none';
         if (doctorSection) doctorSection.style.display = 'none';
         if (submitBtn) submitBtn.innerText = 'Terbitkan Arahan Regional';
@@ -1391,8 +1542,9 @@ async function openCreateCampaignModal() {
     } else {
         // DM: Pengajuan rekomendasi dokter distrik ke RSM
         if (headingEl) headingEl.innerText = 'Ajukan Rekomendasi Dokter Distrik ke RSM';
-        if (subheadingEl) subheadingEl.innerText = `Tentukan dokter sasaran dan spesialisasi di distrik ${currentUserDistrict || ''} sesuai arahan RSM`;
-        if (districtLabelEl) districtLabelEl.innerText = `Distrik: ${currentUserDistrict || 'Wilayah DM'}`;
+        if (subheadingEl) subheadingEl.innerText = 'Tentukan dokter sasaran dan spesialisasi sesuai arahan RSM';
+        if (districtLabelPrefixEl) districtLabelPrefixEl.innerText = 'Distrik:';
+        if (districtLabelEl) districtLabelEl.innerText = currentUserDistrict ? `Distrik ${currentUserDistrict}` : 'Wilayah DM';
         if (doctorSection) doctorSection.style.display = 'block';
         if (submitBtn) submitBtn.innerText = 'Simpan & Ajukan ke RSM';
 
@@ -1403,7 +1555,7 @@ async function openCreateCampaignModal() {
 
             rsmGuidanceSelect.innerHTML = '<option value="">-- Buat Usulan Distrik Mandiri --</option>' +
                 rsmCampaigns.map(c => {
-                    const prodNames = (c.products || []).map(p => p.name).join(', ') || `${c.product_count || 0} Obat Fokus`;
+                    const prodNames = (c.products || []).map(p => p.name).join(', ') || `${c.product_count || 0} Produk Prioritas`;
                     return `<option value="${c.id}">[Arahan RSM] ${escapeHtml(c.title)} (${c.duration_months} Bln - Fokus: ${escapeHtml(prodNames)})</option>`;
                 }).join('');
         }
@@ -1446,7 +1598,7 @@ function onCampaignProductToggle(input) {
     if (input.checked && checked.length > 5) {
         input.checked = false;
         if (chip) chip.classList.remove('is-selected');
-        showAlert('Maksimal 5 obat fokus promosi.', 'danger');
+        showAlert('Maksimal 5 produk prioritas.', 'danger');
         updateCampaignSelectedProdCount();
         return;
     }
@@ -1646,12 +1798,12 @@ function handleRsmGuidanceChange(e) {
     if (lockBanner) {
         lockBanner.style.display = 'flex';
         if (lockDesc) {
-            const prodList = (camp.products || []).map(p => p.name).join(', ') || `${camp.product_count || 0} Obat Fokus`;
-            lockDesc.innerText = `Program "${camp.title}" (${camp.duration_months} Bulan). Obat Fokus: ${prodList}.`;
+            const prodList = (camp.products || []).map(p => p.name).join(', ') || `${camp.product_count || 0} Produk Prioritas`;
+            lockDesc.innerText = `Program "${camp.title}" (${camp.duration_months} Bulan). Produk Prioritas: ${prodList}.`;
         }
     }
 
-    // Kunci obat fokus promosi sesuai arahan RSM
+    // Kunci produk prioritas sesuai arahan RSM
     if (camp.products && camp.products.length) {
         const targetProductIds = new Set(camp.products.map(p => p.id));
         document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]').forEach(cb => {
@@ -1707,14 +1859,14 @@ async function handleCreateCampaignSubmit(e) {
 
     if (!selectedProducts.length) {
         if (errBox) {
-            errBox.innerText = 'Pilih minimal 1 obat fokus promosi.';
+            errBox.innerText = 'Pilih minimal 1 produk prioritas.';
             errBox.style.display = 'block';
         }
         return;
     }
     if (selectedProducts.length > 5) {
         if (errBox) {
-            errBox.innerText = 'Maksimal 5 obat fokus promosi.';
+            errBox.innerText = 'Maksimal 5 produk prioritas.';
             errBox.style.display = 'block';
         }
         return;
@@ -1749,7 +1901,7 @@ async function handleCreateCampaignSubmit(e) {
         const result = await res.json();
         if (submitBtn) submitBtn.disabled = false;
 
-        if (result.success) {
+        if (res.ok && result.success) {
             showAlert(currentUserRole === 'dm'
                 ? 'Rekomendasi dokter distrik berhasil diajukan ke RSM untuk ditinjau.'
                 : 'Arahan program kampanye regional berhasil diterbitkan.'
@@ -1758,37 +1910,37 @@ async function handleCreateCampaignSubmit(e) {
             loadCampaigns();
         } else {
             if (errBox) {
-                errBox.innerText = result.message || 'Gagal mengajukan program.';
+                errBox.innerText = window.describeApiError(result || res, 'Gagal mengajukan program.', res.status);
                 errBox.style.display = 'block';
             }
         }
     } catch (err) {
         if (submitBtn) submitBtn.disabled = false;
         if (errBox) {
-            errBox.innerText = 'Terjadi kesalahan sistem saat mengirim pengajuan.';
+            errBox.innerText = window.describeApiError(err, 'Terjadi kesalahan sistem saat mengirim pengajuan.');
             errBox.style.display = 'block';
         }
     }
 }
 
 async function handleApproveCampaign(campaignId) {
-    const ok = await requestConfirmation('Setujui program rekomendasi distrik ini? Rekomendasi dokter dan obat fokus akan otomatis aktif untuk seluruh MR di distrik terkait.', 'Konfirmasi Persetujuan Program');
+    const ok = await requestConfirmation('Setujui program rekomendasi distrik ini? Rekomendasi dokter dan produk prioritas akan otomatis aktif untuk seluruh MR di distrik terkait.', 'Konfirmasi Persetujuan Program');
     if (!ok) return;
 
-    try {
+        try {
         const res = await window.apiFetch(`/api/managerial-campaigns/${campaignId}/review`, {
             method: 'PATCH',
             body: JSON.stringify({ decision: 'approved' }),
         });
         const result = await res.json();
-        if (result.success) {
+        if (res.ok && result.success) {
             showAlert('Program rekomendasi distrik berhasil disetujui.');
             loadCampaigns();
         } else {
-            showAlert(result.message || 'Gagal menyetujui program.', 'danger');
+            showAlert(window.describeApiError(result || res, 'Gagal menyetujui program.', res.status), 'danger');
         }
     } catch (err) {
-        showAlert('Terjadi kesalahan saat menyetujui program.', 'danger');
+        showAlert(window.describeApiError(err, 'Terjadi kesalahan saat menyetujui program.'), 'danger');
     }
 }
 
@@ -1824,15 +1976,15 @@ async function handleRejectCampaignSubmit(e) {
             body: JSON.stringify({ decision: 'rejected', reason }),
         });
         const result = await res.json();
-        if (result.success) {
+        if (res.ok && result.success) {
             showAlert('Program rekomendasi berhasil ditolak dengan catatan.');
             closeRejectCampaignModal();
             loadCampaigns();
         } else {
-            showAlert(result.message || 'Gagal menolak program.', 'danger');
+            showAlert(window.describeApiError(result || res, 'Gagal menolak program.', res.status), 'danger');
         }
     } catch (err) {
-        showAlert('Terjadi kesalahan saat memproses penolakan.', 'danger');
+        showAlert(window.describeApiError(err, 'Terjadi kesalahan saat memproses penolakan.'), 'danger');
     }
 }
 
@@ -1856,8 +2008,9 @@ async function showUnvisitedDoctors(campaignId) {
             listEl.innerHTML = doctors.map(d => `
                 <li style="padding: 0.45rem 0.65rem; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.825rem;">
                     <strong>${escapeHtml(d.name)}</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
-                        ${escapeHtml(d.specialization || 'Umum')} • Distrik: ${escapeHtml(d.district || '-')}
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 0.75rem;">
+                        <span>${escapeHtml(d.specialization || 'Umum')}</span>
+                        <span>Distrik: <strong>${escapeHtml(d.district || '-')}</strong></span>
                     </div>
                 </li>
             `).join('');

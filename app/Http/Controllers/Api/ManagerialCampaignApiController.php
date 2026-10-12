@@ -32,13 +32,26 @@ class ManagerialCampaignApiController extends Controller
         $query = ManagerialCampaign::with(['creator', 'approver', 'products', 'doctors']);
 
         if ($user->role === 'mr') {
-            // MR hanya melihat kampanye aktif di distriknya
+            // Accounts without a district must not receive cross-district campaign data.
             $query->active();
-            if ($user->district) {
-                $query->forDistrict($user->district);
+            if (! $user->district) {
+                $query->whereIn('id', []);
+            } else {
+                $query->where(function ($campaignQuery) use ($user) {
+                    $campaignQuery->where('district_name', $user->district);
+
+                    $dm = $user->manager;
+                    $rsmId = $dm?->manager_id;
+                    if ($rsmId) {
+                        $campaignQuery->orWhere(function ($regionalQuery) use ($rsmId) {
+                            $regionalQuery->where('district_name', 'Regional')
+                                ->where('created_by', $rsmId);
+                        });
+                    }
+                });
             }
         } elseif ($user->role === 'dm') {
-            // DM melihat kampanye di distriknya, yang dia buat, atau arahan regional dari RSM (atasannya)
+            // DM melihat kampanye di distriknya, yang dia buat, atau arahan regional dari RSM (atasannya langsung)
             $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id);
                 if ($user->district) {
@@ -47,7 +60,6 @@ class ManagerialCampaignApiController extends Controller
                 if ($user->manager_id) {
                     $q->orWhere('created_by', $user->manager_id);
                 }
-                $q->orWhere('district_name', 'Regional');
             });
         } elseif ($user->role === 'rsm') {
             // RSM melihat kampanye yang dibuat bawahannya (DM) atau yang diajukan kepadanya
@@ -140,11 +152,16 @@ class ManagerialCampaignApiController extends Controller
      */
     public function show(int $id): JsonResponse
     {
+        /** @var User $user */
+        $user = Auth::user();
+
         $campaign = ManagerialCampaign::with(['creator', 'approver', 'products', 'doctors'])->find($id);
 
         if (! $campaign) {
             throw ApiException::notFound('CAMPAIGN_NOT_FOUND', 'Program rekomendasi tidak ditemukan.');
         }
+
+        $this->authorizeCampaignAccess($user, $campaign);
 
         $progress = $this->campaignService->getCampaignProgress($campaign);
 
@@ -159,6 +176,65 @@ class ManagerialCampaignApiController extends Controller
                 'products' => $campaign->products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]),
             ]),
         ]);
+    }
+
+    /**
+     * Memvalidasi batas kewenangan pengguna terhadap data detail kampanye.
+     */
+    protected function authorizeCampaignAccess(User $user, ManagerialCampaign $campaign): void
+    {
+        if ($user->role === 'mm') {
+            return;
+        }
+
+        if ($user->role === 'rsm') {
+            $isOwn = (int) $campaign->created_by === (int) $user->id;
+            $isSubordinate = User::where('manager_id', $user->id)
+                ->where('id', $campaign->created_by)
+                ->exists();
+
+            if ($isOwn || $isSubordinate) {
+                return;
+            }
+
+            throw ApiException::forbidden('FORBIDDEN', 'Anda tidak memiliki hak akses untuk melihat program rekomendasi ini.');
+        }
+
+        if ($user->role === 'dm') {
+            $isOwn = (int) $campaign->created_by === (int) $user->id;
+            $isDistrict = $user->district && $campaign->district_name === $user->district;
+            $isDirectRsm = $user->manager_id && (int) $campaign->created_by === (int) $user->manager_id;
+
+            if ($isOwn || $isDistrict || $isDirectRsm) {
+                return;
+            }
+
+            throw ApiException::forbidden('FORBIDDEN', 'Anda tidak memiliki hak akses untuk melihat program rekomendasi ini.');
+        }
+
+        if ($user->role === 'mr') {
+            $isApproved = $campaign->status === 'approved';
+            $isDistrict = $user->district && $campaign->district_name === $user->district;
+
+            // Jika arahan regional, pastikan diterbitkan oleh atasan hierarkis (RSM)
+            $isRegional = $campaign->district_name === 'Regional';
+            if ($isRegional && $user->manager_id) {
+                $dm = $user->manager;
+                $rsmId = $dm ? $dm->manager_id : null;
+                $isFromHierarchy = $rsmId && (int) $campaign->created_by === (int) $rsmId;
+                if ($isApproved && $isFromHierarchy) {
+                    return;
+                }
+            }
+
+            if ($isApproved && $isDistrict) {
+                return;
+            }
+
+            throw ApiException::forbidden('FORBIDDEN', 'Anda tidak memiliki hak akses untuk melihat program rekomendasi ini.');
+        }
+
+        throw ApiException::forbidden('FORBIDDEN', 'Peran Anda tidak memiliki hak akses untuk melihat program rekomendasi ini.');
     }
 
     /**
@@ -227,7 +303,33 @@ class ManagerialCampaignApiController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $district = $request->query('district', $user->district ?? '');
+
+        // Mengikat distrik ke wilayah pengguna sesuai peran, mencegah akses rekomendasi lintas wilayah
+        if ($user->role === 'mr' || $user->role === 'dm') {
+            if ($request->filled('district') && $request->query('district') !== $user->district) {
+                throw ApiException::forbidden('CROSS_DISTRICT_FORBIDDEN', 'Anda tidak berhak meminta rekomendasi di luar wilayah distrik Anda.');
+            }
+            $district = (string) ($user->district ?? '');
+        } elseif ($user->role === 'rsm') {
+            $allowedDistricts = User::where('manager_id', $user->id)
+                ->pluck('district')
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            if ($request->filled('district')) {
+                $requested = (string) $request->query('district');
+                if (! in_array($requested, $allowedDistricts, true)) {
+                    throw ApiException::forbidden('CROSS_DISTRICT_FORBIDDEN', 'Distrik yang diminta berada di luar wilayah pengawasan Anda.');
+                }
+                $district = $requested;
+            } else {
+                $district = $allowedDistricts[0] ?? '';
+            }
+        } else {
+            // MM: Nasional
+            $district = (string) $request->query('district', $user->district ?? '');
+        }
 
         $recommendations = $this->campaignService->getActiveDoctorRecommendations($district);
 

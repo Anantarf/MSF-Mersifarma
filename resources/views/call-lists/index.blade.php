@@ -15,21 +15,22 @@
             <button type="button" class="btn btn-primary" data-action="open-create">
                 + Susun Target Dokter
             </button>
+            @elseif(auth()->user()->role === 'rsm')
+            <button type="button" class="btn btn-primary" data-action="open-create-campaign">
+                + Terbitkan Arahan Regional
+            </button>
             @endif
         </div>
     </div>
 
-    <!-- Tabs Navigation (Khusus Manajer) -->
-    @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
+    <!-- Tabs Navigation (Khusus DM) -->
+    @if(auth()->user()->role === 'dm')
     <div class="target-tabs">
         <button id="tabReview" class="tab-btn active" data-action="switch-tab" data-tab="review">
             Persetujuan Masuk (<span id="reviewCount" class="tabular-nums">0</span>)
         </button>
         <button id="tabCampaigns" class="tab-btn" data-action="switch-tab" data-tab="campaigns">
-            Program Rekomendasi
-        </button>
-        <button id="tabMyLists" class="tab-btn" data-action="switch-tab" data-tab="myLists">
-            Target Saya (<span id="myListCount" class="tabular-nums">0</span>)
+            Program Rekomendasi Distrik
         </button>
     </div>
     @endif
@@ -38,7 +39,8 @@
     <div id="statusAlert" style="display: none;" class="alert"></div>
 
     <!-- ================= TAB 1: TARGET SAYA (MR VIEW) ================= -->
-    <div id="myListsContainer" class="target-list-stack" style="display: {{ auth()->user()->role === 'mr' ? 'flex' : 'none' }};">
+    @if(auth()->user()->role === 'mr')
+    <div id="myListsContainer" class="target-list-stack" style="display: flex;">
         <div id="loadingMyLists" class="target-loader"></div>
 
         <!-- Kartu Target Periode Berjalan / Utama -->
@@ -127,11 +129,24 @@
             <button type="button" class="btn btn-primary" data-action="open-create">+ Susun Target Dokter</button>
             @endif
         </div>
-    </div>
 
-    <!-- ================= TAB 2: PERSETUJUAN MASUK (MANAGER VIEW) ================= -->
-    @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
-    <div id="reviewContainer" class="target-list-stack" style="display: {{ auth()->user()->role !== 'mr' ? 'flex' : 'none' }};">
+        <!-- Error State Target -->
+        <div id="errorMyLists" class="target-empty" style="display: none; border-color: #fecaca; background: #fff5f5;">
+            <div style="font-size: 2rem; color: #dc2626; margin-bottom: 0.5rem;">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h4 style="color: #dc2626;">Gagal Memuat Target Dokter</h4>
+            <p id="errorMyListsText" style="color: #64748b; margin-bottom: 1.25rem;">Terjadi gangguan saat mengambil data target dokter dari server.</p>
+            <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-my-lists" style="color: #dc2626; border-color: #dc2626;">
+                <i class="bi bi-arrow-clockwise"></i> Coba Muat Ulang
+            </button>
+        </div>
+    </div>
+    @endif
+
+    <!-- ================= TAB 2: PERSETUJUAN MASUK & MONITORING DISTRIK (DM VIEW) ================= -->
+    @if(auth()->user()->role === 'dm')
+    <div id="reviewContainer" class="target-list-stack" style="display: flex;">
         <!-- Widget Ringkasan Monitoring Wilayah -->
         <div id="monitoringSummaryCard" class="target-monitoring" style="display: none;">
             <div class="target-monitoring-head">
@@ -140,7 +155,7 @@
                         Monitoring Pengajuan Wilayah
                     </h4>
                     <p class="target-section-subtitle">
-                        Rekapitulasi target dokter dari tim bawahan langsung pada periode terpilih.
+                        Rekapitulasi target dokter dari tim MR bawahan langsung di distrik ini.
                     </p>
                 </div>
                 <div class="target-filter-inline">
@@ -215,36 +230,51 @@
                 Tidak ada pengajuan bawahan yang sedang menunggu persetujuan Anda saat ini.
             </p>
         </div>
+
+        <!-- Error State Review -->
+        <div id="errorReviewQueue" class="target-empty" style="display: none; border-color: #fecaca; background: #fff5f5;">
+            <div style="font-size: 2rem; color: #dc2626; margin-bottom: 0.5rem;">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h4 style="color: #dc2626;">Gagal Memuat Antrean Persetujuan</h4>
+            <p id="errorReviewQueueText" style="color: #64748b; margin-bottom: 1.25rem;">Terjadi gangguan saat mengambil data antrean persetujuan dari server.</p>
+            <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-review" style="color: #dc2626; border-color: #dc2626;">
+                <i class="bi bi-arrow-clockwise"></i> Coba Muat Ulang
+            </button>
+        </div>
     </div>
+    @endif
 
     <!-- ================= TAB 3: PROGRAM REKOMENDASI MANAJERIAL (P1) ================= -->
-    <div id="campaignsContainer" class="target-list-stack" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <div>
-                <h3 style="font-size: 1.05rem; color: var(--secondary); margin-bottom: 0.2rem;">Program Rekomendasi Distrik & Fokus Produk</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Arahan strategis dokter target dan produk promosi (durasi 1–3 bulan).</p>
-            </div>
-            @if(in_array(auth()->user()->role, ['dm', 'rsm']))
+    @if(in_array(auth()->user()->role, ['dm', 'rsm', 'mm']))
+    <div id="campaignsContainer" class="target-list-stack" style="display: {{ in_array(auth()->user()->role, ['rsm', 'mm']) ? 'flex' : 'none' }};">
+        @if(auth()->user()->role === 'dm')
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 0.75rem;">
             <button type="button" class="btn btn-primary btn-sm" data-action="open-create-campaign">
-                + Buat Program Baru
+                + Buat Usulan Distrik
             </button>
-            @endif
         </div>
+        @endif
 
         <div id="loadingCampaigns" class="target-loader" style="display: none;"></div>
 
-        <!-- Executive Summary Section (Khusus RSM & MM) -->
+        <div id="managerSummaryError" class="target-empty" style="display: none;" role="alert">
+            <h4>Ringkasan belum dapat dimuat</h4>
+            <p>Data ringkasan belum tersedia. Coba muat ulang.</p>
+            <button type="button" class="btn btn-outline btn-sm" data-action="retry-manager-summary">Coba lagi</button>
+        </div>
+
+        <!-- Ringkasan khusus RSM dan MM -->
         <div id="executiveSummarySection" style="display: none; margin-bottom: 1.25rem;">
             <div id="executiveMetricGrid" class="metric-strip-grid"></div>
             <div id="districtBreakdownWrap" class="target-card" style="margin-top: 1rem;">
                 <div class="target-card-subhead">
-                    <div class="target-title-with-badge">
+                    <div class="target-section-heading">
                         <i class="bi bi-bar-chart-line-fill" style="color: var(--primary); font-size: 1rem;"></i>
                         <h4 class="target-section-title">Ringkasan Performa Antar-Distrik</h4>
-                        <span class="badge badge-info" style="font-size: 0.7rem; font-weight: 600;">Executive View</span>
                     </div>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0;">
-                        Rekapitulasi capaian dokter target, tingkat jangkauan (reach %), dan total detailing obat fokus di tiap distrik.
+                        Rekapitulasi capaian dokter target, tingkat jangkauan, dan kunjungan yang membahas produk prioritas.
                     </p>
                 </div>
                 <div class="table-responsive" style="border: none; border-radius: 0; box-shadow: none;">
@@ -254,8 +284,8 @@
                                 <th>Distrik</th>
                                 <th>Penanggung Jawab (DM)</th>
                                 <th style="text-align: right;">Target Dokter</th>
-                                <th>Terkunjungi (Reach %)</th>
-                                <th style="text-align: right;">Detailing Obat Fokus</th>
+                                <th>Dokter target dikunjungi</th>
+                                <th style="text-align: right;">Kunjungan dengan Produk Prioritas</th>
                             </tr>
                         </thead>
                         <tbody id="districtBreakdownTableBody"></tbody>
@@ -341,20 +371,9 @@
                     </div>
                 </div>
 
-                <!-- 3. Daftar Dokter Lega & Interaktif (Tampilan Halaman Bersih Tanpa Scrollbar Ganda) -->
+                <!-- 3. Daftar Dokter Lega & Interaktif (Scrollable Master List) -->
                 <div id="doctorPickerList" class="target-doctor-picker">
                     <span class="target-picker-loading">Memuat daftar dokter...</span>
-                </div>
-
-                <!-- Kontrol Navigasi Halaman Dokter -->
-                <div id="doctorPickerPagination" class="target-picker-pagination" style="display: none;">
-                    <button type="button" id="btnPickerPrevPage" class="btn btn-outline btn-sm" data-action="picker-prev-page">
-                        &larr; Sebelumnya
-                    </button>
-                    <span id="pickerPaginationInfo" class="target-picker-page-info">Halaman 1 dari 1</span>
-                    <button type="button" id="btnPickerNextPage" class="btn btn-outline btn-sm" data-action="picker-next-page">
-                        Berikutnya &rarr;
-                    </button>
                 </div>
             </div>
 
@@ -459,53 +478,56 @@
 
 <!-- ================= MODAL: BUAT PROGRAM REKOMENDASI (DM/RSM) ================= -->
 <div id="createCampaignModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card target-form-modal" style="max-width: 650px;">
+    <div class="modal-card target-form-modal" style="max-width: 680px;">
         <div class="modal-sheet-head">
             <div>
                 <h3 id="campaignModalHeading" class="modal-sheet-title">Program Rekomendasi</h3>
-                <span id="campaignModalSubheading" class="modal-sheet-subtitle">Tentukan arahan strategis obat fokus dan dokter target</span>
+                <span class="modal-sheet-subtitle" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <span><span id="campaignDistrictLabelPrefix">Distrik:</span> <strong id="campaignDistrictLabel" style="color: var(--primary);">-</strong></span>
+                    <span id="campaignModalSubheading" style="color: var(--text-muted);">Tentukan produk prioritas & dokter sasaran</span>
+                </span>
             </div>
             <button type="button" class="close-btn" data-action="close-create-campaign" aria-label="Tutup">&times;</button>
         </div>
 
         <form id="createCampaignForm" class="modal-sheet-form">
-            <div class="modal-sheet-body">
+            <div class="modal-sheet-body" style="background: #ffffff; padding: 1.25rem 1.35rem;">
                 <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
 
-                <!-- Section 1: Informasi & Lingkup Program -->
-                <div class="modal-section-card">
-                    <div id="campaignDistrictBadgeWrap" class="campaign-scope-banner">
-                        <span>Wilayah Cakupan Program:</span>
-                        <strong id="campaignDistrictLabel" style="color: var(--secondary); font-size: 0.85rem;">-</strong>
-                    </div>
-
-                    <div id="campaignGuidanceLockBanner" class="guidance-lock-banner" style="display: none;">
-                        <i class="bi bi-shield-lock-fill" style="font-size: 1rem; color: #0284c7; flex-shrink: 0; margin-top: 1px;"></i>
-                        <div>
-                            <strong>Terkunci Sesuai Arahan RSM:</strong>
-                            <span id="campaignGuidanceLockDesc">Durasi dan obat fokus promosi telah disesuaikan otomatis dengan arahan regional.</span>
-                        </div>
-                    </div>
-
+                <!-- Parameter Dasar Program -->
+                <div style="border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem;">
                     <!-- Pilihan Arahan RSM (Khusus DM) -->
                     <div id="campaignRsmGuidanceField" class="target-field" style="display: none; margin-bottom: 0.85rem;">
-                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Pilih Program Arahan dari RSM (Opsional):</label>
+                        <label for="campaignRsmGuidanceSelect" class="target-field-label" style="font-weight: 600; color: var(--secondary);">
+                            Dasar Arahan Regional dari RSM:
+                        </label>
                         <select id="campaignRsmGuidanceSelect" class="target-input">
                             <option value="">-- Buat Usulan Distrik Mandiri --</option>
                         </select>
                         <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
-                            Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
+                            Memilih arahan RSM akan otomatis menyelaraskan durasi dan produk prioritas.
                         </small>
+
+                        <!-- Banner Indikator Kunci Arahan RSM -->
+                        <div id="campaignGuidanceLockBanner" class="guidance-lock-banner" style="display: none; margin-top: 0.6rem; margin-bottom: 0;">
+                            <i class="bi bi-shield-lock-fill" style="font-size: 1.05rem; color: #0284c7; flex-shrink: 0; margin-top: 1px;"></i>
+                            <div>
+                                <strong style="color: #0369a1; font-size: 0.82rem; display: block;">Terkunci Sesuai Arahan RSM:</strong>
+                                <span id="campaignGuidanceLockDesc" style="font-size: 0.78rem; color: #075985;">Durasi dan produk prioritas telah disesuaikan otomatis dengan arahan regional.</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="target-field" style="margin-bottom: 0.85rem;">
-                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Judul Program Rekomendasi:</label>
+                        <label for="campaignTitleInput" class="target-field-label" style="font-weight: 600; color: var(--secondary);">
+                            Nama Program Rekomendasi:
+                        </label>
                         <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="target-field" style="margin: 0;">
-                            <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Durasi Waktu:</label>
+                            <label for="campaignDurationSelect" class="target-field-label" style="font-weight: 600; color: var(--secondary);">Durasi Waktu:</label>
                             <select id="campaignDurationSelect" class="target-input" required>
                                 <option value="1">1 Bulan</option>
                                 <option value="2">2 Bulan</option>
@@ -513,7 +535,7 @@
                             </select>
                         </div>
                         <div class="target-field" style="margin: 0;">
-                            <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Target Spesialisasi:</label>
+                            <label for="campaignSpecSelect" class="target-field-label" style="font-weight: 600; color: var(--secondary);">Target Spesialisasi:</label>
                             <select id="campaignSpecSelect" class="target-input">
                                 <option value="">-- Semua Spesialisasi --</option>
                             </select>
@@ -521,15 +543,15 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Fokus Produk Promosi -->
-                <div class="modal-section-card">
+                <!-- Produk Prioritas Promosi -->
+                <div style="border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
                         <div>
                             <label class="target-field-label" style="margin: 0; font-weight: 700; color: var(--secondary); font-size: 0.88rem;">
-                                Obat Fokus Promosi
+                                Produk Prioritas Promosi
                             </label>
                             <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">
-                                Pilih 1 hingga maksimal 5 obat untuk fokus detailing
+                                Pilih 1 hingga maksimal 5 produk yang diprioritaskan dalam kunjungan
                             </span>
                         </div>
                         <span class="badge badge-info" style="font-size: 0.75rem; font-weight: 600;">
@@ -544,12 +566,12 @@
                     </div>
                 </div>
 
-                <!-- Section 3: Target Dokter Distrik (Khusus DM) -->
-                <div id="campaignDoctorSection" class="modal-section-card" style="display: none;">
+                <!-- Target Dokter Distrik (Khusus DM) -->
+                <div id="campaignDoctorSection" style="display: none; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
                         <div>
                             <label class="target-field-label" style="margin: 0; font-weight: 700; color: var(--secondary); font-size: 0.88rem;">
-                                Target Dokter di Distrik
+                                Target Dokter Sasaran Distrik
                             </label>
                             <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">
                                 Pilih dokter sasaran rekomendasi di wilayah distrik Anda
@@ -579,11 +601,11 @@
                     </div>
                 </div>
 
-                <!-- Section 4: Catatan Strategis (Opsional) -->
-                <div class="modal-section-card" style="margin-bottom: 0;">
+                <!-- Catatan Tambahan -->
+                <div>
                     <div class="target-field" style="margin: 0;">
-                        <label class="target-field-label" style="font-weight: 600; color: var(--secondary);">Catatan Tambahan (Opsional):</label>
-                        <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing untuk MR..."></textarea>
+                        <label for="campaignNotesInput" class="target-field-label" style="font-weight: 600; color: var(--secondary);">Catatan Tambahan (Opsional):</label>
+                        <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan pembahasan produk untuk MR..."></textarea>
                     </div>
                 </div>
             </div>
@@ -610,7 +632,7 @@
         </div>
 
         <div class="modal-sheet-body">
-            <div id="unvisitedDoctorsListWrap" style="overflow-y: auto;">
+            <div id="unvisitedDoctorsListWrap" style="max-height: 320px; overflow-y: auto; overscroll-behavior: contain;">
                 <ul id="unvisitedDoctorsList" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; margin: 0;"></ul>
             </div>
         </div>
@@ -636,7 +658,7 @@
             <input type="hidden" id="rejectCampaignId" value="">
             <div class="modal-sheet-body">
                 <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">
-                    Berikan catatan alasan penolakan agar pembuat program dapat merevisi target atau fokus produk.
+                    Berikan catatan alasan penolakan agar pembuat program dapat merevisi target atau produk prioritas.
                 </p>
                 <div class="target-field">
                     <label class="target-field-label">Alasan Penolakan:</label>

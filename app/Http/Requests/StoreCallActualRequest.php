@@ -40,8 +40,8 @@ class StoreCallActualRequest extends FormRequest
             'check_in.regex' => 'Format jam check-in harus HH:MM atau HH:MM:SS.',
             'check_out.required' => 'Jam check-out wajib diisi.',
             'check_out.regex' => 'Format jam check-out harus HH:MM atau HH:MM:SS.',
-            'products.*.distinct' => 'Produk detailing tidak boleh duplikat.',
-            'products.*.exists' => 'Produk detailing tidak valid.',
+            'products.*.distinct' => 'Produk yang dibahas tidak boleh dipilih lebih dari sekali.',
+            'products.*.exists' => 'Produk yang dipilih tidak valid.',
         ];
     }
 }

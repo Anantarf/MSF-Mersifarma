@@ -42,7 +42,8 @@ class CallActualApiController extends Controller
             $request->filled('doctor_id') ? (int) $request->query('doctor_id') : null,
             $request->filled('mr_id') ? (int) $request->query('mr_id') : null,
             $request->query('month'),
-            $request->query('visit_type')
+            $request->query('visit_type'),
+            $request->query('district')
         );
 
         return response()->json([

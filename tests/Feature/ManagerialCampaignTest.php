@@ -82,6 +82,23 @@ class ManagerialCampaignTest extends TestCase
         ]);
     }
 
+    public function test_dm_campaign_district_is_taken_from_authenticated_user(): void
+    {
+        $products = Product::take(1)->pluck('id')->toArray();
+        $doctors = MasterCustomer::where('district', $this->dm->district)->take(1)->pluck('id')->toArray();
+        $this->assertNotEmpty($doctors);
+
+        $response = $this->actingAs($this->dm)->postJson('/api/managerial-campaigns', [
+            'title' => 'Program dengan distrik yang dimanipulasi',
+            'district_name' => 'Regional',
+            'duration_months' => 1,
+            'product_ids' => $products,
+            'doctor_ids' => $doctors,
+        ]);
+
+        $response->assertCreated()->assertJsonPath('data.district_name', $this->dm->district);
+    }
+
     public function test_mr_cannot_create_managerial_campaign(): void
     {
         $response = $this->actingAs($this->mr)->postJson('/api/managerial-campaigns', [
@@ -206,7 +223,7 @@ class ManagerialCampaignTest extends TestCase
         ]);
     }
 
-    public function test_campaign_progress_calculates_reach_and_detailing(): void
+    public function test_campaign_progress_counts_each_priority_product_visit_once(): void
     {
         $products = Product::take(2)->get();
         $doctors = MasterCustomer::take(3)->get();
@@ -224,7 +241,7 @@ class ManagerialCampaignTest extends TestCase
         $campaign->products()->sync($products->pluck('id')->toArray());
         $campaign->doctors()->sync($doctors->pluck('id')->toArray());
 
-        // Simulasikan 1 kunjungan aktual ke dokter pertama dengan produk fokus
+        // Simulasikan satu kunjungan yang membahas dua produk prioritas.
         $actual = CallActual::create([
             'mr_id' => $this->mr->id,
             'doctor_id' => $doctors[0]->id,
@@ -238,6 +255,10 @@ class ManagerialCampaignTest extends TestCase
         CallActualProduct::create([
             'call_actual_id' => $actual->id,
             'product_id' => $products[0]->id,
+        ]);
+        CallActualProduct::create([
+            'call_actual_id' => $actual->id,
+            'product_id' => $products[1]->id,
         ]);
 
         $response = $this->actingAs($this->dm)->getJson("/api/managerial-campaigns/{$campaign->id}");
@@ -387,5 +408,157 @@ class ManagerialCampaignTest extends TestCase
         $response->assertStatus(200);
         $campaignIds = collect($response->json('data'))->pluck('id')->toArray();
         $this->assertContains($campaignId = $campaign->id, $campaignIds);
+    }
+
+    public function test_mr_only_sees_active_campaigns_in_district_or_from_its_rsm(): void
+    {
+        $dm = $this->mr->manager;
+        $dm->manager_id = $this->rsm->id;
+        $dm->save();
+
+        $campaigns = collect([
+            ['title' => 'Kampanye Distrik', 'district_name' => $this->mr->district, 'created_by' => $this->dm->id],
+            ['title' => 'Arahan Regional Atasan', 'district_name' => 'Regional', 'created_by' => $this->rsm->id],
+            ['title' => 'Arahan Regional Lain', 'district_name' => 'Regional', 'created_by' => $this->dm2->id],
+            ['title' => 'Kampanye Distrik Lain', 'district_name' => 'Surabaya', 'created_by' => $this->dm2->id],
+        ])->map(function (array $data) {
+            return ManagerialCampaign::create($data + [
+                'duration_months' => 1,
+                'start_date' => now()->subDay()->toDateString(),
+                'end_date' => now()->addMonth()->toDateString(),
+                'status' => 'approved',
+                'approved_by' => $this->rsm->id,
+            ]);
+        });
+
+        $response = $this->actingAs($this->mr)->getJson('/api/managerial-campaigns');
+
+        $response->assertOk();
+        $visibleIds = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($campaigns[0]->id, $visibleIds);
+        $this->assertContains($campaigns[1]->id, $visibleIds);
+        $this->assertNotContains($campaigns[2]->id, $visibleIds);
+        $this->assertNotContains($campaigns[3]->id, $visibleIds);
+    }
+
+    public function test_mr_without_district_receives_no_campaign_data(): void
+    {
+        $campaign = ManagerialCampaign::create([
+            'title' => 'Kampanye Distrik Terbatas',
+            'district_name' => $this->dm->district,
+            'duration_months' => 1,
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $this->dm->id,
+        ]);
+        $campaign->products()->sync(Product::take(1)->pluck('id'));
+
+        $mrWithoutDistrict = User::factory()->create([
+            'role' => 'mr',
+            'district' => null,
+            'manager_id' => $this->dm->id,
+        ]);
+
+        $response = $this->actingAs($mrWithoutDistrict)->getJson('/api/managerial-campaigns');
+
+        $response->assertOk()->assertJsonPath('data', []);
+    }
+
+    public function test_user_cannot_view_campaign_detail_outside_scope(): void
+    {
+        $products = Product::take(1)->pluck('id')->toArray();
+
+        // Kampanye milik DM di Jakarta Selatan
+        $campaign = ManagerialCampaign::create([
+            'title' => 'Program Khusus Jaksel',
+            'district_name' => 'Jakarta Selatan',
+            'duration_months' => 1,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->endOfMonth()->toDateString(),
+            'status' => 'pending_approval',
+            'created_by' => $this->dm->id,
+        ]);
+        $campaign->products()->sync($products);
+
+        // User MR dari distrik lain atau role lain yang tidak terkait
+        $otherMr = User::where('role', 'mr')->where('district', '!=', 'Jakarta Selatan')->first();
+        if (! $otherMr) {
+            $otherMr = User::factory()->create([
+                'name' => 'MR Surabaya',
+                'email' => 'mr_sby_test@mersi.com',
+                'role' => 'mr',
+                'district' => 'Surabaya',
+                'manager_id' => $this->dm2->id,
+            ]);
+        }
+
+        // MR luar distrik tidak boleh melihat detail
+        $unauthorizedRes = $this->actingAs($otherMr)->getJson("/api/managerial-campaigns/{$campaign->id}");
+        $unauthorizedRes->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'FORBIDDEN',
+            ]);
+
+        // Pemilik kampanye (DM) berhak melihat
+        $authorizedRes = $this->actingAs($this->dm)->getJson("/api/managerial-campaigns/{$campaign->id}");
+        $authorizedRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'campaign_id' => $campaign->id,
+                ],
+            ]);
+    }
+
+    public function test_mr_cannot_request_doctor_recommendations_outside_assigned_district(): void
+    {
+        // MR Jakarta Selatan mencoba meminta rekomendasi Surabaya
+        $response = $this->actingAs($this->mr)->getJson('/api/managerial-campaigns/recommendations?district=Surabaya');
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'CROSS_DISTRICT_FORBIDDEN',
+            ]);
+
+        // Permintaan tanpa query atau sesuai distrik MR berhasil
+        $validResponse = $this->actingAs($this->mr)->getJson('/api/managerial-campaigns/recommendations');
+        $validResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+    }
+
+    public function test_dm_cannot_see_regional_campaign_from_unrelated_rsm(): void
+    {
+        $products = Product::take(1)->pluck('id')->toArray();
+
+        // Buat RSM lain yang bukan atasan langsung dari $this->dm
+        $otherRsm = User::factory()->create([
+            'name' => 'RSM Jawa Barat',
+            'email' => 'rsm_jabar_test@mersi.com',
+            'role' => 'rsm',
+            'district' => 'Regional Jabar',
+        ]);
+
+        $unrelatedCampaign = ManagerialCampaign::create([
+            'title' => 'Arahan Regional Jabar',
+            'district_name' => 'Regional',
+            'duration_months' => 2,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->addMonths(1)->endOfMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $otherRsm->id,
+            'approved_by' => $otherRsm->id,
+        ]);
+        $unrelatedCampaign->products()->sync($products);
+
+        $response = $this->actingAs($this->dm)->getJson('/api/managerial-campaigns');
+        $response->assertStatus(200);
+
+        $campaignIds = collect($response->json('data'))->pluck('id')->toArray();
+        $this->assertNotContains($unrelatedCampaign->id, $campaignIds);
     }
 }

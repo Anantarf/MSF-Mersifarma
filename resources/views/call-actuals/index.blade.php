@@ -9,7 +9,8 @@
         <div>
             <h1 class="actual-page-title">Pelaksanaan Kunjungan</h1>
             @if(auth()->user()->role === 'mr')
-            <p class="actual-page-subtitle" id="actualTodayLabel"><strong>Call Actual</strong> : Catatan kunjungan dokter dan pelaporan bukti lapangan.</p>
+            <p class="actual-page-subtitle"><strong>Call Actual</strong> : Catatan kunjungan dokter dan pelaporan bukti lapangan.</p>
+            <p class="actual-page-subtitle" id="actualTodayLabel"></p>
             @else
             <p class="actual-page-subtitle"><strong>Call Actual</strong> : Rekapitulasi pelaksanaan kunjungan dan audit bukti tim.</p>
             @endif
@@ -27,10 +28,10 @@
         </div>
         <h3 id="activeSessionDoctorName" class="ca-card-title">-</h3>
         <p id="activeSessionDoctorDetail" class="ca-card-sub">-</p>
-        <p class="ca-session-time">
-            <span class="text-muted">Check-in server</span> <strong id="activeSessionCheckInTime" class="tabular-nums">-</strong>
+        <p class="ca-session-time" style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+            <span><span class="text-muted">Check-in server:</span> <strong id="activeSessionCheckInTime" class="tabular-nums">-</strong></span>
             <span id="activeSessionCheckOutWrap" style="display: none;">
-                <span class="text-muted">&middot; Check-out server</span> <strong id="activeSessionCheckOutTime" class="tabular-nums">-</strong>
+                <span><span class="text-muted">Check-out server:</span> <strong id="activeSessionCheckOutTime" class="tabular-nums">-</strong></span>
             </span>
         </p>
         <div class="ca-actions">
@@ -57,7 +58,6 @@
             <div class="empty-state-icon" aria-hidden="true"><i class="bi bi-calendar2-check"></i></div>
             <h4>Belum ada jadwal hari ini</h4>
             <p>Mulai dari jadwal bila ada. Jika dokter meminta kunjungan mendadak, catat sebagai kunjungan di luar rencana.</p>
-            <button type="button" class="ca-btn ca-btn-primary ca-empty-action" data-action="open-unplanned-actual">Catat Kunjungan</button>
         </div>
         <button type="button" class="ca-add-visit" data-action="open-unplanned-actual">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
@@ -84,7 +84,7 @@
         <div id="actualsEmpty" class="empty-state" style="display: none;">
             <div class="empty-state-icon" aria-hidden="true"><i class="bi bi-journal-check"></i></div>
             <h4>Belum ada laporan tersimpan</h4>
-            <p>Laporan yang selesai akan muncul di sini setelah bukti kunjungan, verifikasi dokter, dan produk detailing disimpan.</p>
+            <p>Laporan yang selesai akan muncul di sini setelah bukti kunjungan, verifikasi dokter, dan produk yang dibahas disimpan.</p>
         </div>
     </section>
 
@@ -92,6 +92,7 @@
 
     <div class="filter-bar">
         <div class="filter-controls">
+            @if(auth()->user()->role === 'dm')
             <div class="filter-field">
                 <label for="filterManagerMr">MR:</label>
                 <select id="filterManagerMr">
@@ -101,6 +102,22 @@
                     @endforeach
                 </select>
             </div>
+            @elseif(in_array(auth()->user()->role, ['rsm', 'mm']))
+            <div class="filter-field">
+                <label for="filterManagerDistrict">Distrik:</label>
+                <select id="filterManagerDistrict">
+                    <option value="">Semua Distrik</option>
+                    @php
+                        $availableDistricts = auth()->user()->role === 'rsm'
+                            ? \App\Models\User::where('manager_id', auth()->id())->whereNotNull('district')->pluck('district')->unique()
+                            : \App\Models\User::whereNotNull('district')->pluck('district')->unique();
+                    @endphp
+                    @foreach($availableDistricts as $dName)
+                        <option value="{{ $dName }}">{{ $dName }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
 
             <div class="filter-field">
                 <label for="filterManagerMonth">Periode:</label>
@@ -165,8 +182,19 @@
 
     <section class="actual-section">
         <div>
+            @if(auth()->user()->role === 'dm')
+            <h2 class="section-title">Kunjungan Tim Distrik</h2>
+            <p class="section-note">Laporan kunjungan dari MR bawahan di distrik ini.</p>
+            @elseif(auth()->user()->role === 'rsm')
+            <h2 class="section-title">Kunjungan Wilayah Regional</h2>
+            <p class="section-note">Rekapitulasi pelaksanaan kunjungan lapangan lintas distrik di region.</p>
+            @elseif(auth()->user()->role === 'mm')
+            <h2 class="section-title">Kunjungan Skala Nasional</h2>
+            <p class="section-note">Rekapitulasi pelaksanaan kunjungan lapangan seluruh wilayah.</p>
+            @else
             <h2 class="section-title">Kunjungan Tim</h2>
             <p class="section-note">Laporan kunjungan dari MR bawahan.</p>
+            @endif
         </div>
 
         <div id="actualsLoading" class="loading-slot"></div>
@@ -179,7 +207,7 @@
                         <th>MR</th>
                         <th>Target Dokter &amp; Faskes</th>
                         <th>Kategori Kunjungan</th>
-                        <th>Detailing Produk</th>
+                        <th>Produk yang Dibahas</th>
                         <th class="ca-table-action-head">Bukti</th>
                     </tr>
                 </thead>
@@ -243,7 +271,7 @@
                     </div>
 
                     <div id="sessionTimeBox" class="ca-readbox" style="display: none;">
-                        <span class="ca-readbox-cap">Tanggal &amp; waktu dari server &middot; hanya baca</span>
+                        <span class="ca-readbox-cap">Tanggal &amp; waktu server (hanya baca)</span>
                         <strong id="sessionTimeText">-</strong>
                         <p>Waktu berasal dari Visit Session server dan tidak dapat diubah.</p>
                     </div>
@@ -342,7 +370,7 @@
 
                     <div class="ca-split"></div>
 
-                    <h4 class="ca-step-title">Detailing Produk <span class="ca-req" aria-hidden="true">*</span></h4>
+                    <h4 class="ca-step-title">Produk yang Dibahas <span class="ca-req" aria-hidden="true">*</span></h4>
                     <p class="ca-helper">Pilih setidaknya satu produk yang dijelaskan selama kunjungan.</p>
                     <div class="ca-search">
                         <i class="bi bi-search" aria-hidden="true"></i>
@@ -402,7 +430,7 @@
                         Alasan Pembatalan
                     </label>
                     <textarea id="cancelSessionReasonInput" required minlength="3" rows="3" class="ca-input ca-textarea"
-                              placeholder="Contoh: Dokter dipanggil operasi darurat sebelum detailing obat"></textarea>
+                              placeholder="Contoh: Dokter dipanggil menangani tindakan darurat"></textarea>
                 </div>
             </div>
 

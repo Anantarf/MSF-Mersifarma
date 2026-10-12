@@ -597,6 +597,30 @@ class CallPlanTest extends TestCase
         $this->assertNotNull($fresh->rescheduled_at);
     }
 
+    public function test_reschedule_rejects_invalid_time_without_changing_plan(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'planned_time' => '99:75',
+                'reason' => 'Dokter meminta penyesuaian jadwal kunjungan',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('planned_time');
+
+        $this->assertSame('2026-11-10', Carbon::parse($plan->fresh()->plan_date)->toDateString());
+        $this->assertSame('09:00:00', $plan->fresh()->planned_time);
+    }
+
     public function test_reschedule_rejects_date_outside_call_list_month(): void
     {
         $plan = CallPlan::create([

@@ -416,6 +416,31 @@ class CallActualTest extends TestCase
         $mrAttempt->assertStatus(403);
     }
 
+    public function test_manager_can_filter_actuals_by_district(): void
+    {
+        // 1. Catat actual untuk MR di Jakarta Selatan
+        $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-19',
+            'check_in' => '08:00',
+            'check_out' => '08:30',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/sig.png',
+            'products' => [1],
+        ])->assertStatus(201);
+
+        // 2. RSM filter distrik yang sesuai (Jakarta Selatan) -> dapat 1
+        $rsm = User::where('email', 'rsm@mersi.com')->firstOrFail();
+        $responseMatch = $this->actingAs($rsm)->getJson('/api/call-actuals?district=Jakarta Selatan&date=2026-11-19');
+        $responseMatch->assertStatus(200)
+            ->assertJsonCount(1, 'data');
+
+        // 3. RSM filter distrik lain (Jakarta Timur) -> dapat 0
+        $responseOther = $this->actingAs($rsm)->getJson('/api/call-actuals?district=Jakarta Timur&date=2026-11-19');
+        $responseOther->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_planned_actual_rejects_visit_date_different_from_plan_date_with_reschedule_required(): void
     {
         $plan = CallPlan::create([

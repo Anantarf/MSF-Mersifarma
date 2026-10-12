@@ -78,6 +78,17 @@
             </p>
             @endif
         </div>
+
+        <div id="errorPlans" class="plan-empty" style="display: none; border-color: #fecaca; background: #fff5f5;">
+            <div style="font-size: 2rem; color: #dc2626; margin-bottom: 0.5rem;">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h4 style="color: #dc2626;">Gagal Memuat Jadwal Kunjungan</h4>
+            <p id="errorPlansText" style="color: #64748b; margin-bottom: 1.25rem;">Terjadi gangguan saat mengambil data jadwal dari server.</p>
+            <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-plans" style="color: #dc2626; border-color: #dc2626;">
+                <i class="bi bi-arrow-clockwise"></i> Coba Muat Ulang
+            </button>
+        </div>
     </div>
 </div>
 
