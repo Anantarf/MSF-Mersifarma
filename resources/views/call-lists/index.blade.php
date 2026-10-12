@@ -236,20 +236,31 @@
         <!-- Executive Summary Section (Khusus RSM & MM) -->
         <div id="executiveSummarySection" style="display: none; margin-bottom: 1.25rem;">
             <div id="executiveMetricGrid" class="metric-strip-grid"></div>
-            <div id="districtBreakdownWrap" class="target-card" style="padding: 1rem; overflow-x: auto;">
-                <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--secondary);">Ringkasan Performa Antar-Distrik</h4>
-                <table class="target-table">
-                    <thead>
-                        <tr>
-                            <th>Distrik</th>
-                            <th>Penanggung Jawab (DM)</th>
-                            <th>Target Dokter</th>
-                            <th>Terkunjungi (Reach %)</th>
-                            <th>Detailing Obat Fokus</th>
-                        </tr>
-                    </thead>
-                    <tbody id="districtBreakdownTableBody"></tbody>
-                </table>
+            <div id="districtBreakdownWrap" class="target-card" style="margin-top: 1rem;">
+                <div class="target-card-subhead">
+                    <div class="target-title-with-badge">
+                        <i class="bi bi-bar-chart-line-fill" style="color: var(--primary); font-size: 1rem;"></i>
+                        <h4 class="target-section-title">Ringkasan Performa Antar-Distrik</h4>
+                        <span class="badge badge-info" style="font-size: 0.7rem; font-weight: 600;">Executive View</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0;">
+                        Rekapitulasi capaian dokter target, tingkat jangkauan (reach %), dan total detailing obat fokus di tiap distrik.
+                    </p>
+                </div>
+                <div class="table-responsive" style="border: none; border-radius: 0; box-shadow: none;">
+                    <table class="enterprise-table">
+                        <thead>
+                            <tr>
+                                <th>Distrik</th>
+                                <th>Penanggung Jawab (DM)</th>
+                                <th style="text-align: right;">Target Dokter</th>
+                                <th>Terkunjungi (Reach %)</th>
+                                <th style="text-align: right;">Detailing Obat Fokus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="districtBreakdownTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

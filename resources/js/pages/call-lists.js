@@ -1227,22 +1227,54 @@ async function loadExecutiveSummary() {
             `;
 
             if (sum.district_breakdown && sum.district_breakdown.length) {
-                tableBody.innerHTML = sum.district_breakdown.map(d => `
+                tableBody.innerHTML = sum.district_breakdown.map(d => {
+                    const reachPct = Number(d.reach_percentage) || 0;
+                    const badgeClass = reachPct >= 80 ? 'badge-success' : (reachPct >= 50 ? 'badge-info' : 'badge-warning');
+                    const fillBg = reachPct >= 80 ? 'background: linear-gradient(90deg, #16a34a, #22c55e);' : '';
+
+                    return `
+                        <tr>
+                            <td>
+                                <div style="font-weight: 700; color: var(--secondary); font-size: 0.9rem;">${escapeHtml(d.district_name)}</div>
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">${escapeHtml(d.dm_name)}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">District Manager</div>
+                            </td>
+                            <td style="text-align: right;">
+                                <span class="tabular-nums font-bold" style="font-size: 0.9rem; color: var(--secondary);">${d.total_doctors}</span>
+                                <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: 2px;">Dokter</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                    <strong style="color: var(--secondary); font-size: 0.82rem;">${d.visited_doctors_count}/${d.total_doctors}</strong>
+                                    <span class="badge ${badgeClass}" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">
+                                        ${reachPct}%
+                                    </span>
+                                </div>
+                                <div class="progress-bar-container" style="height: 6px;">
+                                    <div class="progress-bar-fill" style="width: ${reachPct}%; ${fillBg}"></div>
+                                </div>
+                            </td>
+                            <td style="text-align: right;">
+                                <span class="tabular-nums font-bold" style="font-size: 0.92rem; color: var(--success);">${d.focus_detailing_count}x</span>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">diskusi detailing</div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tableBody.innerHTML = `
                     <tr>
-                        <td><strong>${escapeHtml(d.district_name)}</strong></td>
-                        <td>${escapeHtml(d.dm_name)}</td>
-                        <td><span class="tabular-nums">${d.total_doctors}</span> Dokter</td>
-                        <td>
-                            <strong>${d.visited_doctors_count}/${d.total_doctors} (${d.reach_percentage}%)</strong>
-                            <div class="progress-bar-container" style="height: 5px; margin-top: 3px; max-width: 100px;">
-                                <div class="progress-bar-fill" style="width: ${d.reach_percentage}%;"></div>
+                        <td colspan="5" style="text-align: center; padding: 2.75rem 1.5rem; background: #fafcff;">
+                            <i class="bi bi-inbox" style="font-size: 2.25rem; color: #94a3b8; display: block; margin-bottom: 0.65rem;"></i>
+                            <div style="font-weight: 700; color: var(--secondary); font-size: 0.95rem; margin-bottom: 0.35rem;">Belum Ada Program Distrik yang Disetujui</div>
+                            <div style="font-size: 0.825rem; color: var(--text-muted); max-width: 460px; margin: 0 auto; line-height: 1.5;">
+                                Data capaian reach dan detailing obat fokus antar-distrik akan terakumulasi secara otomatis setelah program rekomendasi distrik berstatus disetujui.
                             </div>
                         </td>
-                        <td><span class="tabular-nums font-bold">${d.focus_detailing_count}x</span> didiskusikan</td>
                     </tr>
-                `).join('');
-            } else {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Belum ada program distrik yang disetujui.</td></tr>';
+                `;
             }
         }
     } catch (e) {
