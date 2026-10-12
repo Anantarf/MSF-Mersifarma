@@ -53,9 +53,11 @@
         </div>
         <div id="todayPlansLoading" class="loading-slot"></div>
         <div id="todayPlansList" class="ca-card-list" style="display: none;"></div>
-        <div id="todayPlansEmpty" class="empty-state" style="display: none;">
+        <div id="todayPlansEmpty" class="empty-state empty-state-actionable" style="display: none;">
+            <div class="empty-state-icon" aria-hidden="true"><i class="bi bi-calendar2-check"></i></div>
             <h4>Belum ada jadwal hari ini</h4>
-            <p>Anda tetap bisa mencatat kunjungan dokter yang terdaftar di Master Customer List.</p>
+            <p>Mulai dari jadwal bila ada. Jika dokter meminta kunjungan mendadak, catat sebagai kunjungan di luar rencana.</p>
+            <button type="button" class="ca-btn ca-btn-primary ca-empty-action" data-action="open-unplanned-actual">Catat Kunjungan</button>
         </div>
         <button type="button" class="ca-add-visit" data-action="open-unplanned-actual">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
@@ -80,8 +82,9 @@
         <div id="actualsLoading" class="loading-slot"></div>
         <div id="actualsList" class="ca-card-list" style="display: none;"></div>
         <div id="actualsEmpty" class="empty-state" style="display: none;">
-            <h4>Belum ada riwayat</h4>
-            <p>Laporan yang selesai akan muncul di sini.</p>
+            <div class="empty-state-icon" aria-hidden="true"><i class="bi bi-journal-check"></i></div>
+            <h4>Belum ada laporan tersimpan</h4>
+            <p>Laporan yang selesai akan muncul di sini setelah bukti kunjungan, verifikasi dokter, dan produk detailing disimpan.</p>
         </div>
     </section>
 
@@ -222,13 +225,19 @@
             <div class="ca-sheet-body">
                 <div id="actualModalError" class="ca-alert-error" role="alert" style="display: none;"></div>
 
-                <div id="stepSection1">
+                <div id="stepSection1" class="ca-step-panel">
                     <h4 class="ca-step-title">Informasi Kunjungan</h4>
-                    <p class="ca-helper" id="stepOneHelper">Periksa dokter serta waktu kunjungan sebelum melengkapi laporan.</p>
+                    <p class="ca-helper" id="stepOneHelper">Pilih dokter, tanggal, dan waktu kunjungan. Validasi final tetap dilakukan server saat laporan disimpan.</p>
 
                     <div class="ca-field">
                         <label for="actualDoctorSelect" class="ca-label">Dokter <span class="ca-req" aria-hidden="true">*</span></label>
                         <select id="actualDoctorSelect" class="ca-input" required></select>
+                        <div id="unplannedScopeWrap" class="ca-scope-toggle" style="display: none; margin-top: 0.5rem;">
+                            <label class="ca-checkbox-inline" style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="chkAllMclScope" value="1">
+                                <span>Cari di seluruh Master Customer List (lintas distrik)</span>
+                            </label>
+                        </div>
                         <p class="ca-field-note" id="doctorLockNote" style="display: none;"></p>
                         <p class="ca-field-error" data-error-for="doctor" role="alert"></p>
                     </div>
@@ -276,15 +285,15 @@
                     </button>
                 </div>
 
-                <div id="stepSection2" style="display: none;">
+                <div id="stepSection2" class="ca-step-panel" style="display: none;">
                     <h4 class="ca-step-title">Bukti Kunjungan</h4>
-                    <p class="ca-helper">Lengkapi foto, tanda tangan dokter, dan produk yang benar-benar didetailkan.</p>
+                    <p class="ca-helper">Lengkapi bukti minimum sebelum lanjut: foto kunjungan, verifikasi dokter, dan minimal satu produk.</p>
 
                     <div class="ca-evidence">
                         <div class="ca-evidence-head">
                             <span class="ca-evidence-icon"><i class="bi bi-camera" aria-hidden="true"></i></span>
                             <div class="ca-evidence-meta">
-                                <b>Foto kunjungan <span class="ca-req" aria-hidden="true">*</span></b>
+                                <b>Foto kunjungan <span class="ca-req" aria-hidden="true">*</span></b><em class="ca-required-chip">Wajib</em>
                                 <span id="photoStatusText">Belum ada foto</span>
                             </div>
                             <label class="ca-btn ca-btn-soft ca-btn-sm" for="photoFileInput" id="photoPickLabel">Pilih Foto</label>
@@ -302,7 +311,7 @@
                         <div class="ca-evidence-head">
                             <span class="ca-evidence-icon"><i class="bi bi-pencil-square" aria-hidden="true"></i></span>
                             <div class="ca-evidence-meta">
-                                <b>Verifikasi dokter <span class="ca-req" aria-hidden="true">*</span></b>
+                                <b>Verifikasi dokter <span class="ca-req" aria-hidden="true">*</span></b><em class="ca-required-chip">Wajib</em>
                                 <span><span id="sigBadgeRecorded" style="display: none;">Tanda tangan tersimpan</span><span id="sigStatusText">Belum ada tanda tangan</span></span>
                             </div>
                         </div>
@@ -344,9 +353,9 @@
                     <p class="ca-field-error" data-error-for="products" role="alert"></p>
                 </div>
 
-                <div id="stepSection3" style="display: none;">
+                <div id="stepSection3" class="ca-step-panel" style="display: none;">
                     <h4 class="ca-step-title">Konfirmasi Laporan</h4>
-                    <p class="ca-helper">Tinjau kembali informasi sebelum menyimpan laporan.</p>
+                    <p class="ca-helper">Pastikan data sudah sesuai. Setelah disimpan, laporan menjadi kunjungan final.</p>
                     <div id="actualSummary" class="ca-summary"></div>
                     <p class="ca-field-note" style="text-align: center; margin: 0.5rem 0 0;">Data kunjungan akan divalidasi dan dicatat ke sistem.</p>
                 </div>

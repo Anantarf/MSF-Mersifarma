@@ -8,6 +8,8 @@ let isFilterOnlySelected = false;
 let pickerCurrentPage = 1;
 let pendingConfirmResolve = null;
 const PICKER_PAGE_SIZE = 4;
+const escapeHtml = window.MSF.escapeHtml;
+const formatPeriodIndonesian = window.MSF.formatPeriodIndonesian;
 
 document.addEventListener('DOMContentLoaded', () => {
         bindCallListEvents();
@@ -182,15 +184,6 @@ async function loadDoctors() {
         }
     }
 
-function escapeHtml(str) {
-        return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
 async function loadMyCallLists() {
         const loadingEl = document.getElementById('loadingMyLists');
         if (loadingEl) {
@@ -212,19 +205,6 @@ async function loadMyCallLists() {
             if (loadingEl) loadingEl.style.display = 'none';
             console.error(err);
         }
-    }
-
-function formatPeriodIndonesian(periodStr) {
-        if (!periodStr) return '-';
-        const parts = String(periodStr).split('-');
-        if (parts.length !== 2) return periodStr;
-        const year = parts[0];
-        const monthNum = parseInt(parts[1], 10);
-        const monthNames = [
-            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-        ];
-        return `${monthNames[monthNum - 1] || parts[1]} ${year}`;
     }
 
 function renderMyListsView() {
@@ -287,7 +267,7 @@ function renderMyListsView() {
                 if (quickAddWrap) {
                     quickAddWrap.innerHTML = `
                         <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
-                            + Kelola Dokter Sasaran
+                            + Kelola Target Dokter
                         </button>
                     `;
                 }
@@ -301,7 +281,7 @@ function renderMyListsView() {
                 if (quickAddWrap) {
                     quickAddWrap.innerHTML = `
                         <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
-                            + Kelola Dokter Sasaran
+                            + Kelola Target Dokter
                         </button>
                     `;
                 }
@@ -310,7 +290,7 @@ function renderMyListsView() {
             badgeEl.innerHTML = badgeHtml;
             btnsEl.innerHTML = btnsHtml;
 
-            // Render Daftar Dokter Sasaran pada Kartu
+            // Render Daftar Target Dokter pada Kartu
             const docs = activeList.doctors || [];
             if (doctorsTableBody) {
                 if (docs.length === 0) {
@@ -318,7 +298,7 @@ function renderMyListsView() {
                         <tr>
                             <td colspan="4" class="target-empty-cell">
                                 Belum ada dokter yang ditargetkan untuk periode ini.
-                                ${activeList.status === 'draft' ? `<div class="target-row-action-space"><button type="button" class="btn btn-primary btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">+ Pilih Dokter Sasaran</button></div>` : ''}
+                                ${activeList.status === 'draft' ? `<div class="target-row-action-space"><button type="button" class="btn btn-primary btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">+ Pilih Target Dokter</button></div>` : ''}
                             </td>
                         </tr>
                     `;
@@ -393,7 +373,7 @@ function renderMyListsView() {
     async function openCreateModal() {
         document.getElementById('editingCallListId').value = '';
         document.getElementById('targetModalTitle').innerText = 'Susun Target Dokter Baru';
-        document.getElementById('targetModalSubtitle').innerText = 'Pilih dokter sasaran dari Master Customer List';
+        document.getElementById('targetModalSubtitle').innerText = 'Pilih target dokter dari Master Customer List';
 
         const periodInput = document.getElementById('periodMonthInput');
         if (periodInput) periodInput.disabled = false;
@@ -430,7 +410,7 @@ function renderMyListsView() {
     async function openEditModal(callListId) {
         document.getElementById('editingCallListId').value = callListId;
         document.getElementById('targetModalTitle').innerText = 'Ubah Target Dokter';
-        document.getElementById('targetModalSubtitle').innerText = 'Perbarui daftar dokter sasaran untuk periode ini';
+        document.getElementById('targetModalSubtitle').innerText = 'Perbarui daftar target dokter untuk periode ini';
 
         const errEl = document.getElementById('targetModalError');
         if (errEl) errEl.style.display = 'none';
@@ -719,14 +699,28 @@ async function openDetailModal(id) {
                 const statusLabel = cl.status === 'pending_approval' ? 'Menunggu Persetujuan' : (cl.status === 'approved' ? 'Disetujui' : 'Draft');
                 const doctorCount = cl.doctors.length;
 
+                const defaultReasons = [
+                    'Draft Call List dibuat',
+                    'Pengajuan Call List ke atasan',
+                    'Pengajuan ulang setelah revisi draft',
+                    'Disetujui'
+                ];
                 const historyHtml = cl.approval_history.length
-                    ? cl.approval_history.map(h => `
-                        <div class="target-detail-history-row">
-                            <strong>${escapeHtml(formatApprovalEvent(h.event))}</strong>
-                            <span>oleh ${escapeHtml(h.actor_name || 'Sistem')} pada ${window.formatDateTimeIndonesia ? window.formatDateTimeIndonesia(h.created_at) : h.created_at}</span>
-                            ${h.reason ? `<div>${escapeHtml(h.reason)}</div>` : ''}
-                        </div>
-                    `).join('')
+                    ? cl.approval_history.map(h => {
+                        const eventTitle = formatApprovalEvent(h.event);
+                        const actor = h.actor_name || 'Sistem';
+                        const timeStr = window.formatDateTimeIndonesia ? window.formatDateTimeIndonesia(h.created_at) : h.created_at;
+                        const isRedundantReason = !h.reason || defaultReasons.includes(h.reason.trim());
+
+                        return `
+                            <div class="target-detail-history-row">
+                                <div class="target-history-main">
+                                    <strong>${escapeHtml(eventTitle)}</strong> &middot; <span>${escapeHtml(actor)}</span> &middot; <span class="tabular-nums">${escapeHtml(timeStr)}</span>
+                                </div>
+                                ${!isRedundantReason ? `<div class="target-history-note">Catatan: "${escapeHtml(h.reason)}"</div>` : ''}
+                            </div>
+                        `;
+                    }).join('')
                     : '<div class="target-detail-history-row">Belum ada riwayat.</div>';
 
                 const html = `
@@ -737,11 +731,11 @@ async function openDetailModal(id) {
                         </div>
                         <div>
                             Peninjau
-                            <strong>${escapeHtml(cl.assigned_approver ? cl.assigned_approver.name : '-')}</strong>
+                            <strong>${escapeHtml(cl.assigned_approver_name || (cl.assigned_approver && cl.assigned_approver.name) || '-')}</strong>
                         </div>
                         <div>
                             Pengaju
-                            <strong>${escapeHtml(cl.owner ? cl.owner.name : '-')}</strong>
+                            <strong>${escapeHtml(cl.owner_name || (cl.owner && cl.owner.name) || '-')}</strong>
                         </div>
                         <div>
                             Jumlah dokter

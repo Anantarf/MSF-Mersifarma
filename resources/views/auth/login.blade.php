@@ -15,6 +15,9 @@
     if ($errors->any()) {
         $initialMessage = $errors->first();
         $toastType = 'error';
+    } elseif (request('expired') === 'session') {
+        $initialMessage = 'Sesi sudah kedaluwarsa. Silakan masuk kembali.';
+        $toastType = 'error';
     } elseif (session('error')) {
         $initialMessage = session('error');
         $toastType = 'error';
@@ -67,7 +70,7 @@
             <div class="password-input-wrap">
                 <input id="password" type="password" name="password" required autocomplete="current-password"
                        class="input-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                       placeholder="••••••••">
+                       placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
                 <button type="button" id="togglePasswordBtn" class="password-toggle-btn" data-action="toggle-password" aria-label="Tampilkan atau sembunyikan kata sandi" title="Tampilkan kata sandi">
                     <i id="passwordEyeIcon" class="bi bi-eye password-eye-icon"></i>
                 </button>
@@ -117,7 +120,7 @@
             </button>
             <button type="button" class="btn btn-outline demo-btn" data-account="dm@mersi.com" data-password="password">
                 <div class="demo-btn-info">
-                    <strong class="demo-btn-name">Wisnu Santhika</strong>
+                    <strong class="demo-btn-name">Joko Widodo</strong>
                     <span class="demo-btn-subtitle">District Manager Jakarta Selatan</span>
                 </div>
                 <span class="role-pill role-dm">DM</span>
@@ -138,7 +141,7 @@
             </button>
             <button type="button" class="btn btn-outline demo-btn" data-account="mr3@mersi.com" data-password="password">
                 <div class="demo-btn-info">
-                    <strong class="demo-btn-name">Bambang Irawan</strong>
+                    <strong class="demo-btn-name">Nadia Putri</strong>
                     <span class="demo-btn-subtitle">MR Jakarta Timur</span>
                 </div>
                 <span class="role-pill role-mr">MR</span>

@@ -8,7 +8,7 @@
     <div class="target-page-head">
         <div>
             <h1 class="target-page-title">Target Dokter</h1>
-            <p class="target-page-subtitle">Daftar dokter sasaran dan komitmen kunjungan bulanan.</p>
+            <p class="target-page-subtitle">Daftar target dokter dan komitmen kunjungan bulanan.</p>
         </div>
         <div>
             @if(auth()->user()->role === 'mr')
@@ -68,9 +68,9 @@
             <div class="target-card-body">
                 <div class="target-section-head">
                     <div>
-                        <h4 class="target-section-title">Daftar Dokter Sasaran</h4>
+                        <h4 class="target-section-title">Daftar Target Dokter</h4>
                         <span id="spotlightDoctorCount" style="display: none;">0</span>
-                        <p class="target-small-muted">Komitmen dokter sasaran untuk periode ini.</p>
+                        <p class="target-small-muted">Komitmen target dokter untuk periode ini.</p>
                     </div>
                     <div id="spotlightQuickAddBtnWrap"></div>
                 </div>
@@ -222,7 +222,7 @@
         <div class="target-detail-head">
             <div>
                 <h3 id="targetModalTitle" class="target-detail-title">Susun Target Dokter</h3>
-                <span id="targetModalSubtitle" class="target-detail-subtitle">Pilih dokter sasaran dari Master Customer List</span>
+                <span id="targetModalSubtitle" class="target-detail-subtitle">Pilih target dokter dari Master Customer List</span>
             </div>
             <button type="button" class="close-btn" data-action="close-target">&times;</button>
         </div>
@@ -338,7 +338,7 @@
     <div class="modal-card target-reject-modal">
         <h3 class="target-reject-title">Tolak Target Dokter</h3>
         <p class="target-reject-copy">
-            Target akan dikembalikan ke status <strong>Perlu Revisi (Draft)</strong> agar bawahan dapat menyesuaikan daftar dokter sasaran.
+            Target akan dikembalikan ke status <strong>Perlu Revisi (Draft)</strong> agar bawahan dapat menyesuaikan daftar target dokter.
         </p>
         <div id="rejectModalError" style="display: none;" class="alert alert-danger"></div>
         <form id="rejectForm">

@@ -1,3 +1,8 @@
+import { callApi, describeApiError } from './call-actuals/api.js';
+import { formatVisitDateIndonesian, localDateString, todayString } from './call-actuals/dates.js';
+import { byId, isVisible } from './call-actuals/dom.js';
+import { canvasToEvidenceDataUrl, drawImageToCanvas, fileToEvidenceDataUrl } from './call-actuals/evidence-image.js';
+import { ACTUAL_TYPE, PLAN_STATUS, SESSION_STATUS, statusBadge } from './call-actuals/status.js';
 const pageEl = document.querySelector('[data-call-actuals-page]');
 const currentUserRole = pageEl?.dataset.currentUserRole || "";
 const callPlansUrl = pageEl?.dataset.callPlansUrl || "/call-plans";
@@ -22,47 +27,8 @@ let lockedPlanDate = '';
 
 const EXPIRED_LOOKBACK_DAYS = 14;
 const EXPIRED_MAX_ITEMS = 5;
-
-// Mapping label + warna dipisah per entitas agar status Plan, Session, dan Actual tidak tertukar.
-const PLAN_STATUS = {
-    scheduled: ['Terjadwal', 'status-scheduled'],
-    completed: ['Selesai', 'status-approved'],
-    cancelled: ['Dibatalkan', 'status-draft'],
-    expired: ['Kedaluwarsa', 'status-warning'],
-};
-const ACTUAL_TYPE = {
-    planned: ['Terencana', 'status-approved'],
-    unplanned: ['Di Luar Rencana', 'status-scheduled'],
-    non_target: ['Non-Target', 'status-draft'],
-};
-const SESSION_STATUS = {
-    in_progress: ['Sedang Berlangsung', 'status-approved'],
-    checked_out: ['Menunggu Laporan', 'status-warning'],
-};
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    }[char]));
-}
-
-function statusBadge(map, key, kindTitle) {
-    const [label, cls] = map[key] || [String(key || '-'), 'status-draft'];
-    return `<span class="status-badge ${cls}" title="${escapeHtml(kindTitle)}">${escapeHtml(label)}</span>`;
-}
-
-function byId(id) {
-    return document.getElementById(id);
-}
-
-function isVisible(id) {
-    const el = byId(id);
-    return !!el && el.style.display !== 'none';
-}
+const escapeHtml = window.MSF.escapeHtml;
+const formatWaktuIndonesia = window.MSF.formatWaktuIndonesia;
 
 document.addEventListener('DOMContentLoaded', async () => {
     bindStaticEvents();
@@ -205,16 +171,24 @@ function bindStaticEvents() {
     byId('stampFileInput')?.addEventListener('change', (event) => handleStampFile(event.target));
     byId('productPicker')?.addEventListener('change', (event) => {
         if (event.target.matches('input[name="product_ids"]')) {
+            clearFieldErrors();
             saveActualDraft();
         }
+    });
+    byId('chkAllMclScope')?.addEventListener('change', async (event) => {
+        await loadDoctors(event.target.checked);
     });
 
     ['filterManagerMr', 'filterManagerMonth', 'filterManagerVisitType'].forEach((id) => {
         byId(id)?.addEventListener('change', loadActuals);
     });
 
-    byId('actualDoctorSelect')?.addEventListener('change', saveActualDraft);
+    byId('actualDoctorSelect')?.addEventListener('change', () => {
+        clearFieldErrors();
+        saveActualDraft();
+    });
     byId('actualDateInput')?.addEventListener('change', () => {
+        clearFieldErrors();
         syncActualDateDisplay();
         saveActualDraft();
     });
@@ -222,106 +196,12 @@ function bindStaticEvents() {
         const input = byId(id);
         input?.addEventListener('input', () => window.autoFormatTimeInput(input));
         input?.addEventListener('blur', () => window.normalizeTime24(input));
-        input?.addEventListener('change', saveActualDraft);
+        input?.addEventListener('change', () => {
+            clearFieldErrors();
+            saveActualDraft();
+        });
     });
     byId('visitReasonInput')?.addEventListener('input', saveActualDraft);
-}
-
-/* ------------------------------------------------------------------ */
-/* API helper: satu pintu agar 401/403/409/419/422/5xx/jaringan konsisten */
-/* ------------------------------------------------------------------ */
-
-async function callApi(url, options = {}) {
-    let res;
-    try {
-        res = await window.apiFetch(url, options);
-    } catch (err) {
-        return { networkError: true, ok: false, status: 0, body: null };
-    }
-
-    let body = null;
-    try {
-        body = await res.json();
-    } catch (err) {
-        body = null;
-    }
-
-    return {
-        networkError: false,
-        ok: res.ok && !!body && body.success !== false,
-        status: res.status,
-        body,
-    };
-}
-
-const FIELD_BY_ERROR_KEY = {
-    doctor_id: ['doctor', 1],
-    visit_date: ['date', 1],
-    check_in: ['time', 1],
-    check_out: ['time', 1],
-    photo_url: ['evidence', 2],
-    signature_url: ['evidence', 2],
-    products: ['products', 2],
-};
-const FIELD_BY_ERROR_CODE = {
-    PHOTO_REQUIRED: ['evidence', 2],
-    SIGNATURE_REQUIRED: ['evidence', 2],
-    PRODUCT_REQUIRED: ['products', 2],
-    DOCTOR_PLAN_MISMATCH: ['doctor', 1],
-    VISIT_TIME_IN_FUTURE: ['time', 1],
-};
-
-function describeApiError(result, fallbackMessage) {
-    const { status, body, networkError } = result;
-    const info = { message: fallbackMessage, fields: {}, step: null };
-
-    if (networkError) {
-        info.message = 'Koneksi ke server terputus. Periksa jaringan Anda lalu coba lagi.';
-        return info;
-    }
-    if (status === 401) {
-        info.message = 'Sesi login Anda berakhir. Muat ulang halaman dan masuk kembali.';
-        return info;
-    }
-    if (status === 419) {
-        info.message = 'Sesi halaman kedaluwarsa. Muat ulang halaman lalu coba lagi.';
-        return info;
-    }
-    if (status >= 500 || !body) {
-        info.message = 'Server sedang bermasalah. Coba lagi beberapa saat.';
-        return info;
-    }
-
-    if (status === 403) {
-        info.message = body.message || 'Anda tidak memiliki akses untuk tindakan ini.';
-        return info;
-    }
-
-    if (body.error_code === 'VISIT_ALREADY_EXISTS') {
-        info.message = body.data?.owned_by_me
-            ? 'Kunjungan ini sudah tercatat atas nama Anda. Periksa Riwayat Kunjungan.'
-            : 'Dokter sudah memiliki kunjungan pada tanggal ini.';
-        return info;
-    }
-
-    info.message = body.message || fallbackMessage;
-
-    const mappedByCode = FIELD_BY_ERROR_CODE[body.error_code];
-    if (mappedByCode) {
-        info.fields[mappedByCode[0]] = body.message;
-        info.step = mappedByCode[1];
-    }
-
-    if (body.errors && typeof body.errors === 'object') {
-        Object.entries(body.errors).forEach(([key, messages]) => {
-            const mapped = FIELD_BY_ERROR_KEY[key.split('.')[0]];
-            if (!mapped) return;
-            info.fields[mapped[0]] = Array.isArray(messages) ? messages[0] : String(messages);
-            info.step = info.step ? Math.min(info.step, mapped[1]) : mapped[1];
-        });
-    }
-
-    return info;
 }
 
 /* ------------------------------------------------------------------ */
@@ -366,33 +246,6 @@ function closeEvidenceModal() {
 /* Format tanggal / waktu                                              */
 /* ------------------------------------------------------------------ */
 
-function formatVisitDateIndonesian(dateStr) {
-    if (!dateStr) return '-';
-    const parts = String(dateStr).split('T')[0].split('-');
-    if (parts.length !== 3) return dateStr;
-    const year = parts[0];
-    const monthNum = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
-    const monthNames = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    const monthName = monthNames[monthNum - 1] || parts[1];
-    return `${day} ${monthName} ${year}`;
-}
-
-function localDateString(date) {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-}
-
-// Tanggal lokal perangkat (bukan UTC) agar jadwal hari ini tidak bergeser sebelum pukul 07.00 WIB.
-function todayString() {
-    return localDateString(new Date());
-}
-
 function renderTodayLabel() {
     const label = byId('actualTodayLabel');
     if (!label) return;
@@ -417,32 +270,6 @@ function syncActualDateDisplay() {
         display.value = input.value ? formatVisitDateIndonesian(input.value) : '';
     }
 }
-
-function formatWaktuIndonesia(timeOrDate) {
-    if (!timeOrDate) return '-';
-    if (timeOrDate instanceof Date) {
-        const h = String(timeOrDate.getHours()).padStart(2, '0');
-        const m = String(timeOrDate.getMinutes()).padStart(2, '0');
-        return `${h}.${m} WIB`;
-    }
-    if (typeof timeOrDate === 'string') {
-        const trimmed = timeOrDate.trim();
-        const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/);
-        if (timeMatch) {
-            const h = timeMatch[1].padStart(2, '0');
-            const m = timeMatch[2];
-            return `${h}.${m} WIB`;
-        }
-        const d = new Date(trimmed);
-        if (!isNaN(d.getTime())) {
-            const h = String(d.getHours()).padStart(2, '0');
-            const m = String(d.getMinutes()).padStart(2, '0');
-            return `${h}.${m} WIB`;
-        }
-    }
-    return String(timeOrDate);
-}
-
 /* ------------------------------------------------------------------ */
 /* Tanda tangan, foto, stempel                                         */
 /* ------------------------------------------------------------------ */
@@ -618,70 +445,6 @@ function clearStampFile() {
         byId('signatureUrlInput').value = '';
     }
     saveActualDraft();
-}
-
-async function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target.result);
-        reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
-        reader.readAsDataURL(file);
-    });
-}
-
-function loadImage(dataUrl) {
-    return new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = () => reject(new Error('File gambar tidak valid.'));
-        image.src = dataUrl;
-    });
-}
-
-function drawImageToCanvas(image, maxDimension) {
-    const ratio = Math.min(1, maxDimension / Math.max(image.width, image.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(image.width * ratio));
-    canvas.height = Math.max(1, Math.round(image.height * ratio));
-    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas;
-}
-
-function canvasToEvidenceDataUrl(canvas, initialQuality = 0.72) {
-    let quality = initialQuality;
-    let dataUrl = canvas.toDataURL('image/jpeg', quality);
-
-    while (dataUrl.length > 64000 && quality > 0.38) {
-        quality -= 0.1;
-        dataUrl = canvas.toDataURL('image/jpeg', quality);
-    }
-
-    while (dataUrl.length > 64000 && canvas.width > 360 && canvas.height > 360) {
-        const nextCanvas = document.createElement('canvas');
-        nextCanvas.width = Math.round(canvas.width * 0.8);
-        nextCanvas.height = Math.round(canvas.height * 0.8);
-        nextCanvas.getContext('2d').drawImage(canvas, 0, 0, nextCanvas.width, nextCanvas.height);
-        canvas = nextCanvas;
-        dataUrl = canvas.toDataURL('image/jpeg', 0.45);
-    }
-
-    if (dataUrl.length > 64000) {
-        throw new Error('Ukuran gambar masih terlalu besar. Gunakan foto yang lebih kecil atau crop lebih dekat.');
-    }
-
-    return dataUrl;
-}
-
-async function fileToEvidenceDataUrl(file, maxDimension = 900) {
-    if (!file || !file.type.startsWith('image/')) {
-        throw new Error('File harus berupa gambar.');
-    }
-
-    const rawDataUrl = await readFileAsDataUrl(file);
-    const image = await loadImage(rawDataUrl);
-    const canvas = drawImageToCanvas(image, maxDimension);
-
-    return canvasToEvidenceDataUrl(canvas);
 }
 
 async function toggleLiveCamera() {
@@ -951,8 +714,9 @@ function showActualAlert(message, type = 'success') {
 /* Loader data                                                         */
 /* ------------------------------------------------------------------ */
 
-async function loadDoctors() {
-    const result = await callApi('/api/doctors');
+async function loadDoctors(allMcl = false) {
+    const url = allMcl ? '/api/doctors?all=1' : '/api/doctors';
+    const result = await callApi(url);
     if (result.ok && Array.isArray(result.body.data)) {
         doctors = result.body.data;
     } else {
@@ -1331,6 +1095,7 @@ function actualTimeRange(actual) {
 function actualCardHtml(actual) {
     const timeRange = actualTimeRange(actual);
     const products = (actual.products || []).map((p) => `<span class="ca-product-chip">${escapeHtml(p.name)}</span>`).join('');
+    const [typeLabel, typeClass] = ACTUAL_TYPE[actual.visit_type] || ['Kunjungan', 'status-draft'];
 
     return `
         <article class="ca-card">
@@ -1339,7 +1104,10 @@ function actualCardHtml(actual) {
                     <h3 class="ca-card-title">${escapeHtml(actual.doctor_name || 'Dokter')}</h3>
                     <p class="ca-card-sub">${escapeHtml(actual.doctor_specialization || 'Spesialis Umum')}</p>
                 </div>
-                ${statusBadge(ACTUAL_TYPE, actual.visit_type, 'Kategori kunjungan')}
+                <div class="ca-badge-stack">
+                    <span class="status-badge status-approved" title="Status laporan">Terlaksana</span>
+                    <span class="status-badge ${typeClass} ca-badge-sub" title="Kategori kunjungan">${escapeHtml(typeLabel)}</span>
+                </div>
             </div>
             <div class="ca-meta">
                 <span><i class="bi bi-calendar3" aria-hidden="true"></i>${escapeHtml(formatVisitDateIndonesian(actual.visit_date))}</span>
@@ -1367,6 +1135,7 @@ function actualRowHtml(actual) {
         ? `<div class="ca-table-reason">"${escapeHtml(actual.visit_reason)}"</div>`
         : '';
     const products = (actual.products || []).map((p) => escapeHtml(p.name)).join(', ') || '-';
+    const [typeLabel, typeClass] = ACTUAL_TYPE[actual.visit_type] || ['Kunjungan', 'status-draft'];
 
     return `
         <tr>
@@ -1384,7 +1153,10 @@ function actualRowHtml(actual) {
                 ${doctorAddress}
             </td>
             <td>
-                ${statusBadge(ACTUAL_TYPE, actual.visit_type, 'Kategori kunjungan')}
+                <div class="ca-table-badge-stack">
+                    <span class="status-badge status-approved">Terlaksana</span>
+                    <span class="status-badge ${typeClass} ca-badge-sub">${escapeHtml(typeLabel)}</span>
+                </div>
                 ${visitReason}
             </td>
             <td>
@@ -1412,18 +1184,37 @@ function actualMode() {
     return 'direct';
 }
 
+const FIELD_ERROR_TARGETS = {
+    doctor: ['#actualDoctorSelect'],
+    date: ['#actualDateDisplay'],
+    time: ['#checkInInput', '#checkOutInput'],
+    evidence: ['.ca-evidence'],
+    products: ['#productPicker'],
+};
+
 function clearFieldErrors() {
     document.querySelectorAll('[data-error-for]').forEach((el) => { el.innerText = ''; });
+    document.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
 }
 
 function setFieldError(name, message) {
     const el = document.querySelector(`[data-error-for="${name}"]`);
     if (el) el.innerText = message || '';
-}
 
-function showActualModalError(message) {
+    (FIELD_ERROR_TARGETS[name] || []).forEach((selector) => {
+        document.querySelectorAll(selector).forEach((target) => {
+            const field = target.closest('.ca-field') || target;
+            field.classList.add('is-invalid');
+        });
+    });
+}
+function showActualModalError(message, isHtml = false) {
     const errorEl = byId('actualModalError');
-    errorEl.innerText = message;
+    if (isHtml) {
+        errorEl.innerHTML = message;
+    } else {
+        errorEl.innerText = message;
+    }
     errorEl.style.display = 'block';
     document.querySelector('.ca-sheet-body')?.scrollTo({ top: 0 });
 }
@@ -1551,7 +1342,7 @@ function renderSummary() {
         when = byId('sessionTimeText').innerText + ' (server)';
     } else {
         const date = formatVisitDateIndonesian(byId('actualDateInput').value);
-        when = `${date} · ${byId('checkInInput').value} – ${byId('checkOutInput').value} WIB (manual)`;
+        when = `${date} - ${byId('checkInInput').value} - ${byId('checkOutInput').value} WIB (manual)`;
     }
 
     const methodLabel = { session: 'Visit Session', plan: 'Manual dari jadwal', direct: 'Kunjungan di luar rencana' }[mode];
@@ -1597,9 +1388,9 @@ function openActualModal(planId = null, fallbackDoctorId = null, sessionId = nul
     const mode = actualMode();
     byId('actualModalTitle').innerText = 'Laporan Kunjungan';
     byId('actualModeLabel').innerText = {
-        session: 'Visit Session · waktu dari server',
-        plan: 'Dari jadwal · waktu diisi manual',
-        direct: 'Kunjungan di luar rencana · waktu diisi manual',
+        session: 'Visit Session - waktu dari server',
+        plan: 'Dari jadwal - waktu diisi manual',
+        direct: 'Kunjungan di luar rencana - waktu diisi manual',
     }[mode];
     setLockedDoctorNote({ session: 'Dokter mengikuti sesi kunjungan.', plan: 'Dokter mengikuti jadwal.', direct: '' }[mode]);
 
@@ -1607,6 +1398,18 @@ function openActualModal(planId = null, fallbackDoctorId = null, sessionId = nul
     byId('manualTimeFields').style.display = isSessionBacked ? 'none' : 'block';
     byId('sessionTimeBox').style.display = isSessionBacked ? 'block' : 'none';
     byId('dateLockNote').style.display = lockedPlanDate ? 'block' : 'none';
+
+    const unplannedScopeWrap = byId('unplannedScopeWrap');
+    const chkAllMcl = byId('chkAllMclScope');
+    if (unplannedScopeWrap) {
+        if (mode === 'direct') {
+            unplannedScopeWrap.style.display = 'block';
+            if (chkAllMcl) chkAllMcl.checked = false;
+        } else {
+            unplannedScopeWrap.style.display = 'none';
+        }
+    }
+
     byId('actualDateInput').disabled = !!lockedPlanDate;
     byId('actualDateDisplay').classList.toggle('ca-input-clickable', !lockedPlanDate);
     byId('actualDateDisplay').style.background = lockedPlanDate ? '#f4f7fb' : '';
@@ -1658,9 +1461,9 @@ function fillSessionTime() {
     const checkOut = activeSession.check_out_at ? new Date(activeSession.check_out_at) : null;
     const dateLabel = formatVisitDateIndonesian(localDateString(checkIn));
     const range = checkOut
-        ? `${formatWaktuIndonesia(checkIn).replace(' WIB', '')} – ${formatWaktuIndonesia(checkOut)}`
+        ? `${formatWaktuIndonesia(checkIn).replace(' WIB', '')} - ${formatWaktuIndonesia(checkOut)}`
         : formatWaktuIndonesia(checkIn);
-    byId('sessionTimeText').innerText = `${dateLabel} · ${range}`;
+    byId('sessionTimeText').innerText = `${dateLabel} - ${range}`;
 }
 
 function requestCloseActualModal() {
@@ -1799,7 +1602,12 @@ async function submitActual(event) {
             currentActualStep = info.step;
             renderStepView();
         }
-        showActualModalError(info.message);
+        if (result.body?.error_code === 'RESCHEDULE_REQUIRED') {
+            const rescheduleHtml = `${escapeHtml(info.message)} <div style="margin-top: 0.6rem;"><a href="/call-plans" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; text-decoration: none; border-color: #0284c7; color: #0284c7;"><i class="bi bi-calendar-event"></i> Buka Menu Jadwal Kunjungan untuk Reschedule</a></div>`;
+            showActualModalError(rescheduleHtml, true);
+        } else {
+            showActualModalError(info.message);
+        }
     } finally {
         isSubmittingActual = false;
         setSubmitting(false);

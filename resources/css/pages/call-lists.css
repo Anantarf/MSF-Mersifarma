@@ -681,10 +681,29 @@
     .target-detail-history {
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.45rem;
     }
-    .target-detail-history-row strong {
+    .target-detail-history-row {
+        padding: 0.2rem 0;
+    }
+    .target-history-main {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        line-height: 1.45;
+    }
+    .target-history-main strong {
         color: var(--secondary);
+        font-weight: 700;
+    }
+    .target-history-note {
+        font-size: 0.775rem;
+        color: #991b1b;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        padding: 0.25rem 0.55rem;
+        margin-top: 0.3rem;
+        display: inline-block;
     }
     .target-detail-actions {
         display: flex;

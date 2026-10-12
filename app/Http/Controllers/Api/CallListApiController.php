@@ -114,10 +114,18 @@ class CallListApiController extends Controller
                 'id' => $callList->id,
                 'owner_id' => $callList->owner_id,
                 'owner_name' => $callList->owner ? $callList->owner->name : null,
+                'owner' => $callList->owner ? [
+                    'id' => $callList->owner->id,
+                    'name' => $callList->owner->name,
+                ] : null,
                 'period_month' => Carbon::parse($callList->period_month)->format('Y-m'),
                 'status' => $callList->status,
                 'assigned_approver_id' => $callList->assigned_approver_id,
                 'assigned_approver_name' => $callList->assignedApprover ? $callList->assignedApprover->name : null,
+                'assigned_approver' => $callList->assignedApprover ? [
+                    'id' => $callList->assignedApprover->id,
+                    'name' => $callList->assignedApprover->name,
+                ] : null,
                 'submitted_at' => $callList->submitted_at ? $callList->submitted_at->toIso8601String() : null,
                 'approved_at' => $callList->approved_at ? $callList->approved_at->toIso8601String() : null,
                 'created_at' => $callList->created_at->toIso8601String(),

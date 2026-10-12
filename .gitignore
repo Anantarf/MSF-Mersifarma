@@ -21,3 +21,5 @@ yarn-error.log
 
 vite.config.js.timestamp*
 /output/
+.playwright-cli/
+.env.testing

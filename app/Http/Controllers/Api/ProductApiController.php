@@ -10,7 +10,10 @@ class ProductApiController extends Controller
 {
     public function index(): JsonResponse
     {
-        $products = Product::orderBy('name')->get();
+        $products = Product::query()
+            ->select(['id', 'name', 'category'])
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'success' => true,
