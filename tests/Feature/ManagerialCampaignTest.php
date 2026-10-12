@@ -300,4 +300,92 @@ class ManagerialCampaignTest extends TestCase
         $this->assertEquals($doctor->id, $data[0]['doctor_id']);
         $this->assertEquals('Rekomendasi Distrik', $data[0]['badge']);
     }
+
+    public function test_dm_cannot_propose_cross_district_doctors(): void
+    {
+        $products = Product::take(2)->pluck('id')->toArray();
+        // Dokter dari distrik Jakarta Timur
+        $otherDistrictDoctor = MasterCustomer::where('district', '!=', $this->dm->district)->first();
+
+        if (! $otherDistrictDoctor) {
+            $otherDistrictDoctor = MasterCustomer::create([
+                'name' => 'Dr. Luar Distrik',
+                'specialization' => 'Spesialis Penyakit Dalam',
+                'district' => 'Surabaya',
+                'address' => 'Jl. Pahlawan',
+                'phone' => '081234567899',
+            ]);
+        }
+
+        $response = $this->actingAs($this->dm)->postJson('/api/managerial-campaigns', [
+            'title' => 'Program Ilegal Lintas Distrik',
+            'district_name' => $this->dm->district,
+            'duration_months' => 2,
+            'product_ids' => $products,
+            'doctor_ids' => [$otherDistrictDoctor->id],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error_code' => 'CROSS_DISTRICT_DOCTOR',
+            ]);
+    }
+
+    public function test_rsm_can_create_regional_campaign_without_doctors(): void
+    {
+        $products = Product::take(2)->pluck('id')->toArray();
+
+        $response = $this->actingAs($this->rsm)->postJson('/api/managerial-campaigns', [
+            'title' => 'Arahan Fokus Regional Q4',
+            'duration_months' => 3,
+            'product_ids' => $products,
+            'doctor_ids' => [],
+            'specialization' => 'Spesialis Anak',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'title' => 'Arahan Fokus Regional Q4',
+                    'district_name' => 'Regional',
+                    'status' => 'approved',
+                    'doctor_count' => 0,
+                    'product_count' => 2,
+                ],
+            ]);
+
+        $campaignId = $response->json('data.id');
+        $this->assertDatabaseHas('managerial_campaigns', [
+            'id' => $campaignId,
+            'created_by' => $this->rsm->id,
+            'status' => 'approved',
+            'approved_by' => $this->rsm->id,
+            'duration_months' => 3,
+        ]);
+    }
+
+    public function test_dm_can_view_rsm_regional_campaign_in_index(): void
+    {
+        $products = Product::take(1)->pluck('id')->toArray();
+
+        $campaign = ManagerialCampaign::create([
+            'title' => 'Program Regional RSM Aktif',
+            'district_name' => 'Regional',
+            'duration_months' => 2,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->addMonths(1)->endOfMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $this->rsm->id,
+            'approved_by' => $this->rsm->id,
+        ]);
+        $campaign->products()->sync($products);
+
+        $response = $this->actingAs($this->dm)->getJson('/api/managerial-campaigns');
+
+        $response->assertStatus(200);
+        $campaignIds = collect($response->json('data'))->pluck('id')->toArray();
+        $this->assertContains($campaignId = $campaign->id, $campaignIds);
+    }
 }

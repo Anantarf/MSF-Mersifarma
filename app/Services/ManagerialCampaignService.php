@@ -44,17 +44,15 @@ class ManagerialCampaignService
         }
 
         $doctorIds = $data['doctor_ids'] ?? [];
-        if (empty($doctorIds)) {
-            throw ApiException::validation('INVALID_DOCTORS', 'Pilih minimal 1 dokter target untuk program rekomendasi.', [
-                'doctor_ids' => ['Pilih minimal 1 dokter target.'],
+        if ($creator->role === 'dm' && empty($doctorIds)) {
+            throw ApiException::validation('INVALID_DOCTORS', 'DM wajib memilih minimal 1 dokter target di distriknya.', [
+                'doctor_ids' => ['Pilih minimal 1 dokter target di distrik Anda.'],
             ]);
         }
 
         $districtName = trim($data['district_name'] ?? ($creator->district ?? ''));
         if (empty($districtName)) {
-            throw ApiException::validation('DISTRICT_REQUIRED', 'Nama distrik target wajib diisi.', [
-                'district_name' => ['Distrik target tidak boleh kosong.'],
-            ]);
+            $districtName = $creator->role === 'rsm' ? 'Regional' : ($creator->district ?? 'Nasional');
         }
 
         // Validasi produk terdaftar
@@ -65,15 +63,28 @@ class ManagerialCampaignService
             ]);
         }
 
-        // Validasi dokter terdaftar dan sesuai distrik jika distrik dispesifikasikan
-        $validDoctors = MasterCustomer::whereIn('id', $doctorIds)->get();
-        if ($validDoctors->count() !== count($doctorIds)) {
-            throw ApiException::validation('DOCTOR_NOT_FOUND', 'Terdapat dokter yang tidak terdaftar dalam Master Customer List.', [
-                'doctor_ids' => ['Beberapa dokter tidak valid.'],
-            ]);
+        // Validasi dokter terdaftar dan sesuai distrik jika pembuatnya DM
+        if (! empty($doctorIds)) {
+            $validDoctors = MasterCustomer::whereIn('id', $doctorIds)->get();
+            if ($validDoctors->count() !== count($doctorIds)) {
+                throw ApiException::validation('DOCTOR_NOT_FOUND', 'Terdapat dokter yang tidak terdaftar dalam Master Customer List.', [
+                    'doctor_ids' => ['Beberapa dokter tidak valid.'],
+                ]);
+            }
+
+            if ($creator->role === 'dm' && $creator->district) {
+                $crossDistrict = $validDoctors->filter(fn ($d) => $d->district !== $creator->district);
+                if ($crossDistrict->isNotEmpty()) {
+                    throw ApiException::validation('CROSS_DISTRICT_DOCTOR', 'Dokter target harus berada dalam distrik '.$creator->district.'.', [
+                        'doctor_ids' => ['Terdapat dokter dari luar wilayah distrik Anda.'],
+                    ]);
+                }
+            }
         }
 
-        return DB::transaction(function () use ($creator, $data, $districtName, $durationMonths, $startDate, $endDate, $productIds, $doctorIds) {
+        $initialStatus = in_array($creator->role, ['rsm', 'mm'], true) ? 'approved' : 'pending_approval';
+
+        return DB::transaction(function () use ($creator, $data, $districtName, $durationMonths, $startDate, $endDate, $productIds, $doctorIds, $initialStatus) {
             $campaign = ManagerialCampaign::create([
                 'title' => trim($data['title']),
                 'district_name' => $districtName,
@@ -81,19 +92,21 @@ class ManagerialCampaignService
                 'duration_months' => $durationMonths,
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString(),
-                'status' => 'pending_approval',
+                'status' => $initialStatus,
                 'created_by' => $creator->id,
-                'approved_by' => null,
+                'approved_by' => in_array($creator->role, ['rsm', 'mm'], true) ? $creator->id : null,
                 'notes' => $data['notes'] ?? null,
             ]);
 
             $campaign->products()->sync($productIds);
 
-            $doctorSyncData = [];
-            foreach ($doctorIds as $doctorId) {
-                $doctorSyncData[$doctorId] = ['target_visits' => 1];
+            if (! empty($doctorIds)) {
+                $doctorSyncData = [];
+                foreach ($doctorIds as $doctorId) {
+                    $doctorSyncData[$doctorId] = ['target_visits' => 1];
+                }
+                $campaign->doctors()->sync($doctorSyncData);
             }
-            $campaign->doctors()->sync($doctorSyncData);
 
             return $campaign->load(['creator', 'products', 'doctors']);
         });

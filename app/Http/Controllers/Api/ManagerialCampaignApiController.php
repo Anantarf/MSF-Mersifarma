@@ -38,12 +38,16 @@ class ManagerialCampaignApiController extends Controller
                 $query->forDistrict($user->district);
             }
         } elseif ($user->role === 'dm') {
-            // DM melihat kampanye di distriknya atau yang dia buat
+            // DM melihat kampanye di distriknya, yang dia buat, atau arahan regional dari RSM (atasannya)
             $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id);
                 if ($user->district) {
                     $q->orWhere('district_name', $user->district);
                 }
+                if ($user->manager_id) {
+                    $q->orWhere('created_by', $user->manager_id);
+                }
+                $q->orWhere('district_name', 'Regional');
             });
         } elseif ($user->role === 'rsm') {
             // RSM melihat kampanye yang dibuat bawahannya (DM) atau yang diajukan kepadanya
@@ -106,7 +110,7 @@ class ManagerialCampaignApiController extends Controller
             'duration_months' => 'required|integer|between:1,3',
             'product_ids' => 'required|array|min:1|max:5',
             'product_ids.*' => 'integer|exists:products,id',
-            'doctor_ids' => 'required|array|min:1',
+            'doctor_ids' => $user->role === 'dm' ? 'required|array|min:1' : 'nullable|array',
             'doctor_ids.*' => 'integer|exists:master_customers,id',
             'notes' => 'nullable|string',
             'start_date' => 'nullable|date',

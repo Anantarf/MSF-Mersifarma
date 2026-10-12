@@ -3,7 +3,7 @@
 @section('title', 'Target Dokter')
 
 @section('content')
-<div class="target-page" data-call-lists-page data-current-user-role="{{ auth()->user()->role }}">
+<div class="target-page" data-call-lists-page data-current-user-role="{{ auth()->user()->role }}" data-current-user-district="{{ auth()->user()->district ?? '' }}">
     <!-- Page Header -->
     <div class="target-page-head">
         <div>
@@ -426,8 +426,8 @@
     <div class="modal-card target-form-modal" style="max-width: 620px;">
         <div class="target-detail-head">
             <div>
-                <h3 class="target-detail-title">Buat Program Rekomendasi Distrik</h3>
-                <span class="target-detail-subtitle">Tentukan obat fokus promosi dan dokter target (berlaku 1–3 bulan)</span>
+                <h3 id="campaignModalHeading" class="target-detail-title">Program Rekomendasi</h3>
+                <span id="campaignModalSubheading" class="target-detail-subtitle">Tentukan arahan strategis obat fokus dan dokter target</span>
             </div>
             <button type="button" class="close-btn" data-action="close-create-campaign">&times;</button>
         </div>
@@ -435,6 +435,22 @@
         <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
 
         <form id="createCampaignForm">
+            <!-- Pilihan Arahan RSM (Khusus DM) -->
+            <div id="campaignRsmGuidanceField" class="target-field" style="display: none;">
+                <label class="target-field-label">Pilih Program Arahan dari RSM (Opsional):</label>
+                <select id="campaignRsmGuidanceSelect" class="target-input">
+                    <option value="">-- Buat Usulan Distrik Mandiri --</option>
+                </select>
+                <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                    Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
+                </small>
+            </div>
+
+            <!-- Indikator Distrik Sasaran -->
+            <div id="campaignDistrictBadgeWrap" style="margin-bottom: 0.75rem; font-size: 0.825rem; color: var(--text-muted); background: #f8fafc; padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                Wilayah Cakupan: <strong id="campaignDistrictLabel" style="color: var(--secondary);">-</strong>
+            </div>
+
             <div class="target-field">
                 <label class="target-field-label">Judul Program Rekomendasi:</label>
                 <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
@@ -442,7 +458,7 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="target-field">
-                    <label class="target-field-label">Durasi Program:</label>
+                    <label class="target-field-label">Durasi Waktu:</label>
                     <select id="campaignDurationSelect" class="target-input" required>
                         <option value="1">1 Bulan</option>
                         <option value="2">2 Bulan</option>
@@ -451,18 +467,20 @@
                 </div>
                 <div class="target-field">
                     <label class="target-field-label">Target Spesialisasi:</label>
-                    <input type="text" id="campaignSpecInput" class="target-input" placeholder="Contoh: Spesialis Anak">
+                    <select id="campaignSpecSelect" class="target-input">
+                        <option value="">-- Semua Spesialisasi --</option>
+                    </select>
                 </div>
             </div>
 
             <div class="target-field">
-                <label class="target-field-label">Pilih Obat Fokus Promosi (Maksimal 5 Produk):</label>
+                <label class="target-field-label">Obat Fokus Promosi (Maksimal 5 Produk):</label>
                 <div id="campaignProductCheckboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
                     <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat produk master...</span>
                 </div>
             </div>
 
-            <div class="target-field">
+            <div id="campaignDoctorSection" class="target-field">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                     <label class="target-field-label" style="margin-bottom: 0;">Pilih Dokter Target di Distrik:</label>
                     <span style="font-size: 0.75rem; color: var(--text-muted);"><span id="campaignSelectedDocCount">0</span> Dokter Terpilih</span>
@@ -482,7 +500,7 @@
                 <div class="target-actions">
                     <button type="button" class="btn btn-outline" data-action="close-create-campaign">Batal</button>
                     <button type="submit" id="btnSubmitCampaign" class="btn btn-primary">
-                        Ajukan ke Atasan
+                        Simpan & Ajukan
                     </button>
                 </div>
             </div>

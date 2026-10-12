@@ -1,5 +1,6 @@
 const pageEl = document.querySelector('[data-call-lists-page]');
 const currentUserRole = pageEl?.dataset.currentUserRole || '';
+const currentUserDistrict = pageEl?.dataset.currentUserDistrict || '';
 let allDoctors = [];
 let myCallLists = [];
 let reviewCallLists = [];
@@ -162,6 +163,8 @@ function bindCallListEvents() {
         document.getElementById('rejectForm')?.addEventListener('submit', handleRejectSubmit);
         document.getElementById('createCampaignForm')?.addEventListener('submit', handleCreateCampaignSubmit);
         document.getElementById('rejectCampaignForm')?.addEventListener('submit', handleRejectCampaignSubmit);
+        document.getElementById('campaignSpecSelect')?.addEventListener('change', renderCampaignDoctors);
+        document.getElementById('campaignRsmGuidanceSelect')?.addEventListener('change', handleRsmGuidanceChange);
         document.getElementById('doctorSearchInput')?.addEventListener('input', (event) => onDoctorSearchInput(event.target.value));
         document.getElementById('summaryMonthSelect')?.addEventListener('change', loadManagerSummary);
         document.getElementById('periodMonthSelect')?.addEventListener('change', syncPeriodToHiddenInput);
@@ -1251,11 +1254,24 @@ async function openCreateCampaignModal() {
     const modal = document.getElementById('createCampaignModal');
     const errBox = document.getElementById('createCampaignError');
     const prodBox = document.getElementById('campaignProductCheckboxes');
-    const docBox = document.getElementById('campaignDoctorCheckboxes');
+    const headingEl = document.getElementById('campaignModalHeading');
+    const subheadingEl = document.getElementById('campaignModalSubheading');
+    const districtLabelEl = document.getElementById('campaignDistrictLabel');
+    const rsmGuidanceField = document.getElementById('campaignRsmGuidanceField');
+    const rsmGuidanceSelect = document.getElementById('campaignRsmGuidanceSelect');
+    const doctorSection = document.getElementById('campaignDoctorSection');
+    const submitBtn = document.getElementById('btnSubmitCampaign');
+    const durationSelect = document.getElementById('campaignDurationSelect');
 
     if (!modal) return;
     if (errBox) errBox.style.display = 'none';
 
+    // Reset formulir & status disabled
+    const form = document.getElementById('createCampaignForm');
+    if (form) form.reset();
+    if (durationSelect) durationSelect.disabled = false;
+
+    // Pastikan master produk telah dimuat
     if (!masterProducts.length) {
         try {
             const res = await window.apiFetch('/api/products');
@@ -1264,10 +1280,29 @@ async function openCreateCampaignModal() {
                 masterProducts = pData.data;
             }
         } catch (e) {
-            console.warn(e);
+            console.warn('Gagal memuat master produk', e);
         }
     }
 
+    // Pastikan master dokter telah dimuat
+    if (!allDoctors.length) {
+        await loadDoctors();
+    }
+
+    // Pastikan daftar kampanye telah dimuat (agar DM bisa memilih arahan RSM)
+    if (!allCampaigns.length) {
+        try {
+            const cRes = await window.apiFetch('/api/managerial-campaigns');
+            const cData = await cRes.json();
+            if (cData.success && Array.isArray(cData.data)) {
+                allCampaigns = cData.data;
+            }
+        } catch (e) {
+            console.warn('Gagal memuat kampanye untuk modal', e);
+        }
+    }
+
+    // Render checkbox produk master
     if (prodBox && masterProducts.length) {
         prodBox.innerHTML = masterProducts.map(p => `
             <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer;">
@@ -1277,17 +1312,146 @@ async function openCreateCampaignModal() {
         `).join('');
     }
 
-    if (docBox && allDoctors.length) {
-        docBox.innerHTML = allDoctors.map(d => `
-            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer; padding: 0.2rem 0; border-bottom: 1px dashed #e2e8f0;">
-                <input type="checkbox" name="campaign_doctor" value="${d.id}" onchange="updateCampaignSelectedDocCount()">
-                <span><strong>${escapeHtml(d.name)}</strong> (${escapeHtml(d.specialization || 'Umum')}) - <small style="color: var(--text-muted);">${escapeHtml(d.district || '-')}</small></span>
-            </label>
-        `).join('');
+    // Penyesuaian antarmuka berdasarkan peran pengguna (RSM vs DM)
+    if (currentUserRole === 'rsm' || currentUserRole === 'mm') {
+        // RSM/MM: Arahan strategis regional (Waktu & Obat Fokus)
+        if (headingEl) headingEl.innerText = 'Buat Arahan Kampanye Regional (Obat Fokus & Periode)';
+        if (subheadingEl) subheadingEl.innerText = 'Tentukan obat fokus promosi dan rentang waktu program untuk seluruh distrik';
+        if (districtLabelEl) districtLabelEl.innerText = 'Regional (DKI Jakarta)';
+        if (rsmGuidanceField) rsmGuidanceField.style.display = 'none';
+        if (doctorSection) doctorSection.style.display = 'none';
+        if (submitBtn) submitBtn.innerText = 'Terbitkan Arahan Regional';
+
+        populateCampaignSpecializations();
+    } else {
+        // DM: Pengajuan rekomendasi dokter distrik ke RSM
+        if (headingEl) headingEl.innerText = 'Ajukan Rekomendasi Dokter Distrik ke RSM';
+        if (subheadingEl) subheadingEl.innerText = `Tentukan dokter sasaran dan spesialisasi di distrik ${currentUserDistrict || ''} sesuai arahan RSM`;
+        if (districtLabelEl) districtLabelEl.innerText = `Distrik: ${currentUserDistrict || 'Wilayah DM'}`;
+        if (doctorSection) doctorSection.style.display = 'block';
+        if (submitBtn) submitBtn.innerText = 'Simpan & Ajukan ke RSM';
+
+        // Tampilkan pilihan arahan RSM jika tersedia
+        if (rsmGuidanceField && rsmGuidanceSelect) {
+            rsmGuidanceField.style.display = 'block';
+            const rsmCampaigns = allCampaigns.filter(c => c.status === 'approved' && (c.district_name === 'Regional' || c.created_by !== window.MSF?.currentUserId));
+
+            rsmGuidanceSelect.innerHTML = '<option value="">-- Buat Usulan Distrik Mandiri --</option>' +
+                rsmCampaigns.map(c => {
+                    const prodNames = (c.products || []).map(p => p.name).join(', ') || `${c.product_count || 0} Obat Fokus`;
+                    return `<option value="${c.id}">[Arahan RSM] ${escapeHtml(c.title)} (${c.duration_months} Bln - Fokus: ${escapeHtml(prodNames)})</option>`;
+                }).join('');
+        }
+
+        populateCampaignSpecializations();
+        renderCampaignDoctors();
     }
 
-    updateCampaignSelectedDocCount();
     modal.style.display = 'flex';
+}
+
+function populateCampaignSpecializations() {
+    const specSelect = document.getElementById('campaignSpecSelect');
+    if (!specSelect) return;
+
+    // Untuk DM: hanya ambil spesialisasi dokter yang benar-benar ada di distrik DM
+    let targetDocs = allDoctors;
+    if (currentUserRole === 'dm' && currentUserDistrict) {
+        targetDocs = targetDocs.filter(d => d.district === currentUserDistrict);
+    }
+
+    const uniqueSpecs = Array.from(new Set(targetDocs.map(d => d.specialization).filter(Boolean))).sort();
+
+    specSelect.innerHTML = '<option value="">-- Semua Spesialisasi --</option>' +
+        uniqueSpecs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+function renderCampaignDoctors() {
+    const docBox = document.getElementById('campaignDoctorCheckboxes');
+    if (!docBox) return;
+
+    // Filter dokter strictly hanya dari distrik DM yang sedang aktif
+    let filtered = allDoctors;
+    if (currentUserRole === 'dm' && currentUserDistrict) {
+        filtered = filtered.filter(d => d.district === currentUserDistrict);
+    }
+
+    // Filter dinamis berdasarkan spesialisasi yang dipilih
+    const specSelect = document.getElementById('campaignSpecSelect');
+    const selectedSpec = specSelect ? specSelect.value : '';
+    if (selectedSpec) {
+        filtered = filtered.filter(d => (d.specialization || '') === selectedSpec);
+    }
+
+    if (!filtered.length) {
+        docBox.innerHTML = `
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 0.75rem;">
+                Tidak ada dokter ${selectedSpec ? `spesialisasi "${escapeHtml(selectedSpec)}" ` : ''}di distrik ${escapeHtml(currentUserDistrict || '-')}.
+            </div>
+        `;
+        updateCampaignSelectedDocCount();
+        return;
+    }
+
+    docBox.innerHTML = filtered.map(d => `
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer; padding: 0.25rem 0; border-bottom: 1px dashed #e2e8f0;">
+            <input type="checkbox" name="campaign_doctor" value="${d.id}" onchange="updateCampaignSelectedDocCount()">
+            <span style="flex: 1;"><strong>${escapeHtml(d.name)}</strong> (${escapeHtml(d.specialization || 'Umum')})</span>
+            <span class="badge" style="background: #f1f5f9; color: var(--secondary); font-size: 0.7rem; font-weight: 500;">${escapeHtml(d.district || '-')}</span>
+        </label>
+    `).join('');
+
+    updateCampaignSelectedDocCount();
+}
+
+function handleRsmGuidanceChange(e) {
+    const selectedCampId = parseInt(e.target.value, 10);
+    const durationSelect = document.getElementById('campaignDurationSelect');
+    const titleInput = document.getElementById('campaignTitleInput');
+    const specSelect = document.getElementById('campaignSpecSelect');
+
+    // Reset status produk
+    document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
+
+    if (!selectedCampId) {
+        if (durationSelect) durationSelect.disabled = false;
+        return;
+    }
+
+    const camp = allCampaigns.find(c => c.id === selectedCampId);
+    if (!camp) return;
+
+    // Otomatis isi judul rekomendasi distrik
+    if (titleInput) {
+        titleInput.value = `Rekomendasi ${currentUserDistrict || 'Distrik'} - ${camp.title}`;
+    }
+
+    // Kunci durasi waktu sesuai arahan RSM
+    if (durationSelect) {
+        durationSelect.value = String(camp.duration_months);
+        durationSelect.disabled = true;
+    }
+
+    // Kunci obat fokus promosi sesuai arahan RSM
+    if (camp.products && camp.products.length) {
+        const targetProductIds = new Set(camp.products.map(p => p.id));
+        document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+            const pid = parseInt(cb.value, 10);
+            if (targetProductIds.has(pid)) {
+                cb.checked = true;
+            }
+            cb.disabled = true;
+        });
+    }
+
+    // Pilih spesialisasi jika ada arahan khusus dari RSM
+    if (camp.specialization && specSelect) {
+        specSelect.value = camp.specialization;
+        renderCampaignDoctors();
+    }
 }
 
 function updateCampaignSelectedDocCount() {
@@ -1302,6 +1466,13 @@ window.updateCampaignSelectedDocCount = updateCampaignSelectedDocCount;
 function closeCreateCampaignModal() {
     const modal = document.getElementById('createCampaignModal');
     if (modal) modal.style.display = 'none';
+
+    // Kembalikan input yang sempat di-disable ke status normal
+    const durationSelect = document.getElementById('campaignDurationSelect');
+    if (durationSelect) durationSelect.disabled = false;
+    document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+        cb.disabled = false;
+    });
 }
 
 async function handleCreateCampaignSubmit(e) {
@@ -1310,8 +1481,9 @@ async function handleCreateCampaignSubmit(e) {
     if (errBox) errBox.style.display = 'none';
 
     const title = document.getElementById('campaignTitleInput')?.value?.trim();
-    const duration = parseInt(document.getElementById('campaignDurationSelect')?.value, 10);
-    const spec = document.getElementById('campaignSpecInput')?.value?.trim();
+    const durationSelect = document.getElementById('campaignDurationSelect');
+    const duration = parseInt(durationSelect?.value, 10);
+    const spec = document.getElementById('campaignSpecSelect')?.value?.trim();
     const notes = document.getElementById('campaignNotesInput')?.value?.trim();
 
     const selectedProducts = Array.from(document.querySelectorAll('input[name="campaign_product"]:checked')).map(el => parseInt(el.value, 10));
@@ -1331,9 +1503,11 @@ async function handleCreateCampaignSubmit(e) {
         }
         return;
     }
-    if (!selectedDoctors.length) {
+
+    // DM wajib memilih dokter target di distriknya
+    if (currentUserRole === 'dm' && !selectedDoctors.length) {
         if (errBox) {
-            errBox.innerText = 'Pilih minimal 1 dokter target distrik.';
+            errBox.innerText = `Pilih minimal 1 dokter target di distrik ${currentUserDistrict || ''}.`;
             errBox.style.display = 'block';
         }
         return;
@@ -1344,7 +1518,7 @@ async function handleCreateCampaignSubmit(e) {
         duration_months: duration,
         specialization: spec || null,
         product_ids: selectedProducts,
-        doctor_ids: selectedDoctors,
+        doctor_ids: currentUserRole === 'dm' ? selectedDoctors : [],
         notes: notes || null,
     };
 
@@ -1360,7 +1534,10 @@ async function handleCreateCampaignSubmit(e) {
         if (submitBtn) submitBtn.disabled = false;
 
         if (result.success) {
-            showAlert('Program rekomendasi distrik berhasil diajukan untuk ditinjau atasan.');
+            showAlert(currentUserRole === 'dm'
+                ? 'Rekomendasi dokter distrik berhasil diajukan ke RSM untuk ditinjau.'
+                : 'Arahan program kampanye regional berhasil diterbitkan.'
+            );
             closeCreateCampaignModal();
             loadCampaigns();
         } else {
