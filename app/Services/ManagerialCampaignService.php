@@ -262,11 +262,18 @@ class ManagerialCampaignService
             $totalVisitedNational += $progress['visited_doctors_count'];
             $priorityProductVisitIds = array_merge($priorityProductVisitIds, $campaignPriorityVisitIds);
 
+            // Program arahan makro Regional dari RSM tidak dimasukkan ke dalam breakdown performa distrik
+            // karena Regional adalah payung arahan strategis, bukan distrik operasional dengan target dokter langsung.
+            if (strcasecmp((string) $campaign->district_name, 'Regional') === 0) {
+                continue;
+            }
+
             $districtSummaries[] = [
                 'campaign_id' => $campaign->id,
                 'title' => $campaign->title,
                 'district_name' => $campaign->district_name,
                 'dm_name' => $campaign->creator->name ?? '-',
+                'creator_role' => $campaign->creator->role ?? 'dm',
                 'duration_months' => $campaign->duration_months,
                 'total_doctors' => $progress['total_doctors'],
                 'visited_doctors_count' => $progress['visited_doctors_count'],

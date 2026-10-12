@@ -5,7 +5,7 @@
 
 ## 1. Workflow Implementasi
 
-1. Baca `AGENTS.md` → `DOCS_INDEX.md` → `DESIGN.md` → `PRD.md` → `API_CONTRACT.md` → `DATABASE_SCHEMA.md` → `TDD.md` → `TEST_PLAN.md`.
+1. Baca `AGENTS.md` → `PANDUAN_DOKUMENTASI.md` → `DESIGN.md` → `PRD.md` → `API_CONTRACT.md` → `DATABASE_SCHEMA.md` → `TDD.md` → `TEST_PLAN.md`.
 2. Verifikasi environment Laravel/PHP/Composer/MySQL lokal.
 3. Implementasi per fase P0; **setelah tiap fase** tulis ringkasan file yang diubah, tes yang dijalankan, dan kegagalan yang ditemukan.
 4. Jangan mengklaim PASS tanpa menjalankan test dan melihat hasilnya.

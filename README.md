@@ -10,9 +10,9 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | 3 halaman utama Blade | Selesai: Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan |
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
 | P1 operasional | Selesai: visit session, server checkout, reschedule & cancel plan, rekomendasi & arahan manajerial |
-| Automated tests | `104 passed (367 assertions)` (100% Green) |
-| Browser evidence | Smoke-test UI tersedia di `docs/evidence/ui-smoke/` |
-| Manual evidence final PDF | Perlu direkam saat demo akhir |
+| Automated tests | `104 passed (367 assertions)` |
+| UI smoke evidence | Screenshot tersedia di `docs/evidence/ui-smoke/` |
+| Skenario manual PDF | Perlu direkam saat demo akhir; automated test bukan penggantinya |
 
 Dokumentasi desain ada di [docs/](docs/). README ini menjelaskan kondisi implementasi aktual, bukan spesifikasi rencana.
 
@@ -160,7 +160,7 @@ Semua akun memakai password: `password`.
 | `GET` | `/api/managerial-campaigns/{id}` | Detail program dan kalkulasi progres kunjungan dokter |
 | `PATCH` | `/api/managerial-campaigns/{id}/approve` | Persetujuan usulan distrik oleh RSM |
 | `PATCH` | `/api/managerial-campaigns/{id}/reject` | Penolakan usulan distrik dengan alasan revisi |
-| `GET` | `/api/managerial-campaigns/summary` | Executive Summary ringkasan capaian target wilayah |
+| `GET` | `/api/managerial-campaigns/summary` | Ringkasan capaian target wilayah |
 | `GET` | `/api/managerial-campaigns/recommendations` | Rekomendasi dokter target dan produk fokus untuk MR |
 | `GET` | `/api/doctors` | Master dokter |
 | `GET` | `/api/products` | Master produk |

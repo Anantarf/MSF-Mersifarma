@@ -863,7 +863,7 @@ async function loadActuals() {
 function updateManagerMetrics() {
     const total = actuals.length;
     const planned = actuals.filter(a => a.visit_type === 'planned').length;
-    const unplanned = total - planned;
+    const unplanned = actuals.filter(a => a.visit_type === 'unplanned').length;
 
     const totalEl = byId('metricTotalActuals');
     const plannedEl = byId('metricPlannedActuals');

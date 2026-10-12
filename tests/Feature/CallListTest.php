@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CallList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -386,6 +387,38 @@ class CallListTest extends TestCase
 
         // DM Joko membawahi minimal 2 MR (Rudi dan Ahmad)
         $this->assertGreaterThanOrEqual(2, $response->json('data.total_subordinates'));
+    }
+
+    public function test_regional_and_national_summaries_list_mr_call_list_owners(): void
+    {
+        $callList = CallList::create([
+            'owner_id' => $this->mr->id,
+            'period_month' => '2098-04-01',
+            'status' => 'approved',
+            'assigned_approver_id' => $this->dm->id,
+        ]);
+
+        $regional = $this->actingAs($this->rsm)
+            ->getJson('/api/call-lists/summary?period_month=2098-04');
+        $regional->assertOk()
+            ->assertJsonFragment([
+                'id' => $this->mr->id,
+                'call_list_id' => $callList->id,
+            ])
+            ->assertJsonPath('data.approved_count', 1);
+
+        $national = $this->actingAs(User::where('email', 'mm@mersi.com')->firstOrFail())
+            ->getJson('/api/call-lists/summary?period_month=2098-04');
+        $national->assertOk()
+            ->assertJsonFragment([
+                'id' => $this->mr->id,
+                'call_list_id' => $callList->id,
+            ]);
+
+        $this->assertSame(
+            User::where('role', 'mr')->count(),
+            $national->json('data.total_subordinates')
+        );
     }
 
     public function test_non_manager_cannot_access_managerial_monitoring_summary(): void

@@ -23,7 +23,7 @@ Act like a responsible Junior Software Engineer:
 
 Read these documents before implementation and revisit the relevant sections for each feature:
 
-1. `DOCS_INDEX.md` — scope and document precedence.
+1. `PANDUAN_DOKUMENTASI.md` — scope and document precedence.
 2. `DESIGN.md` — architecture, system overview, and operational flow.
 3. `PRD.md` — business rules, actors, and user experience.
 4. `API_CONTRACT.md` — HTTP request/response contracts.

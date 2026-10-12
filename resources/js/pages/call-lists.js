@@ -1411,11 +1411,13 @@ async function loadExecutiveSummary() {
             `;
 
             if (sum.district_breakdown && sum.district_breakdown.length) {
-                tableBody.innerHTML = sum.district_breakdown.map(d => {
+                const operationalDistricts = sum.district_breakdown.filter(d => (d.district_name || '').toLowerCase() !== 'regional');
+                tableBody.innerHTML = operationalDistricts.map(d => {
                     const reachPct = Number(d.reach_percentage) || 0;
                     const hasTarget = Number(d.total_doctors) > 0;
                     const badgeClass = reachPct >= 80 ? 'badge-success' : (reachPct >= 50 ? 'badge-info' : 'badge-warning');
                     const fillBg = reachPct >= 80 ? 'background: linear-gradient(90deg, #16a34a, #22c55e);' : '';
+                    const roleLabel = d.creator_role === 'rsm' ? 'Regional Sales Manager' : 'District Manager';
 
                     return `
                         <tr>
@@ -1424,7 +1426,7 @@ async function loadExecutiveSummary() {
                             </td>
                             <td>
                                 <div style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">${escapeHtml(d.dm_name)}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">District Manager</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${roleLabel}</div>
                             </td>
                             <td style="text-align: right;">
                                 <span class="tabular-nums font-bold" style="font-size: 0.9rem; color: var(--secondary);">${d.total_doctors}</span>

@@ -258,8 +258,8 @@ class CallListService
             ? Carbon::createFromFormat('Y-m', $periodMonth)->startOfMonth()->format('Y-m-d')
             : Carbon::now()->startOfMonth()->format('Y-m-d');
 
-        // Ambil bawahan langsung berdasarkan relasi hierarki manager_id
-        $subordinates = User::where('manager_id', $manager->id)->get();
+        // Ringkasan target berisi pemilik Call List (MR), termasuk lintas level.
+        $subordinates = $manager->getSubordinateMrUsers();
         $subordinateIds = $subordinates->pluck('id');
 
         if ($subordinateIds->isEmpty()) {
