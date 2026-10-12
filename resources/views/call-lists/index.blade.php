@@ -123,11 +123,8 @@
         <div id="emptyMyLists" class="target-empty" style="display: none;">
             <h4>Belum Ada Target Dokter</h4>
             <p>
-                Mulai susun komitmen target dokter bulanan Anda dari Master Dokter untuk diajukan ke atasan langsung.
+                Buat target dokter bulanan dari Master Dokter untuk diajukan ke atasan langsung.
             </p>
-            @if(auth()->user()->role === 'mr')
-            <button type="button" class="btn btn-primary" data-action="open-create">Buat Target Dokter</button>
-            @endif
         </div>
 
         <!-- Error State Target -->
@@ -343,10 +340,10 @@
                             <option value="12">Desember</option>
                         </select>
                         <select id="periodYearSelect" class="target-input target-period-year" aria-label="Tahun Periode">
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
+                            @php $targetCurrentYear = now()->year; @endphp
+                            @foreach(range($targetCurrentYear - 1, $targetCurrentYear + 2) as $year)
+                                <option value="{{ $year }}" {{ $year === $targetCurrentYear ? 'selected' : '' }}>{{ $year }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <input type="hidden" id="periodMonthInput" required>

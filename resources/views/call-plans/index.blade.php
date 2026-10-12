@@ -71,7 +71,6 @@
             <p>
                 Pilih target dokter yang sudah disetujui, lalu tentukan tanggal dan jam kunjungan.
             </p>
-            <button type="button" class="btn btn-primary" data-action="open-create-plan">Buat Jadwal</button>
             @else
             <p>
                 Belum ada jadwal yang tercatat.
@@ -115,6 +114,10 @@
                     <select id="callListSelect" class="plan-input" required>
                         <option value="">-- Memuat target dokter... --</option>
                     </select>
+                    <div id="callListLoadError" class="alert alert-danger" role="alert" style="display: none; margin-top: 0.5rem;">
+                        <span id="callListLoadErrorText"></span>
+                        <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-call-lists">Coba lagi</button>
+                    </div>
                     <small class="plan-help-text">
                         Hanya target dokter yang sudah disetujui yang dapat dijadwalkan.
                     </small>
@@ -128,6 +131,10 @@
                     <select id="doctorSelect" class="plan-input" required disabled>
                         <option value="">-- Pilih target bulanan terlebih dahulu --</option>
                     </select>
+                    <div id="doctorLoadError" class="alert alert-danger" role="alert" style="display: none; margin-top: 0.5rem;">
+                        <span id="doctorLoadErrorText"></span>
+                        <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-doctors">Coba lagi</button>
+                    </div>
                 </div>
 
                 <!-- 3. Tanggal Kunjungan -->

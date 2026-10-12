@@ -242,7 +242,7 @@
                 </div>
                 <div class="ca-sheet-head-stepper">
                     <span id="actualStepCount" class="ca-step-badge">Langkah 1 dari 3</span>
-                    <span id="actualStepName" class="ca-step-label">1. Informasi &amp; Waktu</span>
+                    <span id="actualStepName" class="sr-only">1. Informasi &amp; Waktu</span>
                 </div>
             </div>
             <div class="ca-progress" role="group" aria-label="Langkah laporan">
@@ -260,9 +260,6 @@
                 <div id="actualModalError" class="ca-alert-error" role="alert" style="display: none;"></div>
 
                 <div id="stepSection1" class="ca-step-panel">
-                    <h4 class="ca-step-title">Informasi Kunjungan</h4>
-                    <p class="ca-helper" id="stepOneHelper">Pilih dokter, tanggal, dan waktu kunjungan. Validasi final tetap dilakukan server saat laporan disimpan.</p>
-
                     <div class="ca-field">
                         <label for="actualDoctorSelect" class="ca-label">Dokter <span class="ca-req" aria-hidden="true">*</span></label>
                         <select id="actualDoctorSelect" class="ca-input" required></select>

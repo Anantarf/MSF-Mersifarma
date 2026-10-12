@@ -2,6 +2,8 @@ let approvedCallLists = [];
 let currentCallListDoctors = [];
 let currentPlans = [];
 let plansLoadError = null;
+let callListLoadRequest = 0;
+let callListDoctorsRequest = 0;
 
 const escapeHtml = window.MSF.escapeHtml;
 const formatPeriodMonth = window.MSF.formatPeriodIndonesian;
@@ -62,6 +64,12 @@ function bindPlanEvents() {
                 break;
             case 'retry-load-plans':
                 loadPlans();
+                break;
+            case 'retry-load-call-lists':
+                loadApprovedCallLists();
+                break;
+            case 'retry-load-doctors':
+                onCallListChange();
                 break;
             default:
                 break;
@@ -255,13 +263,24 @@ function renderPlansGrid() {
 
 async function loadApprovedCallLists() {
     const select = document.getElementById('callListSelect');
+    const errorBox = document.getElementById('callListLoadError');
+    const errorText = document.getElementById('callListLoadErrorText');
+    const requestId = ++callListLoadRequest;
+    if (!select) return;
+
+    if (errorBox) errorBox.style.display = 'none';
+    select.disabled = true;
+    select.innerHTML = '<option value="">-- Memuat target dokter... --</option>';
+
     try {
         const res = await window.apiFetch('/api/call-lists?status=approved');
         const result = await res.json();
-        if (res.ok && result.success) {
+        if (requestId !== callListLoadRequest) return;
+        if (res.ok && result.success && Array.isArray(result.data)) {
             approvedCallLists = result.data;
             if (!approvedCallLists.length) {
                 select.innerHTML = '<option value="">-- Belum ada target dokter yang disetujui --</option>';
+                select.disabled = true;
                 return;
             }
             select.innerHTML = '<option value="">-- Pilih target bulanan --</option>' +
@@ -270,11 +289,17 @@ async function loadApprovedCallLists() {
                         ${escapeHtml(formatPeriodMonth(cl.period_month))}
                     </option>
                 `).join('');
+            select.disabled = false;
         } else {
-            select.innerHTML = `<option value="">${escapeHtml(window.describeApiError(result || res, 'Gagal memuat target', res.status))}</option>`;
+            throw new Error(window.describeApiError(result || res, 'Gagal memuat target', res.status));
         }
     } catch (err) {
-        select.innerHTML = `<option value="">${escapeHtml(window.describeApiError(err, 'Gagal memuat target'))}</option>`;
+        if (requestId !== callListLoadRequest) return;
+        const message = window.describeApiError(err, 'Gagal memuat target dokter yang disetujui.');
+        select.innerHTML = '<option value="">Target dokter gagal dimuat</option>';
+        select.disabled = true;
+        if (errorText) errorText.innerText = message;
+        if (errorBox) errorBox.style.display = 'block';
     }
 }
 
@@ -283,10 +308,15 @@ async function onCallListChange() {
     const doctorSelect = document.getElementById('doctorSelect');
     const planDateInput = document.getElementById('planDateInput');
     const dateHelp = document.getElementById('dateRangeHelp');
+    const errorBox = document.getElementById('doctorLoadError');
+    const errorText = document.getElementById('doctorLoadErrorText');
+    const requestId = ++callListDoctorsRequest;
 
     const selectedOption = select.options[select.selectedIndex];
     const callListId = select.value;
     const periodMonth = selectedOption.getAttribute('data-period'); // Format YYYY-MM
+    currentCallListDoctors = [];
+    if (errorBox) errorBox.style.display = 'none';
 
     if (!callListId) {
         doctorSelect.innerHTML = '<option value="">-- Pilih target bulanan terlebih dahulu --</option>';
@@ -335,9 +365,10 @@ async function onCallListChange() {
     try {
         const res = await window.apiFetch(`/api/call-lists/${callListId}`);
         const result = await res.json();
-        if (result.success) {
-            currentCallListDoctors = result.data.doctors;
-            if (!currentCallListDoctors.length) {
+        if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
+        if (res.ok && result.success && Array.isArray(result.data?.doctors)) {
+            const callListDoctors = result.data.doctors;
+            if (!callListDoctors.length) {
                 doctorSelect.innerHTML = '<option value="">Tidak ada dokter di target ini</option>';
                 return;
             }
@@ -351,9 +382,10 @@ async function onCallListChange() {
                     });
                 }
             } catch (e) {}
+            if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
 
             doctorSelect.innerHTML = '<option value="">-- Pilih Target Dokter --</option>' +
-                currentCallListDoctors.map(doc => {
+                callListDoctors.map(doc => {
                     const rec = recMap[doc.id];
                     const recLabel = rec ? ` [★ Rekomendasi: ${escapeHtml(rec.focus_products)}]` : '';
                     return `
@@ -363,9 +395,16 @@ async function onCallListChange() {
                     `;
                 }).join('');
             doctorSelect.disabled = false;
+            currentCallListDoctors = callListDoctors;
+        } else {
+            throw new Error(window.describeApiError(result || res, 'Gagal memuat dokter pada target ini.', res.status));
         }
     } catch (err) {
-        doctorSelect.innerHTML = '<option value="">Gagal memuat dokter</option>';
+        if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
+        const message = window.describeApiError(err, 'Gagal memuat dokter pada target ini.');
+        doctorSelect.innerHTML = '<option value="">Dokter gagal dimuat</option>';
+        if (errorText) errorText.innerText = message;
+        if (errorBox) errorBox.style.display = 'block';
     }
 }
 
