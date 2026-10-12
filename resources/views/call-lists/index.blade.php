@@ -267,86 +267,88 @@
 <!-- ================= MODAL: PENYUSUNAN TARGET DOKTER (CREATE / EDIT) ================= -->
 <div id="targetModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card target-form-modal">
-        <div class="target-detail-head">
+        <div class="modal-sheet-head">
             <div>
-                <h3 id="targetModalTitle" class="target-detail-title">Susun Target Dokter</h3>
-                <span id="targetModalSubtitle" class="target-detail-subtitle">Pilih target dokter dari Master Customer List</span>
+                <h3 id="targetModalTitle" class="modal-sheet-title">Susun Target Dokter</h3>
+                <span id="targetModalSubtitle" class="modal-sheet-subtitle">Pilih target dokter dari Master Customer List</span>
             </div>
-            <button type="button" class="close-btn" data-action="close-target">&times;</button>
+            <button type="button" class="close-btn" data-action="close-target" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="targetModalError" style="display: none;" class="alert alert-danger"></div>
-
-        <form id="targetForm">
+        <form id="targetForm" class="modal-sheet-form">
             <input type="hidden" id="editingCallListId" value="">
 
-            <!-- 1. Pilihan Periode Bulan (100% Bahasa Indonesia) -->
-            <div class="target-field">
-                <label class="target-field-label">
-                    Periode Bulan:
-                </label>
-                <div class="target-period-row">
-                    <select id="periodMonthSelect" class="target-input target-period-select" aria-label="Bulan Periode">
-                        <option value="01">Januari</option>
-                        <option value="02">Februari</option>
-                        <option value="03">Maret</option>
-                        <option value="04">April</option>
-                        <option value="05">Mei</option>
-                        <option value="06">Juni</option>
-                        <option value="07">Juli</option>
-                        <option value="08">Agustus</option>
-                        <option value="09">September</option>
-                        <option value="10">Oktober</option>
-                        <option value="11">November</option>
-                        <option value="12">Desember</option>
-                    </select>
-                    <select id="periodYearSelect" class="target-input target-period-year" aria-label="Tahun Periode">
-                        <option value="2025">2025</option>
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
-                        <option value="2028">2028</option>
-                    </select>
-                </div>
-                <input type="hidden" id="periodMonthInput" required>
-            </div>
+            <div class="modal-sheet-body">
+                <div id="targetModalError" style="display: none;" class="alert alert-danger"></div>
 
-            <!-- 2. Pencarian & Filter Dokter -->
-            <div class="target-field">
-                <div class="target-picker-head">
+                <!-- 1. Pilihan Periode Bulan (100% Bahasa Indonesia) -->
+                <div class="target-field">
                     <label class="target-field-label">
-                        Pilih Dokter Target (Minimal 1 Dokter):
+                        Periode Bulan:
                     </label>
-                    <span class="target-selected-count">
-                        <span id="selectedDoctorCount">0</span> Dokter Terpilih
-                    </span>
+                    <div class="target-period-row">
+                        <select id="periodMonthSelect" class="target-input target-period-select" aria-label="Bulan Periode">
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                        <select id="periodYearSelect" class="target-input target-period-year" aria-label="Tahun Periode">
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="periodMonthInput" required>
                 </div>
 
-                <div class="target-search-row">
-                    <input type="text" id="doctorSearchInput" class="target-input" placeholder="Cari nama dokter, spesialisasi, atau rumah sakit...">
-                    <button type="button" id="btnFilterToggleSelected" class="btn btn-outline btn-sm target-nowrap" data-action="toggle-selected-filter">
-                        Tampilkan Terpilih
+                <!-- 2. Pencarian & Filter Dokter -->
+                <div class="target-field">
+                    <div class="target-picker-head">
+                        <label class="target-field-label">
+                            Pilih Dokter Target (Minimal 1 Dokter):
+                        </label>
+                        <span class="target-selected-count">
+                            <span id="selectedDoctorCount">0</span> Dokter Terpilih
+                        </span>
+                    </div>
+
+                    <div class="target-search-row">
+                        <input type="text" id="doctorSearchInput" class="target-input" placeholder="Cari nama dokter, spesialisasi, atau rumah sakit...">
+                        <button type="button" id="btnFilterToggleSelected" class="btn btn-outline btn-sm target-nowrap" data-action="toggle-selected-filter">
+                            Tampilkan Terpilih
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Daftar Dokter Lega & Interaktif (Tampilan Halaman Bersih Tanpa Scrollbar Ganda) -->
+                <div id="doctorPickerList" class="target-doctor-picker">
+                    <span class="target-picker-loading">Memuat daftar dokter...</span>
+                </div>
+
+                <!-- Kontrol Navigasi Halaman Dokter -->
+                <div id="doctorPickerPagination" class="target-picker-pagination" style="display: none;">
+                    <button type="button" id="btnPickerPrevPage" class="btn btn-outline btn-sm" data-action="picker-prev-page">
+                        &larr; Sebelumnya
+                    </button>
+                    <span id="pickerPaginationInfo" class="target-picker-page-info">Halaman 1 dari 1</span>
+                    <button type="button" id="btnPickerNextPage" class="btn btn-outline btn-sm" data-action="picker-next-page">
+                        Berikutnya &rarr;
                     </button>
                 </div>
             </div>
 
-            <!-- 3. Daftar Dokter Lega & Interaktif (Tampilan Halaman Bersih Tanpa Scrollbar Ganda) -->
-            <div id="doctorPickerList" class="target-doctor-picker">
-                <span class="target-picker-loading">Memuat daftar dokter...</span>
-            </div>
-
-            <!-- Kontrol Navigasi Halaman Dokter -->
-            <div id="doctorPickerPagination" class="target-picker-pagination" style="display: none;">
-                <button type="button" id="btnPickerPrevPage" class="btn btn-outline btn-sm" data-action="picker-prev-page">
-                    &larr; Sebelumnya
-                </button>
-                <span id="pickerPaginationInfo" class="target-picker-page-info">Halaman 1 dari 1</span>
-                <button type="button" id="btnPickerNextPage" class="btn btn-outline btn-sm" data-action="picker-next-page">
-                    Berikutnya &rarr;
-                </button>
-            </div>
-
-            <!-- 4. Footer Modal -->
-            <div class="target-modal-foot">
+            <!-- 4. Footer Modal (STICKY AT BOTTOM) -->
+            <div class="modal-sheet-foot target-modal-foot">
                 <span class="target-footer-count">
                     Total: <strong id="footerCountText" class="tabular-nums">0</strong> dokter
                 </span>
@@ -367,37 +369,53 @@
 <!-- ================= MODAL: DETAIL CALL LIST ================= -->
 <div id="detailModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card target-detail-modal">
-        <div class="target-detail-head">
+        <div class="modal-sheet-head">
             <div>
-                <h3 id="detailTitle" class="target-detail-title">Detail Target Dokter</h3>
-                <span id="detailPeriodSubtitle" class="target-detail-subtitle">-</span>
+                <h3 id="detailTitle" class="modal-sheet-title">Detail Target Dokter</h3>
+                <span id="detailPeriodSubtitle" class="modal-sheet-subtitle">-</span>
             </div>
-            <button type="button" class="close-btn" data-action="close-detail">&times;</button>
+            <button type="button" class="close-btn" data-action="close-detail" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="detailContent" class="target-detail-content">
-            <div class="target-loading-text">Memuat detail...</div>
+        <div class="modal-sheet-body">
+            <div id="detailContent" class="target-detail-content" style="padding: 0;">
+                <div class="target-loading-text">Memuat detail...</div>
+            </div>
+        </div>
+
+        <div class="modal-sheet-foot">
+            <button type="button" class="btn btn-outline" data-action="close-detail">Tutup</button>
         </div>
     </div>
 </div>
 
 <!-- ================= MODAL: TOLAK PENGAJUAN (REJECT MODAL) ================= -->
 <div id="rejectModal" class="modal-backdrop target-modal-priority" style="display: none;">
-    <div class="modal-card target-reject-modal">
-        <h3 class="target-reject-title">Tolak Target Dokter</h3>
-        <p class="target-reject-copy">
-            Target akan dikembalikan ke status <strong>Perlu Revisi (Draft)</strong> agar bawahan dapat menyesuaikan daftar target dokter.
-        </p>
-        <div id="rejectModalError" style="display: none;" class="alert alert-danger"></div>
-        <form id="rejectForm">
-            <input type="hidden" id="rejectCallListId">
-            <div class="target-field">
-                <label for="rejectReasonInput" class="target-field-label">
-                    Alasan Penolakan (Wajib Diisi):
-                </label>
-                <textarea id="rejectReasonInput" class="target-input target-textarea" rows="3" required placeholder="Contoh: Tambahkan 3 dokter spesialis anak di RSUD wilayah distrik."></textarea>
+    <div class="modal-card target-reject-modal" style="max-width: 480px;">
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title" style="color: var(--danger);">Tolak Target Dokter</h3>
+                <span class="modal-sheet-subtitle">Kembalikan ke status Perlu Revisi (Draft)</span>
             </div>
-            <div class="target-dialog-actions">
+            <button type="button" class="close-btn" data-action="close-reject" aria-label="Tutup">&times;</button>
+        </div>
+
+        <form id="rejectForm" class="modal-sheet-form">
+            <input type="hidden" id="rejectCallListId">
+            <div class="modal-sheet-body">
+                <div id="rejectModalError" style="display: none;" class="alert alert-danger"></div>
+                <p class="target-reject-copy" style="margin: 0;">
+                    Target akan dikembalikan ke status <strong>Perlu Revisi (Draft)</strong> agar bawahan dapat menyesuaikan daftar target dokter.
+                </p>
+                <div class="target-field">
+                    <label for="rejectReasonInput" class="target-field-label">
+                        Alasan Penolakan (Wajib Diisi):
+                    </label>
+                    <textarea id="rejectReasonInput" class="target-input target-textarea" rows="3" required placeholder="Contoh: Tambahkan 3 dokter spesialis anak di RSUD wilayah distrik."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-sheet-foot">
                 <button type="button" class="btn btn-outline" data-action="close-reject">Batal</button>
                 <button type="submit" id="btnConfirmReject" class="btn target-danger-button">
                     Tolak & Kembalikan
@@ -409,14 +427,21 @@
 
 <!-- ================= MODAL: KONFIRMASI AKSI ================= -->
 <div id="confirmModal" class="modal-backdrop target-modal-priority" style="display: none;">
-    <div class="modal-card target-confirm-modal">
-        <h3 id="confirmModalTitle" class="target-confirm-title">Konfirmasi Aksi</h3>
-        <p id="confirmModalMessage" class="target-confirm-copy">Lanjutkan aksi ini?</p>
-        <div class="target-dialog-actions">
+    <div class="modal-card target-confirm-modal" style="max-width: 420px;">
+        <div class="modal-sheet-head">
+            <div>
+                <h3 id="confirmModalTitle" class="modal-sheet-title">Konfirmasi Aksi</h3>
+            </div>
+            <button type="button" class="close-btn" data-action="close-confirm" aria-label="Tutup">&times;</button>
+        </div>
+
+        <div class="modal-sheet-body">
+            <p id="confirmModalMessage" class="target-confirm-copy" style="margin: 0; line-height: 1.5;">Lanjutkan aksi ini?</p>
+        </div>
+
+        <div class="modal-sheet-foot">
             <button type="button" class="btn btn-outline" data-action="close-confirm">Batal</button>
-            <button type="button" id="btnConfirmAction" class="btn btn-primary" data-action="confirm-action">
-                Lanjutkan
-            </button>
+            <button type="button" id="btnConfirmAction" class="btn btn-primary" data-action="confirm-action">Lanjutkan</button>
         </div>
     </div>
 </div>
@@ -424,85 +449,84 @@
 <!-- ================= MODAL: BUAT PROGRAM REKOMENDASI (DM/RSM) ================= -->
 <div id="createCampaignModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card target-form-modal" style="max-width: 620px;">
-        <div class="target-detail-head">
+        <div class="modal-sheet-head">
             <div>
-                <h3 id="campaignModalHeading" class="target-detail-title">Program Rekomendasi</h3>
-                <span id="campaignModalSubheading" class="target-detail-subtitle">Tentukan arahan strategis obat fokus dan dokter target</span>
+                <h3 id="campaignModalHeading" class="modal-sheet-title">Program Rekomendasi</h3>
+                <span id="campaignModalSubheading" class="modal-sheet-subtitle">Tentukan arahan strategis obat fokus dan dokter target</span>
             </div>
-            <button type="button" class="close-btn" data-action="close-create-campaign">&times;</button>
+            <button type="button" class="close-btn" data-action="close-create-campaign" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
+        <form id="createCampaignForm" class="modal-sheet-form">
+            <div class="modal-sheet-body">
+                <div id="createCampaignError" style="display: none;" class="alert alert-danger"></div>
 
-        <form id="createCampaignForm">
-            <!-- Pilihan Arahan RSM (Khusus DM) -->
-            <div id="campaignRsmGuidanceField" class="target-field" style="display: none;">
-                <label class="target-field-label">Pilih Program Arahan dari RSM (Opsional):</label>
-                <select id="campaignRsmGuidanceSelect" class="target-input">
-                    <option value="">-- Buat Usulan Distrik Mandiri --</option>
-                </select>
-                <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
-                    Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
-                </small>
-            </div>
-
-            <!-- Indikator Distrik Sasaran -->
-            <div id="campaignDistrictBadgeWrap" style="margin-bottom: 0.75rem; font-size: 0.825rem; color: var(--text-muted); background: #f8fafc; padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                Wilayah Cakupan: <strong id="campaignDistrictLabel" style="color: var(--secondary);">-</strong>
-            </div>
-
-            <div class="target-field">
-                <label class="target-field-label">Judul Program Rekomendasi:</label>
-                <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                <div class="target-field">
-                    <label class="target-field-label">Durasi Waktu:</label>
-                    <select id="campaignDurationSelect" class="target-input" required>
-                        <option value="1">1 Bulan</option>
-                        <option value="2">2 Bulan</option>
-                        <option value="3" selected>3 Bulan (Maksimal)</option>
+                <!-- Pilihan Arahan RSM (Khusus DM) -->
+                <div id="campaignRsmGuidanceField" class="target-field" style="display: none;">
+                    <label class="target-field-label">Pilih Program Arahan dari RSM (Opsional):</label>
+                    <select id="campaignRsmGuidanceSelect" class="target-input">
+                        <option value="">-- Buat Usulan Distrik Mandiri --</option>
                     </select>
+                    <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                        Memilih arahan RSM akan otomatis mengunci durasi dan obat fokus promosi.
+                    </small>
                 </div>
+
+                <!-- Indikator Distrik Sasaran -->
+                <div id="campaignDistrictBadgeWrap" style="font-size: 0.825rem; color: var(--text-muted); background: #f8fafc; padding: 0.45rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                    Wilayah Cakupan: <strong id="campaignDistrictLabel" style="color: var(--secondary);">-</strong>
+                </div>
+
                 <div class="target-field">
-                    <label class="target-field-label">Target Spesialisasi:</label>
-                    <select id="campaignSpecSelect" class="target-input">
-                        <option value="">-- Semua Spesialisasi --</option>
-                    </select>
+                    <label class="target-field-label">Judul Program Rekomendasi:</label>
+                    <input type="text" id="campaignTitleInput" class="target-input" required placeholder="Contoh: Fokus Pediatri Q4 Jaksel">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="target-field">
+                        <label class="target-field-label">Durasi Waktu:</label>
+                        <select id="campaignDurationSelect" class="target-input" required>
+                            <option value="1">1 Bulan</option>
+                            <option value="2">2 Bulan</option>
+                            <option value="3" selected>3 Bulan (Maksimal)</option>
+                        </select>
+                    </div>
+                    <div class="target-field">
+                        <label class="target-field-label">Target Spesialisasi:</label>
+                        <select id="campaignSpecSelect" class="target-input">
+                            <option value="">-- Semua Spesialisasi --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="target-field">
+                    <label class="target-field-label">Obat Fokus Promosi (Maksimal 5 Produk):</label>
+                    <div id="campaignProductCheckboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat produk master...</span>
+                    </div>
+                </div>
+
+                <div id="campaignDoctorSection" class="target-field">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <label class="target-field-label" style="margin-bottom: 0;">Pilih Dokter Target di Distrik:</label>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);"><span id="campaignSelectedDocCount">0</span> Dokter Terpilih</span>
+                    </div>
+                    <div id="campaignDoctorCheckboxes" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 160px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat dokter distrik...</span>
+                    </div>
+                </div>
+
+                <div class="target-field">
+                    <label class="target-field-label">Catatan Tambahan (Opsional):</label>
+                    <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing ke MR..."></textarea>
                 </div>
             </div>
 
-            <div class="target-field">
-                <label class="target-field-label">Obat Fokus Promosi (Maksimal 5 Produk):</label>
-                <div id="campaignProductCheckboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat produk master...</span>
-                </div>
-            </div>
-
-            <div id="campaignDoctorSection" class="target-field">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                    <label class="target-field-label" style="margin-bottom: 0;">Pilih Dokter Target di Distrik:</label>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);"><span id="campaignSelectedDocCount">0</span> Dokter Terpilih</span>
-                </div>
-                <div id="campaignDoctorCheckboxes" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 160px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fafafa;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Memuat dokter distrik...</span>
-                </div>
-            </div>
-
-            <div class="target-field">
-                <label class="target-field-label">Catatan Tambahan (Opsional):</label>
-                <textarea id="campaignNotesInput" class="target-input" rows="2" placeholder="Arahan strategi detailing ke MR..."></textarea>
-            </div>
-
-            <div class="target-modal-foot">
-                <span></span>
-                <div class="target-actions">
-                    <button type="button" class="btn btn-outline" data-action="close-create-campaign">Batal</button>
-                    <button type="submit" id="btnSubmitCampaign" class="btn btn-primary">
-                        Simpan & Ajukan
-                    </button>
-                </div>
+            <div class="modal-sheet-foot">
+                <button type="button" class="btn btn-outline" data-action="close-create-campaign">Batal</button>
+                <button type="submit" id="btnSubmitCampaign" class="btn btn-primary">
+                    Simpan & Ajukan
+                </button>
             </div>
         </form>
     </div>
@@ -511,19 +535,21 @@
 <!-- ================= MODAL: DAFTAR DOKTER BELUM DIKUNJUNGI ================= -->
 <div id="unvisitedDoctorsModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card" style="max-width: 540px;">
-        <div class="target-detail-head">
+        <div class="modal-sheet-head">
             <div>
-                <h3 id="unvisitedModalTitle" class="target-detail-title">Dokter Belum Dikunjungi</h3>
-                <span class="target-detail-subtitle">Daftar dokter target rekomendasi yang belum memiliki Call Actual</span>
+                <h3 id="unvisitedModalTitle" class="modal-sheet-title">Dokter Belum Dikunjungi</h3>
+                <span class="modal-sheet-subtitle">Daftar dokter target rekomendasi yang belum memiliki Call Actual</span>
             </div>
-            <button type="button" class="close-btn" data-action="close-unvisited-modal">&times;</button>
+            <button type="button" class="close-btn" data-action="close-unvisited-modal" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="unvisitedDoctorsListWrap" style="max-height: 280px; overflow-y: auto; margin: 1rem 0;">
-            <ul id="unvisitedDoctorsList" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+        <div class="modal-sheet-body">
+            <div id="unvisitedDoctorsListWrap" style="overflow-y: auto;">
+                <ul id="unvisitedDoctorsList" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; margin: 0;"></ul>
+            </div>
         </div>
 
-        <div class="target-dialog-actions">
+        <div class="modal-sheet-foot">
             <button type="button" class="btn btn-primary btn-sm" data-action="close-unvisited-modal">Tutup</button>
         </div>
     </div>
@@ -532,17 +558,27 @@
 <!-- ================= MODAL: TOLAK PROGRAM REKOMENDASI ================= -->
 <div id="rejectCampaignModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card" style="max-width: 440px;">
-        <h3 class="target-detail-title" style="color: var(--danger);">Tolak Program Rekomendasi</h3>
-        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 0.85rem;">
-            Berikan catatan alasan penolakan agar pembuat program dapat merevisi target atau fokus produk.
-        </p>
-        <form id="rejectCampaignForm">
-            <input type="hidden" id="rejectCampaignId" value="">
-            <div class="target-field">
-                <label class="target-field-label">Alasan Penolakan:</label>
-                <textarea id="rejectCampaignReasonInput" class="target-input target-textarea" rows="3" required placeholder="Contoh: Sesuaikan fokus obat dengan ketersediaan stok regional..."></textarea>
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title" style="color: var(--danger);">Tolak Program Rekomendasi</h3>
+                <span class="modal-sheet-subtitle">Berikan catatan alasan penolakan revisi</span>
             </div>
-            <div class="target-dialog-actions">
+            <button type="button" class="close-btn" data-action="close-reject-campaign" aria-label="Tutup">&times;</button>
+        </div>
+
+        <form id="rejectCampaignForm" class="modal-sheet-form">
+            <input type="hidden" id="rejectCampaignId" value="">
+            <div class="modal-sheet-body">
+                <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">
+                    Berikan catatan alasan penolakan agar pembuat program dapat merevisi target atau fokus produk.
+                </p>
+                <div class="target-field">
+                    <label class="target-field-label">Alasan Penolakan:</label>
+                    <textarea id="rejectCampaignReasonInput" class="target-input target-textarea" rows="3" required placeholder="Contoh: Sesuaikan fokus obat dengan ketersediaan stok regional..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-sheet-foot">
                 <button type="button" class="btn btn-outline" data-action="close-reject-campaign">Batal</button>
                 <button type="submit" class="btn target-danger-button">Tolak Program</button>
             </div>

@@ -383,30 +383,32 @@
 
 <div id="cancelSessionModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="cancelSessionTitle">
     <div class="modal-card">
-        <div class="modal-head">
+        <div class="modal-sheet-head">
             <h3 id="cancelSessionTitle" class="modal-title modal-title-danger">Batalkan Sesi</h3>
             <button type="button" class="close-btn" data-action="close-cancel-session" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="cancelSessionModalError" style="display: none;" class="alert alert-danger" role="alert"></div>
+        <form id="cancelSessionForm" class="modal-sheet-form">
+            <div class="modal-sheet-body">
+                <div id="cancelSessionModalError" style="display: none;" class="alert alert-danger" role="alert"></div>
 
-        <p class="modal-copy">
-            Batalkan sesi kunjungan ke <strong id="cancelSessionDoctorName">-</strong>? Jadwal tetap tersimpan.
-        </p>
+                <p class="modal-copy">
+                    Batalkan sesi kunjungan ke <strong id="cancelSessionDoctorName">-</strong>? Jadwal tetap tersimpan.
+                </p>
 
-        <form id="cancelSessionForm">
-            <input type="hidden" id="cancelSessionId">
-            <div class="ca-field ca-field-spacious">
-                <label for="cancelSessionReasonInput" class="ca-label">
-                    Alasan Pembatalan
-                </label>
-                <textarea id="cancelSessionReasonInput" required minlength="3" rows="3" class="ca-input ca-textarea"
-                          placeholder="Contoh: Dokter dipanggil operasi darurat sebelum detailing obat"></textarea>
+                <input type="hidden" id="cancelSessionId">
+                <div class="ca-field ca-field-spacious">
+                    <label for="cancelSessionReasonInput" class="ca-label">
+                        Alasan Pembatalan
+                    </label>
+                    <textarea id="cancelSessionReasonInput" required minlength="3" rows="3" class="ca-input ca-textarea"
+                              placeholder="Contoh: Dokter dipanggil operasi darurat sebelum detailing obat"></textarea>
+                </div>
             </div>
 
-            <div class="ca-actions ca-actions-row">
-                <button type="button" class="ca-btn ca-btn-outline ca-btn-grow" data-action="close-cancel-session">Kembali</button>
-                <button type="submit" id="btnConfirmCancelSession" class="ca-btn ca-btn-danger-solid ca-btn-grow">
+            <div class="modal-sheet-foot">
+                <button type="button" class="ca-btn ca-btn-outline" data-action="close-cancel-session">Kembali</button>
+                <button type="submit" id="btnConfirmCancelSession" class="ca-btn ca-btn-danger-solid">
                     Batalkan Sesi
                 </button>
             </div>
@@ -417,7 +419,7 @@
 
 <div id="evidenceModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
     <div class="modal-card modal-card-evidence">
-        <div class="modal-head modal-head-start">
+        <div class="modal-sheet-head modal-head-start">
             <div>
                 <h3 class="modal-title modal-title-sm">
                     Bukti: <span id="evidenceDoctorName">-</span>
@@ -428,7 +430,7 @@
             </div>
             <button type="button" class="close-btn" data-action="close-evidence-modal" aria-label="Tutup">&times;</button>
         </div>
-        <div class="evidence-stack">
+        <div class="modal-sheet-body evidence-stack">
             <div>
                 <label class="evidence-label">
                     Foto:
@@ -445,9 +447,9 @@
                     <img id="evidenceSignatureImg" src="" alt="Tanda Tangan Dokter">
                 </div>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-outline btn-sm" data-action="close-evidence-modal">Tutup</button>
-            </div>
+        </div>
+        <div class="modal-sheet-foot">
+            <button type="button" class="btn btn-outline btn-sm" data-action="close-evidence-modal">Tutup</button>
         </div>
     </div>
 </div>

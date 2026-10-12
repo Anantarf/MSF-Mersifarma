@@ -84,62 +84,67 @@
 
 <div id="createPlanModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card plan-form-modal">
-        <div class="plan-modal-head">
-            <h3 class="plan-modal-title">Buat Jadwal</h3>
-            <button type="button" class="close-btn" data-action="close-create-plan">&times;</button>
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title">Buat Jadwal Kunjungan</h3>
+                <span class="modal-sheet-subtitle">Jadwalkan kunjungan ke dokter dari Target Dokter yang telah disetujui</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-create-plan" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="createPlanModalError" style="display: none;" class="alert alert-danger"></div>
+        <form id="createPlanForm" class="modal-sheet-form">
+            <div class="modal-sheet-body">
+                <div id="createPlanModalError" style="display: none;" class="alert alert-danger"></div>
 
-        <form id="createPlanForm">
-            
-            <div class="plan-field">
-                <label for="callListSelect" class="plan-field-label">
-                    Target Dokter Bulanan
-                </label>
-                <select id="callListSelect" class="plan-input" required>
-                    <option value="">-- Memuat target dokter... --</option>
-                </select>
-                <small class="plan-help-text">
-                    Hanya target dokter yang sudah disetujui yang dapat dijadwalkan.
-                </small>
+                <!-- 1. Pilihan Call List Terverifikasi -->
+                <div class="plan-field">
+                    <label for="callListSelect" class="plan-field-label">
+                        Target Dokter Bulanan
+                    </label>
+                    <select id="callListSelect" class="plan-input" required>
+                        <option value="">-- Memuat target dokter... --</option>
+                    </select>
+                    <small class="plan-help-text">
+                        Hanya target dokter yang sudah disetujui yang dapat dijadwalkan.
+                    </small>
+                </div>
+
+                <!-- 2. Pilihan Dokter Terdaftar -->
+                <div class="plan-field">
+                    <label for="doctorSelect" class="plan-field-label">
+                        Target Dokter
+                    </label>
+                    <select id="doctorSelect" class="plan-input" required disabled>
+                        <option value="">-- Pilih target bulanan terlebih dahulu --</option>
+                    </select>
+                </div>
+
+                <!-- 3. Tanggal Kunjungan -->
+                <div class="plan-field">
+                    <label for="planDateInput" class="plan-field-label">
+                        Tanggal Kunjungan
+                    </label>
+                    <input type="date" id="planDateInput" class="plan-input" required disabled>
+                    <div id="planSelectedDateText" class="plan-date-preview" style="display: none;"></div>
+                    <small id="dateRangeHelp" class="plan-help-text">
+                        Tanggal mengikuti periode target dokter.
+                    </small>
+                    
+                    <div id="availabilityNotice" class="plan-availability" style="display: none;"></div>
+                </div>
+
+                <!-- 4. Jam Kunjungan -->
+                <div class="plan-field plan-field-large">
+                    <label for="plannedTimeInput" class="plan-field-label">
+                        Jam Kunjungan
+                    </label>
+                    <input type="text" id="plannedTimeInput" class="plan-input tabular-nums" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00">
+                </div>
             </div>
 
-            
-            <div class="plan-field">
-                <label for="doctorSelect" class="plan-field-label">
-                    Target Dokter
-                </label>
-                <select id="doctorSelect" class="plan-input" required disabled>
-                    <option value="">-- Pilih target bulanan terlebih dahulu --</option>
-                </select>
-            </div>
-
-            <!-- 3. Tanggal Kunjungan -->
-            <div class="plan-field">
-                <label for="planDateInput" class="plan-field-label">
-                    Tanggal Kunjungan
-                </label>
-                <input type="date" id="planDateInput" class="plan-input" required disabled>
-                <div id="planSelectedDateText" class="plan-date-preview" style="display: none;"></div>
-                <small id="dateRangeHelp" class="plan-help-text">
-                    Tanggal mengikuti periode target dokter.
-                </small>
-                
-                <div id="availabilityNotice" class="plan-availability" style="display: none;"></div>
-            </div>
-
-            <!-- 4. Jam Kunjungan -->
-            <div class="plan-field plan-field-large">
-                <label for="plannedTimeInput" class="plan-field-label">
-                    Jam Kunjungan
-                </label>
-                <input type="text" id="plannedTimeInput" class="plan-input tabular-nums" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00">
-            </div>
-
-            <div class="plan-dialog-actions">
+            <div class="modal-sheet-foot">
                 <button type="button" class="btn btn-outline" data-action="close-create-plan">Batal</button>
-                <button type="submit" id="btnSubmitPlan" class="btn btn-primary">Simpan</button>
+                <button type="submit" id="btnSubmitPlan" class="btn btn-primary">Simpan Jadwal</button>
             </div>
         </form>
     </div>
@@ -148,46 +153,51 @@
 <!-- Modal Reschedule Jadwal -->
 <div id="reschedulePlanModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">
-        <div class="plan-modal-head plan-modal-head-bordered">
-            <h3 class="plan-modal-title">Reschedule Jadwal Kunjungan</h3>
-            <button type="button" class="close-btn" data-action="close-reschedule-plan">&times;</button>
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title">Reschedule Jadwal Kunjungan</h3>
+                <span class="modal-sheet-subtitle">Atur ulang tanggal atau jam kunjungan lapangan</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-reschedule-plan" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="reschedulePlanModalError" style="display: none;" class="alert alert-danger"></div>
-
-        <p class="plan-cancel-copy">
-            Jadwalkan ulang kunjungan ke <strong id="reschedulePlanDoctorName">-</strong><br>
-            <span class="plan-help-text">Jadwal saat ini: <span id="reschedulePlanCurrentSchedule">-</span></span>
-        </p>
-
-        <form id="reschedulePlanForm">
+        <form id="reschedulePlanForm" class="modal-sheet-form">
             <input type="hidden" id="reschedulePlanId">
             <input type="hidden" id="rescheduleDoctorId">
 
-            <div class="plan-field">
-                <label for="reschedulePlanDateInput" class="plan-field-label">
-                    Tanggal Kunjungan Baru
-                </label>
-                <input type="date" id="reschedulePlanDateInput" class="plan-input" required>
-                <div id="rescheduleSelectedDateText" class="plan-date-preview" style="display: none;"></div>
-                <div id="rescheduleAvailabilityNotice" class="plan-availability" style="display: none;"></div>
+            <div class="modal-sheet-body">
+                <div id="reschedulePlanModalError" style="display: none;" class="alert alert-danger"></div>
+
+                <p class="plan-cancel-copy" style="margin: 0;">
+                    Jadwalkan ulang kunjungan ke <strong id="reschedulePlanDoctorName">-</strong><br>
+                    <span class="plan-help-text">Jadwal saat ini: <span id="reschedulePlanCurrentSchedule">-</span></span>
+                </p>
+
+                <div class="plan-field">
+                    <label for="reschedulePlanDateInput" class="plan-field-label">
+                        Tanggal Kunjungan Baru
+                    </label>
+                    <input type="date" id="reschedulePlanDateInput" class="plan-input" required>
+                    <div id="rescheduleSelectedDateText" class="plan-date-preview" style="display: none;"></div>
+                    <div id="rescheduleAvailabilityNotice" class="plan-availability" style="display: none;"></div>
+                </div>
+
+                <div class="plan-field plan-field-large">
+                    <label for="reschedulePlannedTimeInput" class="plan-field-label">
+                        Jam Kunjungan Baru
+                    </label>
+                    <input type="text" id="reschedulePlannedTimeInput" class="plan-input tabular-nums" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00">
+                </div>
+
+                <div class="plan-field plan-field-wide">
+                    <label for="reschedulePlanReasonInput" class="plan-field-label">
+                        Alasan Reschedule
+                    </label>
+                    <textarea id="reschedulePlanReasonInput" class="plan-input plan-textarea" required minlength="3" rows="3" placeholder="Contoh: Dokter meminta perubahan jadwal ke hari lain karena ada tindakan medis"></textarea>
+                </div>
             </div>
 
-            <div class="plan-field plan-field-large">
-                <label for="reschedulePlannedTimeInput" class="plan-field-label">
-                    Jam Kunjungan Baru
-                </label>
-                <input type="text" id="reschedulePlannedTimeInput" class="plan-input tabular-nums" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00">
-            </div>
-
-            <div class="plan-field plan-field-wide">
-                <label for="reschedulePlanReasonInput" class="plan-field-label">
-                    Alasan Reschedule
-                </label>
-                <textarea id="reschedulePlanReasonInput" class="plan-input plan-textarea" required minlength="3" rows="3" placeholder="Contoh: Dokter meminta perubahan jadwal ke hari lain karena ada tindakan medis"></textarea>
-            </div>
-
-            <div class="plan-dialog-actions">
+            <div class="modal-sheet-foot">
                 <button type="button" class="btn btn-outline" data-action="close-reschedule-plan">Batal</button>
                 <button type="submit" id="btnConfirmReschedulePlan" class="btn btn-primary">
                     Simpan Perubahan Jadwal
@@ -197,29 +207,36 @@
     </div>
 </div>
 
+<!-- Modal Batalkan Jadwal -->
 <div id="cancelPlanModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">
-        <div class="plan-modal-head plan-modal-head-bordered">
-            <h3 class="plan-modal-title plan-danger-title">Batalkan Jadwal</h3>
-            <button type="button" class="close-btn" data-action="close-cancel-plan">&times;</button>
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title plan-danger-title" style="color: var(--danger);">Batalkan Jadwal</h3>
+                <span class="modal-sheet-subtitle">Slot tanggal kunjungan akan kembali tersedia</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-cancel-plan" aria-label="Tutup">&times;</button>
         </div>
 
-        <div id="cancelPlanModalError" style="display: none;" class="alert alert-danger"></div>
-
-        <p class="plan-cancel-copy">
-            Batalkan jadwal kunjungan ke <strong id="cancelPlanDoctorName">-</strong> pada tanggal <strong id="cancelPlanDate">-</strong>?
-        </p>
-
-        <form id="cancelPlanForm">
+        <form id="cancelPlanForm" class="modal-sheet-form">
             <input type="hidden" id="cancelPlanId">
-            <div class="plan-field plan-field-wide">
-                <label for="cancelPlanReasonInput" class="plan-field-label">
-                    Alasan Pembatalan
-                </label>
-                <textarea id="cancelPlanReasonInput" class="plan-input plan-textarea" required minlength="3" rows="3" placeholder="Contoh: Dokter ada simposium / operasi darurat di luar kota"></textarea>
+
+            <div class="modal-sheet-body">
+                <div id="cancelPlanModalError" style="display: none;" class="alert alert-danger"></div>
+
+                <p class="plan-cancel-copy" style="margin: 0;">
+                    Batalkan jadwal kunjungan ke <strong id="cancelPlanDoctorName">-</strong> pada tanggal <strong id="cancelPlanDate">-</strong>?
+                </p>
+
+                <div class="plan-field plan-field-wide">
+                    <label for="cancelPlanReasonInput" class="plan-field-label">
+                        Alasan Pembatalan
+                    </label>
+                    <textarea id="cancelPlanReasonInput" class="plan-input plan-textarea" required minlength="3" rows="3" placeholder="Contoh: Dokter ada simposium / operasi darurat di luar kota"></textarea>
+                </div>
             </div>
 
-            <div class="plan-dialog-actions">
+            <div class="modal-sheet-foot">
                 <button type="button" class="btn btn-outline" data-action="close-cancel-plan">Kembali</button>
                 <button type="submit" id="btnConfirmCancelPlan" class="btn btn-danger plan-danger-button">
                     Batalkan Jadwal
@@ -232,42 +249,47 @@
 <!-- Modal Detail Jadwal -->
 <div id="planDetailModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card plan-detail-modal">
-        <div class="plan-modal-head plan-modal-head-bordered">
-            <h3 class="plan-modal-title">Detail Jadwal</h3>
-            <button type="button" class="close-btn" data-action="close-plan-detail">&times;</button>
+        <div class="modal-sheet-head">
+            <div>
+                <h3 class="modal-sheet-title">Detail Jadwal</h3>
+                <span class="modal-sheet-subtitle">Informasi riwayat jadwal kunjungan</span>
+            </div>
+            <button type="button" class="close-btn" data-action="close-plan-detail" aria-label="Tutup">&times;</button>
         </div>
 
-        <div class="plan-detail-stack">
-            <div>
-                <div class="plan-detail-label">Target Dokter</div>
-                <div id="planDetailDoctorName" class="plan-detail-primary">-</div>
-                <div id="planDetailDoctorSub" class="plan-detail-sub">-</div>
-            </div>
+        <div class="modal-sheet-body">
+            <div class="plan-detail-stack">
+                <div>
+                    <div class="plan-detail-label">Target Dokter</div>
+                    <div id="planDetailDoctorName" class="plan-detail-primary">-</div>
+                    <div id="planDetailDoctorSub" class="plan-detail-sub">-</div>
+                </div>
 
-            <div>
-                <div class="plan-detail-label">Jadwal</div>
-                <div id="planDetailSchedule" class="plan-detail-value">-</div>
-            </div>
+                <div>
+                    <div class="plan-detail-label">Jadwal</div>
+                    <div id="planDetailSchedule" class="plan-detail-value">-</div>
+                </div>
 
-            <div>
-                <div class="plan-detail-label">Status</div>
-                <div class="plan-detail-value">
-                    <span class="status-badge status-cancelled">Dibatalkan</span>
+                <div>
+                    <div class="plan-detail-label">Status</div>
+                    <div class="plan-detail-value">
+                        <span class="status-badge status-cancelled">Dibatalkan</span>
+                    </div>
+                </div>
+
+                <div class="plan-reason-box">
+                    <div class="plan-reason-label">Alasan Pembatalan:</div>
+                    <div id="planDetailReason" class="plan-reason-text">-</div>
+                </div>
+
+                <div id="planDetailCancelledAtWrap" class="plan-cancel-time">
+                    Waktu pembatalan: <strong id="planDetailCancelledAt" class="tabular-nums">-</strong>
                 </div>
             </div>
+        </div>
 
-            <div class="plan-reason-box">
-                <div class="plan-reason-label">Alasan Pembatalan:</div>
-                <div id="planDetailReason" class="plan-reason-text">-</div>
-            </div>
-
-            <div id="planDetailCancelledAtWrap" class="plan-cancel-time">
-                Waktu pembatalan: <strong id="planDetailCancelledAt" class="tabular-nums">-</strong>
-            </div>
-
-            <div class="plan-detail-actions">
-                <button type="button" class="btn btn-outline btn-sm" data-action="close-plan-detail">Tutup</button>
-            </div>
+        <div class="modal-sheet-foot">
+            <button type="button" class="btn btn-outline btn-sm" data-action="close-plan-detail">Tutup</button>
         </div>
     </div>
 </div>
