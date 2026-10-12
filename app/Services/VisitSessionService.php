@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ApiException;
 use App\Models\CallActual;
 use App\Models\CallPlan;
 use App\Models\MasterCustomer;
@@ -10,7 +11,6 @@ use App\Models\VisitSession;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VisitSessionService
 {
@@ -24,11 +24,11 @@ class VisitSessionService
         }
 
         if (empty($planId) && empty($doctorId)) {
-            throw new HttpException(422, 'Pilih jadwal kunjungan atau dokter sasaran.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            throw new ApiException('VALIDATION_FAILED', 'Pilih jadwal kunjungan atau dokter sasaran.', 422);
         }
 
         if (! empty($planId) && ! empty($doctorId)) {
-            throw new HttpException(422, 'Kirim salah satu: jadwal kunjungan atau dokter sasaran.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            throw new ApiException('VALIDATION_FAILED', 'Kirim salah satu: jadwal kunjungan atau dokter sasaran.', 422);
         }
 
         $today = Carbon::now()->toDateString();
@@ -49,11 +49,11 @@ class VisitSessionService
                 }
 
                 if ($plan->status !== 'scheduled') {
-                    throw new HttpException(409, 'Jadwal kunjungan tidak dalam status aktif/scheduled.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
+                    throw new ApiException('PLAN_DATE_CONFLICT', 'Jadwal kunjungan tidak dalam status aktif/scheduled.', 409);
                 }
 
                 if (Carbon::parse($plan->plan_date)->toDateString() !== $today) {
-                    throw new HttpException(422, 'Sesi kunjungan hanya dapat dimulai pada tanggal rencana.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+                    throw new ApiException('VALIDATION_FAILED', 'Sesi kunjungan hanya dapat dimulai pada tanggal rencana.', 422);
                 }
 
                 $resolvedDoctorId = $plan->doctor_id;
@@ -83,7 +83,7 @@ class VisitSessionService
                 }
 
                 if (CallPlan::hasActiveSchedule($mr->id, $resolvedDoctorId, $today)) {
-                    throw new HttpException(422, 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
+                    throw new ApiException('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', 422);
                 }
             }
 
@@ -96,11 +96,10 @@ class VisitSessionService
                 ->first();
 
             if ($otherActiveSession) {
-                throw new HttpException(
-                    409,
+                throw new ApiException(
+                    'CONCURRENT_SESSION_DISALLOWED',
                     'Anda masih memiliki sesi kunjungan aktif yang belum selesai. Selesaikan atau batalkan sesi tersebut terlebih dahulu.',
-                    null,
-                    ['X-Error-Code' => 'CONCURRENT_SESSION_DISALLOWED']
+                    409
                 );
             }
 
@@ -110,11 +109,10 @@ class VisitSessionService
                 ->exists();
 
             if ($hasActual) {
-                throw new HttpException(
-                    409,
+                throw new ApiException(
+                    'VISIT_ALREADY_EXISTS',
                     'Kunjungan untuk dokter dan tanggal ini sudah selesai tercatat.',
-                    null,
-                    ['X-Error-Code' => 'VISIT_ALREADY_EXISTS']
+                    409
                 );
             }
 
@@ -126,11 +124,10 @@ class VisitSessionService
                 ->exists();
 
             if ($hasOtherMrSession) {
-                throw new HttpException(
-                    409,
+                throw new ApiException(
+                    'ACTIVE_SESSION_CONFLICT',
                     'Dokter sedang dalam sesi kunjungan aktif oleh rekan sales lain.',
-                    null,
-                    ['X-Error-Code' => 'ACTIVE_SESSION_CONFLICT']
+                    409
                 );
             }
 
@@ -190,7 +187,7 @@ class VisitSessionService
         }
 
         if ($session->status !== 'in_progress') {
-            throw new HttpException(422, 'Hanya sesi yang sedang berlangsung yang dapat di-checkout.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
+            throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat di-checkout.', 422);
         }
 
         if (! $session->check_out_at) {
@@ -214,12 +211,12 @@ class VisitSessionService
         }
 
         if ($session->status !== 'in_progress') {
-            throw new HttpException(422, 'Hanya sesi yang sedang berlangsung yang dapat dibatalkan.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
+            throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat dibatalkan.', 422);
         }
 
         $reason = trim($reason);
         if (mb_strlen($reason) < 3) {
-            throw new HttpException(422, 'Alasan pembatalan sesi kunjungan wajib diisi minimal 3 karakter.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            throw new ApiException('VALIDATION_FAILED', 'Alasan pembatalan sesi kunjungan wajib diisi minimal 3 karakter.', 422);
         }
 
         $session->update([

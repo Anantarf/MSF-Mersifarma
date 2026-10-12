@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ApiException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -78,6 +79,17 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'NOT_FOUND',
                     'errors' => (object) [],
                 ], 404);
+            }
+        });
+
+        $exceptions->render(function (ApiException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => $e->getErrorCode(),
+                    'errors' => (object) [],
+                ], $e->getStatusCode());
             }
         });
 

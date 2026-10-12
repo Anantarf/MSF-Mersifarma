@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewCallListRequest;
 use App\Http\Requests\StoreCallListRequest;
@@ -104,7 +105,7 @@ class CallListApiController extends Controller
 
         // Hanya pemilik atau manager yang ditugaskan yang boleh melihat detail
         if ($callList->owner_id !== $user->id && $callList->assigned_approver_id !== $user->id) {
-            throw new AccessDeniedHttpException('Anda tidak memiliki izin untuk melihat detail Call List ini.');
+            throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Anda tidak memiliki izin untuk melihat detail Call List ini.');
         }
 
         return response()->json([

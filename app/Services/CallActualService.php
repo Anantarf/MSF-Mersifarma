@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ApiException;
 use App\Models\CallActual;
 use App\Models\CallList;
 use App\Models\CallPlan;
@@ -14,7 +15,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class CallActualService
 {
@@ -44,12 +44,12 @@ class CallActualService
         $checkOut = $this->combineVisitDateAndTime($visitDate, $data['check_out']);
 
         if ($checkOut->lessThanOrEqualTo($checkIn)) {
-            throw new HttpException(422, 'Check-out harus setelah check-in.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            throw new ApiException('VALIDATION_FAILED', 'Check-out harus setelah check-in.', 422);
         }
 
         if (! app()->environment('testing') && ! config('app.allow_future_visit_dates', false)) {
             if ($checkIn->isFuture() || $checkOut->isFuture()) {
-                throw new HttpException(422, 'Waktu kunjungan tidak boleh di masa depan.', null, ['X-Error-Code' => 'VISIT_TIME_IN_FUTURE']);
+                throw new ApiException('VISIT_TIME_IN_FUTURE', 'Waktu kunjungan tidak boleh di masa depan.', 422);
             }
         }
 
@@ -105,11 +105,11 @@ class CallActualService
             }
 
             if ($session->status !== 'in_progress') {
-                throw new HttpException(422, 'Sesi kunjungan tidak dalam status in_progress.', null, ['X-Error-Code' => 'SESSION_NOT_IN_PROGRESS']);
+                throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Sesi kunjungan tidak dalam status in_progress.', 422);
             }
 
             if (! $session->check_out_at) {
-                throw new HttpException(422, 'Sesi kunjungan harus check-out sebelum laporan diselesaikan.', null, ['X-Error-Code' => 'SESSION_CHECKOUT_REQUIRED']);
+                throw new ApiException('SESSION_CHECKOUT_REQUIRED', 'Sesi kunjungan harus check-out sebelum laporan diselesaikan.', 422);
             }
 
             $doctorId = $session->doctor_id;
@@ -118,7 +118,7 @@ class CallActualService
             $checkOut = Carbon::parse($session->check_out_at);
 
             if ($checkOut->lessThanOrEqualTo($checkIn)) {
-                throw new HttpException(422, 'Check-out harus setelah check-in.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+                throw new ApiException('VALIDATION_FAILED', 'Check-out harus setelah check-in.', 422);
             }
 
             $this->ensureNoActiveSession($doctorId, $visitDate, $session->id);
@@ -162,7 +162,7 @@ class CallActualService
     {
         foreach (['plan_id', 'doctor_id', 'visit_date', 'check_in', 'check_out'] as $field) {
             if (array_key_exists($field, $data)) {
-                throw new HttpException(422, 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', null, ['X-Error-Code' => 'SESSION_PAYLOAD_MISMATCH']);
+                throw new ApiException('SESSION_PAYLOAD_MISMATCH', 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', 422);
             }
         }
     }
@@ -252,15 +252,15 @@ class CallActualService
     private function ensureRequiredEvidence(array $data): void
     {
         if (empty(trim($data['photo_url'] ?? ''))) {
-            throw new HttpException(422, 'Foto kunjungan wajib diisi.', null, ['X-Error-Code' => 'PHOTO_REQUIRED']);
+            throw new ApiException('PHOTO_REQUIRED', 'Foto kunjungan wajib diisi.', 422);
         }
 
         if (empty(trim($data['signature_url'] ?? ''))) {
-            throw new HttpException(422, 'Tanda tangan dokter wajib diisi.', null, ['X-Error-Code' => 'SIGNATURE_REQUIRED']);
+            throw new ApiException('SIGNATURE_REQUIRED', 'Tanda tangan dokter wajib diisi.', 422);
         }
 
         if (empty($data['products']) || ! is_array($data['products'])) {
-            throw new HttpException(422, 'Minimal satu produk detailing wajib dipilih.', null, ['X-Error-Code' => 'PRODUCT_REQUIRED']);
+            throw new ApiException('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', 422);
         }
     }
 
@@ -274,12 +274,12 @@ class CallActualService
     private function ensureProductsExist(Collection $productIds): void
     {
         if ($productIds->isEmpty()) {
-            throw new HttpException(422, 'Minimal satu produk detailing wajib dipilih.', null, ['X-Error-Code' => 'PRODUCT_REQUIRED']);
+            throw new ApiException('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', 422);
         }
 
         $validCount = Product::whereIn('id', $productIds)->count();
         if ($validCount !== $productIds->count()) {
-            throw new HttpException(422, 'Produk detailing tidak valid.', null, ['X-Error-Code' => 'PRODUCT_REQUIRED']);
+            throw new ApiException('PRODUCT_REQUIRED', 'Produk detailing tidak valid.', 422);
         }
     }
 
@@ -294,7 +294,7 @@ class CallActualService
         }
 
         if ($query->exists()) {
-            throw new HttpException(409, 'Masih ada sesi kunjungan aktif untuk dokter dan tanggal ini.', null, ['X-Error-Code' => 'ACTIVE_SESSION_CONFLICT']);
+            throw new ApiException('ACTIVE_SESSION_CONFLICT', 'Masih ada sesi kunjungan aktif untuk dokter dan tanggal ini.', 409);
         }
     }
 
@@ -341,25 +341,25 @@ class CallActualService
         }
 
         if ($plan->doctor_id !== $doctorId) {
-            throw new HttpException(422, 'Dokter payload tidak sesuai dengan Call Plan.', null, ['X-Error-Code' => 'DOCTOR_PLAN_MISMATCH']);
+            throw new ApiException('DOCTOR_PLAN_MISMATCH', 'Dokter payload tidak sesuai dengan Call Plan.', 422);
         }
 
         if ($plan->status !== 'scheduled') {
-            throw new HttpException(409, 'Call Plan tidak dalam status scheduled.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
+            throw new ApiException('PLAN_DATE_CONFLICT', 'Call Plan tidak dalam status scheduled.', 409);
         }
 
         if (! $plan->callList || $plan->callList->status !== 'approved') {
-            throw new HttpException(422, 'Call Plan harus berasal dari Call List yang telah disetujui.', null, ['X-Error-Code' => 'CALL_LIST_NOT_APPROVED']);
+            throw new ApiException('CALL_LIST_NOT_APPROVED', 'Call Plan harus berasal dari Call List yang telah disetujui.', 422);
         }
 
         $callListMonth = Carbon::parse($plan->callList->period_month)->format('Y-m');
         $actualMonth = Carbon::parse($visitDate)->format('Y-m');
         if ($callListMonth !== $actualMonth) {
-            throw new HttpException(422, 'Tanggal actual harus berada dalam periode Call List sumber.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+            throw new ApiException('VALIDATION_FAILED', 'Tanggal actual harus berada dalam periode Call List sumber.', 422);
         }
 
         if (Carbon::parse($plan->plan_date)->toDateString() !== $visitDate) {
-            throw new HttpException(422, 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
+            throw new ApiException('RESCHEDULE_REQUIRED', 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.', 422);
         }
 
         return $plan;
@@ -370,7 +370,7 @@ class CallActualService
         // Kunjungan di Luar Rencana bukan untuk salah jadwal:
         // Jika MR masih memiliki Plan scheduled yang aktif (belum lewat) pada periode ini, wajib Reschedule.
         if (CallPlan::hasActiveSchedule($mr->id, $doctorId, $visitDate)) {
-            throw new HttpException(422, 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
+            throw new ApiException('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', 422);
         }
 
         $periodStart = Carbon::parse($visitDate)->startOfMonth()->toDateString();
