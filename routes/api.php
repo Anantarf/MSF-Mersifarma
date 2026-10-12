@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CallActualApiController;
 use App\Http\Controllers\Api\CallListApiController;
 use App\Http\Controllers\Api\CallPlanApiController;
 use App\Http\Controllers\Api\DoctorApiController;
+use App\Http\Controllers\Api\ManagerialCampaignApiController;
 use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\Api\VisitSessionApiController;
 use App\Http\Controllers\AuthController;
@@ -46,4 +47,12 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/call-actuals', [CallActualApiController::class, 'store']);
     Route::get('/call-actuals', [CallActualApiController::class, 'index']);
+
+    // Managerial Campaign & Recommendations (P1 Strategic Enhancement)
+    Route::get('/managerial-campaigns', [ManagerialCampaignApiController::class, 'index']);
+    Route::post('/managerial-campaigns', [ManagerialCampaignApiController::class, 'store']);
+    Route::get('/managerial-campaigns/summary', [ManagerialCampaignApiController::class, 'summary']);
+    Route::get('/managerial-campaigns/recommendations', [ManagerialCampaignApiController::class, 'doctorRecommendations']);
+    Route::get('/managerial-campaigns/{id}', [ManagerialCampaignApiController::class, 'show']);
+    Route::patch('/managerial-campaigns/{id}/review', [ManagerialCampaignApiController::class, 'review']);
 });
