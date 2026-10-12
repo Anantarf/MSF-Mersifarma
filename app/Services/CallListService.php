@@ -66,11 +66,11 @@ class CallListService
     public function updateDraft(CallList $callList, User $user, array $doctorIds): CallList
     {
         if ($callList->owner_id !== $user->id) {
-            throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Anda tidak memiliki wewenang untuk mengubah Call List ini.');
+            throw ApiException::forbidden('FORBIDDEN', 'Anda tidak memiliki wewenang untuk mengubah Call List ini.');
         }
 
         if ($callList->status !== 'draft') {
-            throw ApiException::conflict('CONFLICT', 'Hanya Call List berstatus draft yang dapat diubah.');
+            throw ApiException::conflict('CALL_LIST_NOT_DRAFT', 'Hanya Call List berstatus draft yang dapat diubah.');
         }
 
         $this->ensureDoctorsWithinOwnerDistrict($user, $doctorIds);
@@ -113,11 +113,11 @@ class CallListService
     public function submit(CallList $callList, User $user): CallList
     {
         if ($callList->owner_id !== $user->id) {
-            throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Hanya pemilik yang dapat mengajukan Call List ini.');
+            throw ApiException::forbidden('FORBIDDEN', 'Hanya pemilik yang dapat mengajukan Call List ini.');
         }
 
         if ($callList->status !== 'draft') {
-            throw ApiException::conflict('CONFLICT', 'Hanya Call List berstatus draft yang dapat diajukan.');
+            throw ApiException::conflict('CALL_LIST_NOT_DRAFT', 'Hanya Call List berstatus draft yang dapat diajukan.');
         }
 
         if ($callList->doctors()->count() === 0) {
@@ -130,11 +130,11 @@ class CallListService
             $lockedList = CallList::where('id', $callList->id)->lockForUpdate()->first();
 
             if ($lockedList->owner_id !== $user->id) {
-                throw ApiException::forbidden('APPROVAL_NOT_ALLOWED', 'Hanya pemilik yang dapat mengajukan Call List ini.');
+                throw ApiException::forbidden('FORBIDDEN', 'Hanya pemilik yang dapat mengajukan Call List ini.');
             }
 
             if ($lockedList->status !== 'draft') {
-                throw ApiException::conflict('CONFLICT', 'Hanya Call List berstatus draft yang dapat diajukan.');
+                throw ApiException::conflict('CALL_LIST_NOT_DRAFT', 'Hanya Call List berstatus draft yang dapat diajukan.');
             }
 
             if ($lockedList->doctors()->count() === 0) {
@@ -190,7 +190,7 @@ class CallListService
 
         // 2. Status harus pending_approval
         if ($callList->status !== 'pending_approval') {
-            throw ApiException::conflict('CONFLICT', "Call List tidak dalam status menunggu persetujuan (status saat ini: {$callList->status}).");
+            throw ApiException::conflict('CALL_LIST_NOT_PENDING_APPROVAL', "Call List tidak dalam status menunggu persetujuan (status saat ini: {$callList->status}).");
         }
 
         // 3. Jika reject, alasan wajib diisi
@@ -208,7 +208,7 @@ class CallListService
             }
 
             if ($lockedList->status !== 'pending_approval') {
-                throw ApiException::conflict('CONFLICT', "Call List tidak dalam status menunggu persetujuan (status saat ini: {$lockedList->status}).");
+                throw ApiException::conflict('CALL_LIST_NOT_PENDING_APPROVAL', "Call List tidak dalam status menunggu persetujuan (status saat ini: {$lockedList->status}).");
             }
 
             if ($decision === 'approved') {
