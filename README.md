@@ -9,8 +9,8 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | 8 endpoint wajib PDF | Selesai dan diuji |
 | 3 halaman utama Blade | Selesai: Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan |
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
-| P1 operasional | Sebagian tersedia: visit session, checkout, cancel plan, expire stale plan |
-| Automated tests | `65 passed (239 assertions)` |
+| P1 operasional | Selesai: visit session, server checkout, reschedule & cancel plan, rekomendasi & arahan manajerial |
+| Automated tests | `104 passed (367 assertions)` (100% Green) |
 | Browser evidence | Smoke-test UI tersedia di `docs/evidence/ui-smoke/` |
 | Manual evidence final PDF | Perlu direkam saat demo akhir |
 
@@ -154,6 +154,14 @@ Semua akun memakai password: `password`.
 | `POST` | `/api/visit-sessions/{id}/checkout` | Check-out session |
 | `POST/PATCH` | `/api/visit-sessions/{id}/cancel` | Cancel session |
 | `PATCH` | `/api/call-plans/{id}/cancel` | Cancel jadwal |
+| `PATCH` | `/api/call-plans/{id}/reschedule` | Penjadwalan ulang jadwal kunjungan |
+| `POST` | `/api/managerial-campaigns` | Membuat Usulan Distrik (DM) atau Arahan Regional (RSM) |
+| `GET` | `/api/managerial-campaigns` | Mengambil program/arahan sesuai hierarki wilayah |
+| `GET` | `/api/managerial-campaigns/{id}` | Detail program dan kalkulasi progres kunjungan dokter |
+| `PATCH` | `/api/managerial-campaigns/{id}/approve` | Persetujuan usulan distrik oleh RSM |
+| `PATCH` | `/api/managerial-campaigns/{id}/reject` | Penolakan usulan distrik dengan alasan revisi |
+| `GET` | `/api/managerial-campaigns/summary` | Executive Summary ringkasan capaian target wilayah |
+| `GET` | `/api/managerial-campaigns/recommendations` | Rekomendasi dokter target dan produk fokus untuk MR |
 | `GET` | `/api/doctors` | Master dokter |
 | `GET` | `/api/products` | Master produk |
 | `GET` | `/api/doctors/{id}/availability` | Availability dokter |
@@ -174,6 +182,7 @@ Semua akun memakai password: `password`.
 - Foto, tanda tangan, dan produk wajib untuk Actual final.
 - Completion Actual bersifat atomik: actual, products, dan status plan/session konsisten.
 - Conflict lintas MR tidak membocorkan foto, tanda tangan, produk, atau identitas sensitif MR lain.
+- Program manajerial terikat hierarki wilayah dan tidak dapat diakses lintas distrik tanpa izin.
 
 ## Hasil Test
 
@@ -186,7 +195,7 @@ php artisan test
 Hasil:
 
 ```text
-Tests: 65 passed (239 assertions)
+Tests: 104 passed (367 assertions)
 ```
 
 Validasi build frontend:
