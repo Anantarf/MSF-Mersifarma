@@ -499,7 +499,7 @@ function renderMyListsView() {
     // Modal Builder: Pemilihan Dokter yang Lega & Nyaman
     async function openCreateModal() {
         document.getElementById('editingCallListId').value = '';
-        document.getElementById('targetModalTitle').innerText = 'Susun Target Dokter Baru';
+        document.getElementById('targetModalTitle').innerText = 'Buat Target Dokter';
         document.getElementById('targetModalSubtitle').innerText = 'Pilih target dokter dari Master Customer List';
 
         const periodInput = document.getElementById('periodMonthInput');

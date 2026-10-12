@@ -13,7 +13,7 @@
         <div>
             @if(auth()->user()->role === 'mr')
             <button type="button" class="btn btn-primary" data-action="open-create-plan">
-                + Buat Jadwal
+                Buat Jadwal
             </button>
             @endif
         </div>
@@ -71,7 +71,7 @@
             <p>
                 Pilih target dokter yang sudah disetujui, lalu tentukan tanggal dan jam kunjungan.
             </p>
-            <button type="button" class="btn btn-primary" data-action="open-create-plan">+ Buat Jadwal</button>
+            <button type="button" class="btn btn-primary" data-action="open-create-plan">Buat Jadwal</button>
             @else
             <p>
                 Belum ada jadwal yang tercatat.

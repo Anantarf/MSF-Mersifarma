@@ -230,14 +230,20 @@
     <div class="ca-sheet">
 
         <header class="ca-sheet-head">
-            <button type="button" class="ca-back" data-action="close-actual-modal">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Pelaksanaan Kunjungan
-            </button>
-            <h3 id="actualModalTitle" class="ca-sheet-title">Laporan Kunjungan</h3>
-            <p id="actualModeLabel" class="ca-sheet-mode"></p>
-            <div class="ca-progress-head">
-                <span id="actualStepName">1. Informasi &amp; Waktu</span>
-                <span id="actualStepCount">Langkah 1 dari 3</span>
+            <div class="ca-sheet-head-top">
+                <div class="ca-sheet-head-title-wrap">
+                    <button type="button" class="ca-back-btn" data-action="close-actual-modal" title="Kembali ke Pelaksanaan Kunjungan" aria-label="Kembali ke Pelaksanaan Kunjungan">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                    </button>
+                    <div style="min-width: 0;">
+                        <h3 id="actualModalTitle" class="ca-sheet-title">Laporan Kunjungan</h3>
+                        <p id="actualModeLabel" class="ca-sheet-mode"></p>
+                    </div>
+                </div>
+                <div class="ca-sheet-head-stepper">
+                    <span id="actualStepCount" class="ca-step-badge">Langkah 1 dari 3</span>
+                    <span id="actualStepName" class="ca-step-label">1. Informasi &amp; Waktu</span>
+                </div>
             </div>
             <div class="ca-progress" role="group" aria-label="Langkah laporan">
                 <button type="button" id="stepIndicator1" class="ca-progress-seg" data-action="actual-step" data-step="1" aria-label="Langkah 1: Informasi dan Waktu"></button>

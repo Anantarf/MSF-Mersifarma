@@ -13,7 +13,7 @@
         <div>
             @if(auth()->user()->role === 'mr')
             <button type="button" class="btn btn-primary" data-action="open-create">
-                + Susun Target Dokter
+                Buat Target Dokter
             </button>
             @elseif(auth()->user()->role === 'rsm')
             <button type="button" class="btn btn-primary" data-action="open-create-campaign">
@@ -126,7 +126,7 @@
                 Mulai susun komitmen target dokter bulanan Anda dari Master Dokter untuk diajukan ke atasan langsung.
             </p>
             @if(auth()->user()->role === 'mr')
-            <button type="button" class="btn btn-primary" data-action="open-create">+ Susun Target Dokter</button>
+            <button type="button" class="btn btn-primary" data-action="open-create">Buat Target Dokter</button>
             @endif
         </div>
 
@@ -251,7 +251,7 @@
         @if(auth()->user()->role === 'dm')
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 0.75rem;">
             <button type="button" class="btn btn-primary btn-sm" data-action="open-create-campaign">
-                + Buat Usulan Distrik
+                Buat Usulan Distrik
             </button>
         </div>
         @endif
@@ -310,7 +310,7 @@
     <div class="modal-card target-form-modal">
         <div class="modal-sheet-head">
             <div>
-                <h3 id="targetModalTitle" class="modal-sheet-title">Susun Target Dokter</h3>
+                <h3 id="targetModalTitle" class="modal-sheet-title">Buat Target Dokter</h3>
                 <span id="targetModalSubtitle" class="modal-sheet-subtitle">Pilih target dokter dari Master Customer List</span>
             </div>
             <button type="button" class="close-btn" data-action="close-target" aria-label="Tutup">&times;</button>
