@@ -32,6 +32,8 @@ class VisitSessionTest extends TestCase
     {
         parent::setUp();
 
+        Carbon::setTestNow(Carbon::parse('2026-12-15 10:00:00'));
+
         $this->mr = User::where('email', 'mr@mersi.com')->firstOrFail();
         $this->otherMr = User::where('email', 'mr2@mersi.com')->firstOrFail();
         $this->dm = User::where('email', 'dm@mersi.com')->firstOrFail();
@@ -42,7 +44,7 @@ class VisitSessionTest extends TestCase
         $callList = CallList::firstOrCreate(
             [
                 'owner_id' => $this->mr->id,
-                'period_month' => Carbon::now()->startOfMonth()->toDateString(),
+                'period_month' => '2026-12-01',
             ],
             [
                 'status' => 'approved',
@@ -65,6 +67,13 @@ class VisitSessionTest extends TestCase
             'planned_time' => '10:00:00',
             'status' => 'scheduled',
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     public function test_mr_can_start_visit_session_from_scheduled_plan(): void
@@ -346,10 +355,47 @@ class VisitSessionTest extends TestCase
         $this->assertEquals('cancelled', $staleSession->status);
         $this->assertStringContainsString('kedaluwarsa otomatis', $staleSession->cancellation_reason);
 
-        // 2. MR tidak terkunci dan dapat langsung memulai sesi baru hari ini
         $responseStart = $this->actingAs($this->mr)->postJson('/api/visit-sessions', [
             'plan_id' => $this->plan->id,
         ]);
         $responseStart->assertStatus(201);
+    }
+
+    public function test_cannot_start_unplanned_session_when_doctor_has_active_plan(): void
+    {
+        // Dokter sudah memiliki plan aktif hari ini ($this->plan)
+        $response = $this->actingAs($this->mr)->postJson('/api/visit-sessions', [
+            'doctor_id' => $this->doctor->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error_code', 'RESCHEDULE_REQUIRED');
+    }
+
+    public function test_can_start_unplanned_session_when_doctor_has_only_stale_past_plan(): void
+    {
+        $otherDoctor = MasterCustomer::where('id', '!=', $this->doctor->id)->firstOrFail();
+        $this->plan->callList->doctors()->syncWithoutDetaching([$otherDoctor->id]);
+        $yesterday = Carbon::now()->subDay()->toDateString();
+
+        // Buat plan kemarin yang tidak terealisasi (status masih scheduled)
+        CallPlan::create([
+            'call_list_id' => $this->plan->call_list_id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $otherDoctor->id,
+            'plan_date' => $yesterday,
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        // Memulai sesi kunjungan luar rencana hari ini untuk otherDoctor
+        // Jadwal kemarin yang terlewat tidak boleh memblokir dengan RESCHEDULE_REQUIRED
+        $response = $this->actingAs($this->mr)->postJson('/api/visit-sessions', [
+            'doctor_id' => $otherDoctor->id,
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.doctor_id', $otherDoctor->id)
+            ->assertJsonPath('data.status', 'in_progress');
     }
 }

@@ -86,7 +86,7 @@ class CallActualService
                 $plan->update(['status' => 'completed']);
             }
 
-            return $actual->load(['doctor', 'products', 'plan']);
+            return $actual->load(['doctor', 'products']);
         });
     }
 
@@ -154,7 +154,7 @@ class CallActualService
                 $plan->update(['status' => 'completed']);
             }
 
-            return $actual->load(['doctor', 'products', 'plan']);
+            return $actual->load(['doctor', 'products']);
         });
     }
 
@@ -207,7 +207,7 @@ class CallActualService
         ?string $month = null,
         ?string $visitType = null
     ): Collection {
-        $query = CallActual::with(['doctor', 'products', 'plan', 'mr']);
+        $query = CallActual::with(['doctor', 'products', 'mr']);
 
         if ($user->role === 'mr') {
             if ($targetMrId && $targetMrId !== $user->id) {
@@ -358,19 +358,8 @@ class CallActualService
             throw new HttpException(422, 'Tanggal actual harus berada dalam periode Call List sumber.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
         }
 
-        if (Carbon::parse($plan->plan_date)->toDateString() !== $visitDate && empty(trim($deviationReason ?? ''))) {
-            throw new HttpException(422, 'Alasan deviasi wajib diisi jika tanggal actual berbeda dari jadwal.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
-        }
-
-        $hasScheduledPlanOnActualDate = CallPlan::where('mr_id', $mr->id)
-            ->where('doctor_id', $doctorId)
-            ->where('plan_date', $visitDate)
-            ->where('status', 'scheduled')
-            ->whereKeyNot($plan->id)
-            ->exists();
-
-        if ($hasScheduledPlanOnActualDate) {
-            throw new HttpException(409, 'Gunakan Call Plan yang sesuai dengan tanggal actual.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
+        if (Carbon::parse($plan->plan_date)->toDateString() !== $visitDate) {
+            throw new HttpException(422, 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
         }
 
         return $plan;
@@ -378,10 +367,16 @@ class CallActualService
 
     private function classifyWithoutPlan(User $mr, int $doctorId, string $visitDate, Carbon $checkIn): string
     {
-        $periodMonth = Carbon::parse($visitDate)->startOfMonth()->toDateString();
+        // Kunjungan di Luar Rencana bukan untuk salah jadwal:
+        // Jika MR masih memiliki Plan scheduled yang aktif (belum lewat) pada periode ini, wajib Reschedule.
+        if (CallPlan::hasActiveSchedule($mr->id, $doctorId, $visitDate)) {
+            throw new HttpException(422, 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
+        }
+
+        $periodStart = Carbon::parse($visitDate)->startOfMonth()->toDateString();
 
         $hasApprovedTarget = CallList::where('owner_id', $mr->id)
-            ->where('period_month', $periodMonth)
+            ->where('period_month', $periodStart)
             ->where('status', 'approved')
             ->where('approved_at', '<=', $checkIn)
             ->whereHas('doctors', fn ($query) => $query->where('master_customers.id', $doctorId))

@@ -350,7 +350,7 @@ class CallActualTest extends TestCase
             'products' => [1],
         ])->assertStatus(201);
 
-        // 1. DM (Wisnu) direct manager of MR can view
+        // 1. DM direct manager of MR can view
         $dmResponse = $this->actingAs($this->dm)->getJson('/api/call-actuals?date=2026-11-19');
         $dmResponse->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -413,5 +413,110 @@ class CallActualTest extends TestCase
         // MR trying to query another MR's data
         $mrAttempt = $this->actingAs($this->mr)->getJson("/api/call-actuals?mr_id={$this->otherMr->id}");
         $mrAttempt->assertStatus(403);
+    }
+
+    public function test_planned_actual_rejects_visit_date_different_from_plan_date_with_reschedule_required(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-12',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => $plan->id,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-14', // Beda tanggal dari jadwal
+            'check_in' => '08:30:00',
+            'check_out' => '09:00:00',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error_code', 'RESCHEDULE_REQUIRED')
+            ->assertJson([
+                'success' => false,
+                'message' => 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.',
+            ]);
+    }
+
+    public function test_unplanned_actual_rejects_doctor_with_active_scheduled_plan_with_reschedule_required(): void
+    {
+        // Dokter 1 punya Call Plan scheduled aktif di bulan November
+        CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-20',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        // MR mencoba mengisi kunjungan luar rencana (plan_id null) untuk dokter 1
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => null,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-21',
+            'check_in' => '11:00:00',
+            'check_out' => '11:30:00',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error_code', 'RESCHEDULE_REQUIRED');
+    }
+
+    public function test_unplanned_actual_allows_doctor_with_stale_past_scheduled_plan(): void
+    {
+        // Dokter 1 punya Call Plan scheduled yang tanggalnya sudah lewat (kemarin, 2026-11-19)
+        CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-19',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        // MR mengisi kunjungan luar rencana pada hari ini (2026-11-20)
+        // Karena jadwal 2026-11-19 sudah basi/terlewat, tidak boleh memblokir dengan RESCHEDULE_REQUIRED
+        $response = $this->actingAs($this->mr)->postJson('/api/call-actuals', [
+            'plan_id' => null,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-20',
+            'check_in' => '11:00:00',
+            'check_out' => '11:30:00',
+            'photo_url' => 'https://example.test/photo.jpg',
+            'signature_url' => 'https://example.test/signature.png',
+            'products' => [1],
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.visit_type', 'unplanned');
+    }
+
+    public function test_doctor_api_supports_all_mcl_query_param(): void
+    {
+        // Set user district
+        $this->mr->district = 'Jakarta Selatan';
+        $this->mr->save();
+
+        $defaultResponse = $this->actingAs($this->mr)->getJson('/api/doctors');
+        $defaultResponse->assertStatus(200);
+
+        $allResponse = $this->actingAs($this->mr)->getJson('/api/doctors?all=1');
+        $allResponse->assertStatus(200);
+
+        $this->assertGreaterThanOrEqual(
+            count($defaultResponse->json('data')),
+            count($allResponse->json('data'))
+        );
     }
 }

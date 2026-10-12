@@ -81,6 +81,10 @@ class VisitSessionService
                 if ($existingDocSession) {
                     return $existingDocSession->load(['doctor', 'plan']);
                 }
+
+                if (CallPlan::hasActiveSchedule($mr->id, $resolvedDoctorId, $today)) {
+                    throw new HttpException(422, 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', null, ['X-Error-Code' => 'RESCHEDULE_REQUIRED']);
+                }
             }
 
             // Lock master customer dokter
