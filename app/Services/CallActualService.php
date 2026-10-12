@@ -44,12 +44,12 @@ class CallActualService
         $checkOut = $this->combineVisitDateAndTime($visitDate, $data['check_out']);
 
         if ($checkOut->lessThanOrEqualTo($checkIn)) {
-            throw new ApiException('VALIDATION_FAILED', 'Check-out harus setelah check-in.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Check-out harus setelah check-in.');
         }
 
         if (! app()->environment('testing') && ! config('app.allow_future_visit_dates', false)) {
             if ($checkIn->isFuture() || $checkOut->isFuture()) {
-                throw new ApiException('VISIT_TIME_IN_FUTURE', 'Waktu kunjungan tidak boleh di masa depan.', 422);
+                throw ApiException::validation('VISIT_TIME_IN_FUTURE', 'Waktu kunjungan tidak boleh di masa depan.');
             }
         }
 
@@ -105,11 +105,11 @@ class CallActualService
             }
 
             if ($session->status !== 'in_progress') {
-                throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Sesi kunjungan tidak dalam status in_progress.', 422);
+                throw ApiException::validation('SESSION_NOT_IN_PROGRESS', 'Sesi kunjungan tidak dalam status in_progress.');
             }
 
             if (! $session->check_out_at) {
-                throw new ApiException('SESSION_CHECKOUT_REQUIRED', 'Sesi kunjungan harus check-out sebelum laporan diselesaikan.', 422);
+                throw ApiException::validation('SESSION_CHECKOUT_REQUIRED', 'Sesi kunjungan harus check-out sebelum laporan diselesaikan.');
             }
 
             $doctorId = $session->doctor_id;
@@ -118,7 +118,7 @@ class CallActualService
             $checkOut = Carbon::parse($session->check_out_at);
 
             if ($checkOut->lessThanOrEqualTo($checkIn)) {
-                throw new ApiException('VALIDATION_FAILED', 'Check-out harus setelah check-in.', 422);
+                throw ApiException::validation('VALIDATION_FAILED', 'Check-out harus setelah check-in.');
             }
 
             $this->ensureNoActiveSession($doctorId, $visitDate, $session->id);
@@ -162,7 +162,7 @@ class CallActualService
     {
         foreach (['plan_id', 'doctor_id', 'visit_date', 'check_in', 'check_out'] as $field) {
             if (array_key_exists($field, $data)) {
-                throw new ApiException('SESSION_PAYLOAD_MISMATCH', 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.', 422);
+                throw ApiException::validation('SESSION_PAYLOAD_MISMATCH', 'Payload sesi tidak boleh mengirim identitas atau waktu kunjungan manual.');
             }
         }
     }
@@ -252,15 +252,21 @@ class CallActualService
     private function ensureRequiredEvidence(array $data): void
     {
         if (empty(trim($data['photo_url'] ?? ''))) {
-            throw new ApiException('PHOTO_REQUIRED', 'Foto kunjungan wajib diisi.', 422);
+            throw ApiException::validation('PHOTO_REQUIRED', 'Foto kunjungan wajib diisi.', [
+                'photo_url' => ['Foto kunjungan wajib diisi.'],
+            ]);
         }
 
         if (empty(trim($data['signature_url'] ?? ''))) {
-            throw new ApiException('SIGNATURE_REQUIRED', 'Tanda tangan dokter wajib diisi.', 422);
+            throw ApiException::validation('SIGNATURE_REQUIRED', 'Tanda tangan dokter wajib diisi.', [
+                'signature_url' => ['Tanda tangan dokter wajib diisi.'],
+            ]);
         }
 
         if (empty($data['products']) || ! is_array($data['products'])) {
-            throw new ApiException('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', 422);
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', [
+                'products' => ['Minimal satu produk detailing wajib dipilih.'],
+            ]);
         }
     }
 
@@ -274,12 +280,12 @@ class CallActualService
     private function ensureProductsExist(Collection $productIds): void
     {
         if ($productIds->isEmpty()) {
-            throw new ApiException('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.', 422);
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Minimal satu produk detailing wajib dipilih.');
         }
 
         $validCount = Product::whereIn('id', $productIds)->count();
         if ($validCount !== $productIds->count()) {
-            throw new ApiException('PRODUCT_REQUIRED', 'Produk detailing tidak valid.', 422);
+            throw ApiException::validation('PRODUCT_REQUIRED', 'Produk detailing tidak valid.');
         }
     }
 
@@ -294,7 +300,7 @@ class CallActualService
         }
 
         if ($query->exists()) {
-            throw new ApiException('ACTIVE_SESSION_CONFLICT', 'Masih ada sesi kunjungan aktif untuk dokter dan tanggal ini.', 409);
+            throw ApiException::conflict('ACTIVE_SESSION_CONFLICT', 'Masih ada sesi kunjungan aktif untuk dokter dan tanggal ini.');
         }
     }
 
@@ -341,25 +347,25 @@ class CallActualService
         }
 
         if ($plan->doctor_id !== $doctorId) {
-            throw new ApiException('DOCTOR_PLAN_MISMATCH', 'Dokter payload tidak sesuai dengan Call Plan.', 422);
+            throw ApiException::validation('DOCTOR_PLAN_MISMATCH', 'Dokter payload tidak sesuai dengan Call Plan.');
         }
 
         if ($plan->status !== 'scheduled') {
-            throw new ApiException('PLAN_DATE_CONFLICT', 'Call Plan tidak dalam status scheduled.', 409);
+            throw ApiException::conflict('PLAN_DATE_CONFLICT', 'Call Plan tidak dalam status scheduled.');
         }
 
         if (! $plan->callList || $plan->callList->status !== 'approved') {
-            throw new ApiException('CALL_LIST_NOT_APPROVED', 'Call Plan harus berasal dari Call List yang telah disetujui.', 422);
+            throw ApiException::validation('CALL_LIST_NOT_APPROVED', 'Call Plan harus berasal dari Call List yang telah disetujui.');
         }
 
         $callListMonth = Carbon::parse($plan->callList->period_month)->format('Y-m');
         $actualMonth = Carbon::parse($visitDate)->format('Y-m');
         if ($callListMonth !== $actualMonth) {
-            throw new ApiException('VALIDATION_FAILED', 'Tanggal actual harus berada dalam periode Call List sumber.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Tanggal actual harus berada dalam periode Call List sumber.');
         }
 
         if (Carbon::parse($plan->plan_date)->toDateString() !== $visitDate) {
-            throw new ApiException('RESCHEDULE_REQUIRED', 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.', 422);
+            throw ApiException::validation('RESCHEDULE_REQUIRED', 'Tanggal kunjungan tidak sesuai jadwal. Reschedule jadwal terlebih dahulu.');
         }
 
         return $plan;
@@ -370,7 +376,7 @@ class CallActualService
         // Kunjungan di Luar Rencana bukan untuk salah jadwal:
         // Jika MR masih memiliki Plan scheduled yang aktif (belum lewat) pada periode ini, wajib Reschedule.
         if (CallPlan::hasActiveSchedule($mr->id, $doctorId, $visitDate)) {
-            throw new ApiException('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', 422);
+            throw ApiException::validation('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.');
         }
 
         $periodStart = Carbon::parse($visitDate)->startOfMonth()->toDateString();

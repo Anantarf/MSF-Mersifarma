@@ -48,41 +48,29 @@ class CallPlanService
 
         // 2. Cek status approval Call List (PDF-02)
         if ($callList->status !== 'approved') {
-            throw new ApiException(
-                'CALL_LIST_NOT_APPROVED',
-                'Call Plan hanya dapat dibuat dari Call List yang telah disetujui (Approved).',
-                422
-            );
+            throw ApiException::validation(
+                'CALL_LIST_NOT_APPROVED', 'Call Plan hanya dapat dibuat dari Call List yang telah disetujui (Approved).');
         }
 
         // 3. Cek apakah dokter terdaftar di Call List
         $isDoctorInList = $callList->doctors()->where('master_customers.id', $doctorId)->exists();
         if (! $isDoctorInList) {
-            throw new ApiException(
-                'DOCTOR_PLAN_MISMATCH',
-                'Dokter tidak terdaftar dalam Call List sasaran.',
-                422
-            );
+            throw ApiException::validation(
+                'DOCTOR_PLAN_MISMATCH', 'Dokter tidak terdaftar dalam Call List sasaran.');
         }
 
         // 3b. Plan tidak boleh dibuat untuk tanggal yang sudah lewat; jadwal lewat tanggal otomatis expired.
         if (Carbon::parse($planDate)->toDateString() < Carbon::today('Asia/Jakarta')->toDateString()) {
-            throw new ApiException(
-                'VALIDATION_FAILED',
-                'Tanggal rencana kunjungan tidak boleh sebelum hari ini.',
-                422
-            );
+            throw ApiException::validation(
+                'VALIDATION_FAILED', 'Tanggal rencana kunjungan tidak boleh sebelum hari ini.');
         }
 
         // 4. Cek apakah plan_date berada dalam bulan Call List
         $callListMonth = Carbon::parse($callList->period_month)->format('Y-m');
         $planDateMonth = Carbon::parse($planDate)->format('Y-m');
         if ($callListMonth !== $planDateMonth) {
-            throw new ApiException(
-                'VALIDATION_FAILED',
-                "Tanggal rencana kunjungan ({$planDate}) harus berada dalam periode bulan Call List ({$callListMonth}).",
-                422
-            );
+            throw ApiException::validation(
+                'VALIDATION_FAILED', "Tanggal rencana kunjungan ({$planDate}) harus berada dalam periode bulan Call List ({$callListMonth}).");
         }
 
         return DB::transaction(function () use ($callList, $mr, $doctorId, $planDate, $plannedTime) {
@@ -95,11 +83,8 @@ class CallPlanService
                 ->exists();
 
             if ($hasActual) {
-                throw new ApiException(
-                    'VISIT_ALREADY_EXISTS',
-                    'Kunjungan untuk dokter dan tanggal ini sudah selesai tercatat.',
-                    409
-                );
+                throw ApiException::conflict(
+                    'VISIT_ALREADY_EXISTS', 'Kunjungan untuk dokter dan tanggal ini sudah selesai tercatat.');
             }
 
             // 7. Cek apakah sudah ada Call Plan aktif (scheduled atau completed) di tanggal ini
@@ -109,11 +94,8 @@ class CallPlanService
                 ->exists();
 
             if ($hasActivePlan) {
-                throw new ApiException(
-                    'PLAN_DATE_CONFLICT',
-                    'Dokter sudah memiliki jadwal rencana kunjungan aktif pada tanggal tersebut.',
-                    409
-                );
+                throw ApiException::conflict(
+                    'PLAN_DATE_CONFLICT', 'Dokter sudah memiliki jadwal rencana kunjungan aktif pada tanggal tersebut.');
             }
 
             return CallPlan::create([
@@ -191,21 +173,21 @@ class CallPlanService
         }
 
         if ($plan->status === 'completed') {
-            throw new ApiException('PLAN_ALREADY_COMPLETED', 'Rencana kunjungan yang sudah selesai tidak dapat dibatalkan.', 422);
+            throw ApiException::validation('PLAN_ALREADY_COMPLETED', 'Rencana kunjungan yang sudah selesai tidak dapat dibatalkan.');
         }
 
         if ($plan->status === 'cancelled') {
-            throw new ApiException('PLAN_ALREADY_CANCELLED', 'Rencana kunjungan sudah dalam status dibatalkan.', 422);
+            throw ApiException::validation('PLAN_ALREADY_CANCELLED', 'Rencana kunjungan sudah dalam status dibatalkan.');
         }
 
         $reason = trim($reason);
         if (mb_strlen($reason) < 3) {
-            throw new ApiException('VALIDATION_FAILED', 'Alasan pembatalan rencana kunjungan wajib diisi minimal 3 karakter.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Alasan pembatalan rencana kunjungan wajib diisi minimal 3 karakter.');
         }
 
         // Cek apakah ada Actual terkait
         if ($plan->callActual()->exists()) {
-            throw new ApiException('PLAN_HAS_ACTUAL', 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.', 422);
+            throw ApiException::validation('PLAN_HAS_ACTUAL', 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.');
         }
 
         return DB::transaction(function () use ($plan, $reason) {
@@ -238,13 +220,13 @@ class CallPlanService
 
         $reason = trim($data['reason'] ?? '');
         if (mb_strlen($reason) < 3) {
-            throw new ApiException('VALIDATION_FAILED', 'Alasan penjadwalan ulang rencana kunjungan wajib diisi minimal 3 karakter.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Alasan penjadwalan ulang rencana kunjungan wajib diisi minimal 3 karakter.');
         }
 
         $newDate = Carbon::parse($data['plan_date'])->toDateString();
 
         if ($newDate < Carbon::today('Asia/Jakarta')->toDateString()) {
-            throw new ApiException('VALIDATION_FAILED', 'Tanggal baru tidak boleh sebelum hari ini.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Tanggal baru tidak boleh sebelum hari ini.');
         }
 
         // Bacaan awal tanpa lock hanya untuk mengetahui pemilik dan dokter yang harus di-lock.
@@ -258,23 +240,23 @@ class CallPlanService
             $plan = CallPlan::with('callList')->whereKey($planOwnership->id)->lockForUpdate()->firstOrFail();
 
             if ($plan->status !== 'scheduled') {
-                throw new ApiException('INVALID_STATUS', 'Hanya rencana kunjungan berstatus scheduled yang dapat dijadwalkan ulang.', 422);
+                throw ApiException::validation('INVALID_STATUS', 'Hanya rencana kunjungan berstatus scheduled yang dapat dijadwalkan ulang.');
             }
 
             if ($plan->callActual()->exists()) {
-                throw new ApiException('PLAN_HAS_ACTUAL', 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.', 422);
+                throw ApiException::validation('PLAN_HAS_ACTUAL', 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.');
             }
 
             if (VisitSession::where('plan_id', $plan->id)->where('status', 'in_progress')->exists()) {
-                throw new ApiException('ACTIVE_SESSION_CONFLICT', 'Rencana kunjungan sedang berlangsung. Batalkan sesi kunjungan terlebih dahulu.', 409);
+                throw ApiException::conflict('ACTIVE_SESSION_CONFLICT', 'Rencana kunjungan sedang berlangsung. Batalkan sesi kunjungan terlebih dahulu.');
             }
 
             if (! $plan->callList || $plan->callList->status !== 'approved') {
-                throw new ApiException('CALL_LIST_NOT_APPROVED', 'Call List sumber tidak lagi dalam status disetujui.', 422);
+                throw ApiException::validation('CALL_LIST_NOT_APPROVED', 'Call List sumber tidak lagi dalam status disetujui.');
             }
 
             if (Carbon::parse($plan->callList->period_month)->format('Y-m') !== Carbon::parse($newDate)->format('Y-m')) {
-                throw new ApiException('DATE_OUT_OF_PERIOD', 'Tanggal baru harus berada dalam bulan periode Call List yang disetujui.', 422);
+                throw ApiException::validation('DATE_OUT_OF_PERIOD', 'Tanggal baru harus berada dalam bulan periode Call List yang disetujui.');
             }
 
             // Cek apakah dokter sudah memiliki Call Plan aktif lain pada tanggal baru
@@ -285,7 +267,7 @@ class CallPlanService
                 ->exists();
 
             if ($planConflict) {
-                throw new ApiException('PLAN_DATE_CONFLICT', 'Sudah ada rencana kunjungan aktif untuk dokter ini pada tanggal tersebut.', 409);
+                throw ApiException::conflict('PLAN_DATE_CONFLICT', 'Sudah ada rencana kunjungan aktif untuk dokter ini pada tanggal tersebut.');
             }
 
             // Cek apakah dokter sudah memiliki Call Actual final pada tanggal baru
@@ -294,7 +276,7 @@ class CallPlanService
                 ->exists();
 
             if ($actualConflict) {
-                throw new ApiException('VISIT_ALREADY_EXISTS', 'Sudah ada kunjungan final (Call Actual) untuk dokter ini pada tanggal tersebut.', 409);
+                throw ApiException::conflict('VISIT_ALREADY_EXISTS', 'Sudah ada kunjungan final (Call Actual) untuk dokter ini pada tanggal tersebut.');
             }
 
             $updateData = [

@@ -84,12 +84,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (ApiException $e, Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json([
+                $errors = $e->getErrors();
+                $payload = [
                     'success' => false,
                     'message' => $e->getMessage(),
                     'error_code' => $e->getErrorCode(),
-                    'errors' => (object) [],
-                ], $e->getStatusCode());
+                    'errors' => $errors === [] ? (object) [] : $errors,
+                ];
+
+                return response()->json($payload, $e->getStatusCode());
             }
         });
 

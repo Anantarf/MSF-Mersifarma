@@ -199,7 +199,8 @@ class CallActualTest extends TestCase
             ->assertJson([
                 'success' => false,
                 'error_code' => 'PHOTO_REQUIRED',
-            ]);
+            ])
+            ->assertJsonPath('errors.photo_url.0', 'Foto kunjungan wajib diisi.');
 
         $this->assertDatabaseMissing('call_actuals', [
             'plan_id' => $plan->id,

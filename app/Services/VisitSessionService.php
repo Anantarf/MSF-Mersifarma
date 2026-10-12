@@ -24,11 +24,11 @@ class VisitSessionService
         }
 
         if (empty($planId) && empty($doctorId)) {
-            throw new ApiException('VALIDATION_FAILED', 'Pilih jadwal kunjungan atau dokter sasaran.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Pilih jadwal kunjungan atau dokter sasaran.');
         }
 
         if (! empty($planId) && ! empty($doctorId)) {
-            throw new ApiException('VALIDATION_FAILED', 'Kirim salah satu: jadwal kunjungan atau dokter sasaran.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Kirim salah satu: jadwal kunjungan atau dokter sasaran.');
         }
 
         $today = Carbon::now()->toDateString();
@@ -49,11 +49,11 @@ class VisitSessionService
                 }
 
                 if ($plan->status !== 'scheduled') {
-                    throw new ApiException('PLAN_DATE_CONFLICT', 'Jadwal kunjungan tidak dalam status aktif/scheduled.', 409);
+                    throw ApiException::conflict('PLAN_DATE_CONFLICT', 'Jadwal kunjungan tidak dalam status aktif/scheduled.');
                 }
 
                 if (Carbon::parse($plan->plan_date)->toDateString() !== $today) {
-                    throw new ApiException('VALIDATION_FAILED', 'Sesi kunjungan hanya dapat dimulai pada tanggal rencana.', 422);
+                    throw ApiException::validation('VALIDATION_FAILED', 'Sesi kunjungan hanya dapat dimulai pada tanggal rencana.');
                 }
 
                 $resolvedDoctorId = $plan->doctor_id;
@@ -83,7 +83,7 @@ class VisitSessionService
                 }
 
                 if (CallPlan::hasActiveSchedule($mr->id, $resolvedDoctorId, $today)) {
-                    throw new ApiException('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.', 422);
+                    throw ApiException::validation('RESCHEDULE_REQUIRED', 'Dokter ini sudah memiliki jadwal aktif pada periode ini. Silakan lakukan kunjungan sesuai jadwal atau Reschedule jadwal terlebih dahulu.');
                 }
             }
 
@@ -96,11 +96,8 @@ class VisitSessionService
                 ->first();
 
             if ($otherActiveSession) {
-                throw new ApiException(
-                    'CONCURRENT_SESSION_DISALLOWED',
-                    'Anda masih memiliki sesi kunjungan aktif yang belum selesai. Selesaikan atau batalkan sesi tersebut terlebih dahulu.',
-                    409
-                );
+                throw ApiException::conflict(
+                    'CONCURRENT_SESSION_DISALLOWED', 'Anda masih memiliki sesi kunjungan aktif yang belum selesai. Selesaikan atau batalkan sesi tersebut terlebih dahulu.');
             }
 
             // 2. Cek apakah dokter sudah memiliki Actual final di hari ini
@@ -109,11 +106,8 @@ class VisitSessionService
                 ->exists();
 
             if ($hasActual) {
-                throw new ApiException(
-                    'VISIT_ALREADY_EXISTS',
-                    'Kunjungan untuk dokter dan tanggal ini sudah selesai tercatat.',
-                    409
-                );
+                throw ApiException::conflict(
+                    'VISIT_ALREADY_EXISTS', 'Kunjungan untuk dokter dan tanggal ini sudah selesai tercatat.');
             }
 
             // 3. Cek apakah dokter sedang dikunjungi MR lain hari ini
@@ -124,11 +118,8 @@ class VisitSessionService
                 ->exists();
 
             if ($hasOtherMrSession) {
-                throw new ApiException(
-                    'ACTIVE_SESSION_CONFLICT',
-                    'Dokter sedang dalam sesi kunjungan aktif oleh rekan sales lain.',
-                    409
-                );
+                throw ApiException::conflict(
+                    'ACTIVE_SESSION_CONFLICT', 'Dokter sedang dalam sesi kunjungan aktif oleh rekan sales lain.');
             }
 
             $session = VisitSession::create([
@@ -187,7 +178,7 @@ class VisitSessionService
         }
 
         if ($session->status !== 'in_progress') {
-            throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat di-checkout.', 422);
+            throw ApiException::validation('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat di-checkout.');
         }
 
         if (! $session->check_out_at) {
@@ -211,12 +202,12 @@ class VisitSessionService
         }
 
         if ($session->status !== 'in_progress') {
-            throw new ApiException('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat dibatalkan.', 422);
+            throw ApiException::validation('SESSION_NOT_IN_PROGRESS', 'Hanya sesi yang sedang berlangsung yang dapat dibatalkan.');
         }
 
         $reason = trim($reason);
         if (mb_strlen($reason) < 3) {
-            throw new ApiException('VALIDATION_FAILED', 'Alasan pembatalan sesi kunjungan wajib diisi minimal 3 karakter.', 422);
+            throw ApiException::validation('VALIDATION_FAILED', 'Alasan pembatalan sesi kunjungan wajib diisi minimal 3 karakter.');
         }
 
         $session->update([
