@@ -72,6 +72,8 @@ class CallPlanApiController extends Controller
                     'status' => $plan->status,
                     'cancellation_reason' => $plan->cancellation_reason,
                     'cancelled_at' => $plan->cancelled_at ? $plan->cancelled_at->toIso8601String() : null,
+                    'reschedule_reason' => $plan->reschedule_reason,
+                    'rescheduled_at' => $plan->rescheduled_at ? $plan->rescheduled_at->toIso8601String() : null,
                 ];
             }),
         ]);
@@ -101,6 +103,47 @@ class CallPlanApiController extends Controller
                 'status' => $plan->status,
                 'cancellation_reason' => $plan->cancellation_reason,
                 'cancelled_at' => $plan->cancelled_at ? $plan->cancelled_at->toIso8601String() : null,
+            ],
+        ]);
+    }
+
+    /**
+     * PATCH /api/call-plans/{id}/reschedule
+     * Menjadwalkan ulang rencana kunjungan (Call Plan).
+     */
+    public function reschedule(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'plan_date' => 'required|date_format:Y-m-d',
+            'planned_time' => 'nullable|string',
+            'reason' => 'required|string|min:3|max:500',
+        ], [
+            'plan_date.required' => 'Tanggal rencana baru wajib diisi.',
+            'plan_date.date_format' => 'Format tanggal harus YYYY-MM-DD.',
+            'reason.required' => 'Alasan penjadwalan ulang rencana kunjungan wajib diisi.',
+            'reason.min' => 'Alasan minimal 3 karakter.',
+        ]);
+
+        $user = Auth::user();
+        $plan = $this->callPlanService->reschedulePlan($user, $id, $request->only(['plan_date', 'planned_time', 'reason']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rencana kunjungan berhasil dijadwalkan ulang',
+            'data' => [
+                'id' => $plan->id,
+                'call_list_id' => $plan->call_list_id,
+                'doctor_id' => $plan->doctor_id,
+                'doctor' => $plan->doctor ? [
+                    'id' => $plan->doctor->id,
+                    'name' => $plan->doctor->name,
+                    'specialization' => $plan->doctor->specialization,
+                ] : null,
+                'plan_date' => Carbon::parse($plan->plan_date)->format('Y-m-d'),
+                'planned_time' => (string) $plan->planned_time,
+                'status' => $plan->status,
+                'reschedule_reason' => $plan->reschedule_reason,
+                'rescheduled_at' => $plan->rescheduled_at ? $plan->rescheduled_at->toIso8601String() : null,
             ],
         ]);
     }

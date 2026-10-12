@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,8 @@ class CallPlan extends Model
         'status',
         'cancellation_reason',
         'cancelled_at',
+        'reschedule_reason',
+        'rescheduled_at',
     ];
 
     protected function casts(): array
@@ -27,6 +30,7 @@ class CallPlan extends Model
         return [
             'plan_date' => 'date',
             'cancelled_at' => 'datetime',
+            'rescheduled_at' => 'datetime',
         ];
     }
 
@@ -81,5 +85,27 @@ class CallPlan extends Model
     public function isExpired(): bool
     {
         return $this->status === self::STATUS_EXPIRED;
+    }
+
+    /**
+     * Memeriksa apakah MR memiliki Call Plan aktif (berstatus scheduled dan belum lewat/basi)
+     * untuk dokter tertentu dalam periode bulan yang sama dengan tanggal referensi.
+     */
+    public static function hasActiveSchedule(int $mrId, int $doctorId, string $referenceDate): bool
+    {
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
+        $periodStart = Carbon::parse($referenceDate)->startOfMonth()->toDateString();
+        $periodEnd = Carbon::parse($referenceDate)->endOfMonth()->toDateString();
+        $startDate = max($periodStart, $today);
+
+        if ($startDate > $periodEnd) {
+            return false;
+        }
+
+        return static::where('mr_id', $mrId)
+            ->where('doctor_id', $doctorId)
+            ->where('status', self::STATUS_SCHEDULED)
+            ->whereBetween('plan_date', [$startDate, $periodEnd])
+            ->exists();
     }
 }

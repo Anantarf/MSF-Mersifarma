@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/call-plans', [CallPlanApiController::class, 'store']);
     Route::get('/call-plans', [CallPlanApiController::class, 'index']);
     Route::patch('/call-plans/{id}/cancel', [CallPlanApiController::class, 'cancel']);
+    Route::patch('/call-plans/{id}/reschedule', [CallPlanApiController::class, 'reschedule']);
     Route::get('/doctors/{id}/availability', [CallPlanApiController::class, 'availability']);
 
     Route::post('/visit-sessions', [VisitSessionApiController::class, 'start']);

@@ -2,65 +2,11 @@ let approvedCallLists = [];
 let currentCallListDoctors = [];
 let currentPlans = [];
 
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    }[char]));
-}
-
-function formatPeriodMonth(periodMonth) {
-    if (!periodMonth) return '-';
-    if (window.formatPeriodIndonesian) {
-        return window.formatPeriodIndonesian(periodMonth);
-    }
-    const parts = String(periodMonth).split('-');
-    if (parts.length < 2) return periodMonth;
-    const year = parts[0];
-    const monthNum = parseInt(parts[1], 10);
-    const monthNames = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    return `${monthNames[monthNum - 1] || parts[1]} ${year}`;
-}
-
-function formatDateLabel(dateStr) {
-    return window.formatTanggalIndonesia ? window.formatTanggalIndonesia(dateStr) : dateStr;
-}
-
-function formatDateTimeLabel(dateStr) {
-    return window.formatDateTimeIndonesia ? window.formatDateTimeIndonesia(dateStr) : dateStr;
-}
-
-function formatWaktuIndonesia(timeOrDate) {
-    if (!timeOrDate) return '-';
-    if (timeOrDate instanceof Date) {
-        const h = String(timeOrDate.getHours()).padStart(2, '0');
-        const m = String(timeOrDate.getMinutes()).padStart(2, '0');
-        return `${h}.${m} WIB`;
-    }
-    if (typeof timeOrDate === 'string') {
-        const trimmed = timeOrDate.trim();
-        const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})/);
-        if (timeMatch) {
-            const h = timeMatch[1].padStart(2, '0');
-            const m = timeMatch[2];
-            return `${h}.${m} WIB`;
-        }
-        const d = new Date(trimmed);
-        if (!isNaN(d.getTime())) {
-            const h = String(d.getHours()).padStart(2, '0');
-            const m = String(d.getMinutes()).padStart(2, '0');
-            return `${h}.${m} WIB`;
-        }
-    }
-    return String(timeOrDate);
-}
-
+const escapeHtml = window.MSF.escapeHtml;
+const formatPeriodMonth = window.MSF.formatPeriodIndonesian;
+const formatDateLabel = window.MSF.formatTanggalIndonesia;
+const formatDateTimeLabel = window.MSF.formatDateTimeIndonesia;
+const formatWaktuIndonesia = window.MSF.formatWaktuIndonesia;
 document.addEventListener('DOMContentLoaded', () => {
     bindPlanEvents();
     loadPlans();
@@ -70,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeCreatePlanModal();
+        closeReschedulePlanModal();
         closeCancelPlanModal();
         closePlanDetailModal();
     }
@@ -94,6 +41,12 @@ function bindPlanEvents() {
             case 'quick-date':
                 setQuickDate(trigger.dataset.date);
                 break;
+            case 'open-reschedule-plan':
+                openReschedulePlanModal(parseInt(trigger.dataset.planId, 10));
+                break;
+            case 'close-reschedule-plan':
+                closeReschedulePlanModal();
+                break;
             case 'open-cancel-plan':
                 openCancelPlanModal(parseInt(trigger.dataset.planId, 10));
                 break;
@@ -116,12 +69,18 @@ function bindPlanEvents() {
     document.getElementById('callListSelect')?.addEventListener('change', onCallListChange);
     document.getElementById('doctorSelect')?.addEventListener('change', onDoctorChange);
     document.getElementById('planDateInput')?.addEventListener('change', onPlanDateChange);
+    document.getElementById('reschedulePlanDateInput')?.addEventListener('change', onRescheduleDateChange);
     document.getElementById('createPlanForm')?.addEventListener('submit', handleCreatePlanSubmit);
+    document.getElementById('reschedulePlanForm')?.addEventListener('submit', handleReschedulePlanSubmit);
     document.getElementById('cancelPlanForm')?.addEventListener('submit', handleCancelPlanSubmit);
 
     const plannedTimeInput = document.getElementById('plannedTimeInput');
     plannedTimeInput?.addEventListener('input', () => window.autoFormatTimeInput(plannedTimeInput));
     plannedTimeInput?.addEventListener('blur', () => window.normalizeTime24(plannedTimeInput));
+
+    const reschedulePlannedTimeInput = document.getElementById('reschedulePlannedTimeInput');
+    reschedulePlannedTimeInput?.addEventListener('input', () => window.autoFormatTimeInput(reschedulePlannedTimeInput));
+    reschedulePlannedTimeInput?.addEventListener('blur', () => window.normalizeTime24(reschedulePlannedTimeInput));
 }
 
 function applyFilters() {
@@ -225,6 +184,11 @@ function renderPlansGrid() {
                             <span class="plan-cancel-note-label">Alasan:</span> <span class="plan-cancel-note-text">"${escapeHtml(plan.cancellation_reason)}"</span>
                         </div>
                     ` : ''}
+                    ${plan.rescheduled_at ? `
+                        <div class="plan-cancel-note" style="color: #0369a1; background: #f0f9ff; border-left: 3px solid #0284c7; padding: 0.25rem 0.5rem; margin-top: 0.25rem; font-size: 0.75rem; border-radius: 4px;">
+                            <span class="plan-cancel-note-label">Reschedule:</span> <span class="plan-cancel-note-text">"${escapeHtml(plan.reschedule_reason)}"</span>
+                        </div>
+                    ` : ''}
                 </td>
                 <td class="plan-action-cell">
                     ${plan.status === 'scheduled' ? `
@@ -232,6 +196,9 @@ function renderPlansGrid() {
                             <a href="/call-actuals?plan_id=${plan.id}&doctor_id=${plan.doctor_id}" class="btn btn-primary btn-sm plan-link-button">
                                 Isi Laporan
                             </a>
+                            <button type="button" class="btn btn-outline btn-sm" data-action="open-reschedule-plan" data-plan-id="${plan.id}">
+                                Reschedule
+                            </button>
                             <button type="button" class="btn btn-outline btn-sm plan-danger-outline" data-action="open-cancel-plan" data-plan-id="${plan.id}">
                                 Batalkan
                             </button>
@@ -306,25 +273,26 @@ async function onCallListChange() {
         const lastDay = new Date(yyyy, mm, 0).getDate();
         const minDate = `${periodMonth}-01`;
         const maxDate = `${periodMonth}-${String(lastDay).padStart(2, '0')}`;
-        planDateInput.min = minDate;
-        planDateInput.max = maxDate;
-
-        // Default ke tanggal hari ini jika berada dalam bulan target, selain itu ke minDate
         const today = new Date();
         const yyyyNow = today.getFullYear();
         const mmNow = String(today.getMonth() + 1).padStart(2, '0');
         const ddNow = String(today.getDate()).padStart(2, '0');
         const todayStr = `${yyyyNow}-${mmNow}-${ddNow}`;
 
-        if (todayStr >= minDate && todayStr <= maxDate) {
+        const effectiveMin = todayStr > minDate ? todayStr : minDate;
+        planDateInput.min = effectiveMin;
+        planDateInput.max = maxDate;
+
+        if (todayStr >= effectiveMin && todayStr <= maxDate) {
             planDateInput.value = todayStr;
         } else {
-            planDateInput.value = minDate;
+            planDateInput.value = effectiveMin;
         }
 
         planDateInput.disabled = false;
         const monthName = formatPeriodMonth(periodMonth);
-        dateHelp.innerText = `Pilih tanggal antara 1 s.d. ${lastDay} ${monthName}.`;
+        const startDay = parseInt(effectiveMin.split('-')[2], 10);
+        dateHelp.innerText = `Pilih tanggal antara ${startDay} s.d. ${lastDay} ${monthName}.`;
         onPlanDateChange();
     }
 
@@ -615,4 +583,154 @@ function openPlanDetailModal(planId) {
 
 function closePlanDetailModal() {
     document.getElementById('planDetailModal').style.display = 'none';
+}
+
+let currentRescheduleDoctorBusyDates = [];
+
+async function openReschedulePlanModal(planId) {
+    const plan = currentPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    document.getElementById('reschedulePlanId').value = plan.id;
+    document.getElementById('rescheduleDoctorId').value = plan.doctor_id;
+    document.getElementById('reschedulePlanDoctorName').innerText = plan.doctor_name || 'Dokter';
+
+    const timeStr = formatWaktuIndonesia(plan.planned_time);
+    const dateStr = formatDateLabel(plan.plan_date);
+    document.getElementById('reschedulePlanCurrentSchedule').innerText = `${dateStr} pukul ${timeStr}`;
+
+    const today = new Date();
+    const yyyyNow = today.getFullYear();
+    const mmNow = String(today.getMonth() + 1).padStart(2, '0');
+    const ddNow = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyyNow}-${mmNow}-${ddNow}`;
+    const monthMin = `${year}-${mm}-01`;
+    const effectiveMin = todayStr > monthMin ? todayStr : monthMin;
+
+    dateInput.min = effectiveMin;
+    dateInput.max = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
+    dateInput.value = plan.plan_date >= effectiveMin ? plan.plan_date : effectiveMin;
+
+    const timeInput = document.getElementById('reschedulePlannedTimeInput');
+    timeInput.value = plan.planned_time ? plan.planned_time.substring(0, 5).replace(':', '.') : '09.00';
+
+    document.getElementById('reschedulePlanReasonInput').value = '';
+    const errEl = document.getElementById('reschedulePlanModalError');
+    errEl.style.display = 'none';
+    errEl.innerText = '';
+
+    document.getElementById('reschedulePlanModal').style.display = 'flex';
+
+    const noticeEl = document.getElementById('rescheduleAvailabilityNotice');
+    noticeEl.style.display = 'block';
+    noticeEl.className = 'plan-availability';
+    noticeEl.innerHTML = 'Memeriksa ketersediaan jadwal dokter...';
+    try {
+        const periodMonth = `${year}-${mm}`;
+        const res = await window.apiFetch(`/api/doctors/${plan.doctor_id}/availability?month=${periodMonth}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+            currentRescheduleDoctorBusyDates = (result.data.busy_dates || []).filter(d => d !== plan.plan_date);
+            renderRescheduleAvailabilityNotice();
+            onRescheduleDateChange();
+        } else {
+            noticeEl.style.display = 'none';
+        }
+    } catch (err) {
+        noticeEl.style.display = 'none';
+    }
+}
+
+function renderRescheduleAvailabilityNotice() {
+    const noticeEl = document.getElementById('rescheduleAvailabilityNotice');
+    if (!currentRescheduleDoctorBusyDates.length) {
+        noticeEl.style.display = 'block';
+        noticeEl.className = 'plan-availability is-available';
+        noticeEl.innerHTML = 'Tersedia. Tanggal lain pada bulan ini masih belum terisi.';
+        return;
+    }
+
+    const formattedDays = currentRescheduleDoctorBusyDates.map(d => parseInt(d.split('-')[2])).join(', ');
+    noticeEl.style.display = 'block';
+    noticeEl.className = 'plan-availability is-busy';
+    noticeEl.innerHTML = `<strong>Tanggal terisi:</strong> Tanggal ${formattedDays} sudah ada jadwal/kunjungan dokter ini. Pilih tanggal lain agar tidak bentrok.`;
+}
+
+function onRescheduleDateChange() {
+    const dateInput = document.getElementById('reschedulePlanDateInput');
+    const previewEl = document.getElementById('rescheduleSelectedDateText');
+    const selectedDate = dateInput.value;
+    const btn = document.getElementById('btnConfirmReschedulePlan');
+    const errEl = document.getElementById('reschedulePlanModalError');
+
+    if (previewEl) {
+        if (selectedDate) {
+            previewEl.style.display = 'inline-flex';
+            previewEl.innerHTML = `<i class="bi bi-calendar-check plan-date-preview-icon"></i> Tanggal baru: <strong>${formatDateLabel(selectedDate)}</strong>`;
+        } else {
+            previewEl.style.display = 'none';
+        }
+    }
+
+    if (currentRescheduleDoctorBusyDates.includes(selectedDate)) {
+        errEl.innerText = `Dokter ini sudah memiliki jadwal pada tanggal ${formatDateLabel(selectedDate)}. Pilih tanggal lain.`;
+        errEl.style.display = 'block';
+        btn.disabled = true;
+    } else {
+        errEl.style.display = 'none';
+        btn.disabled = false;
+    }
+}
+
+function closeReschedulePlanModal() {
+    document.getElementById('reschedulePlanModal').style.display = 'none';
+}
+
+async function handleReschedulePlanSubmit(e) {
+    e.preventDefault();
+    const planId = document.getElementById('reschedulePlanId').value;
+    const planDate = document.getElementById('reschedulePlanDateInput').value;
+    const plannedTime = document.getElementById('reschedulePlannedTimeInput').value.replace('.', ':');
+    const reason = document.getElementById('reschedulePlanReasonInput').value.trim();
+    const errEl = document.getElementById('reschedulePlanModalError');
+    const btn = document.getElementById('btnConfirmReschedulePlan');
+
+    errEl.style.display = 'none';
+
+    if (reason.length < 3) {
+        errEl.innerText = 'Alasan reschedule wajib diisi minimal 3 karakter.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Menyimpan...';
+
+    try {
+        const res = await window.apiFetch(`/api/call-plans/${planId}/reschedule`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                plan_date: planDate,
+                planned_time: plannedTime,
+                reason: reason
+            })
+        });
+        const result = await res.json();
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan Jadwal';
+
+        if (result.success) {
+            closeReschedulePlanModal();
+            showAlert('Jadwal berhasil di-reschedule.');
+            loadPlans();
+        } else {
+            errEl.innerText = result.message || 'Gagal reschedule jadwal.';
+            errEl.style.display = 'block';
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan Jadwal';
+        errEl.innerText = 'Terjadi kesalahan jaringan.';
+        errEl.style.display = 'block';
+    }
 }

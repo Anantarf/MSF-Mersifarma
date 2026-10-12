@@ -7,6 +7,7 @@ use App\Models\CallList;
 use App\Models\CallPlan;
 use App\Models\MasterCustomer;
 use App\Models\User;
+use App\Models\VisitSession;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class CallPlanService
      * 1. Call List harus milik MR bersangkutan.
      * 2. Call List harus berstatus 'approved' (PDF-02).
      * 3. Dokter harus terdaftar sebagai anggota Call List tersebut.
-     * 4. Tanggal rencana kunjungan (plan_date) harus berada dalam bulan periode Call List.
+     * 4. Tanggal rencana kunjungan (plan_date) tidak boleh sebelum hari ini dan harus berada dalam bulan periode Call List.
      * 5. Lock baris dokter untuk mencegah race condition.
      * 6. Dokter belum memiliki Actual final pada tanggal tersebut (VISIT_ALREADY_EXISTS - 409).
      * 7. Dokter belum memiliki Plan aktif (scheduled/completed) pada tanggal tersebut (PLAN_DATE_CONFLICT - 409).
@@ -63,6 +64,16 @@ class CallPlanService
                 'Dokter tidak terdaftar dalam Call List sasaran.',
                 null,
                 ['X-Error-Code' => 'DOCTOR_PLAN_MISMATCH']
+            );
+        }
+
+        // 3b. Plan tidak boleh dibuat untuk tanggal yang sudah lewat; jadwal lewat tanggal otomatis expired.
+        if (Carbon::parse($planDate)->toDateString() < Carbon::today('Asia/Jakarta')->toDateString()) {
+            throw new HttpException(
+                422,
+                'Tanggal rencana kunjungan tidak boleh sebelum hari ini.',
+                null,
+                ['X-Error-Code' => 'VALIDATION_FAILED']
             );
         }
 
@@ -152,7 +163,7 @@ class CallPlanService
     {
         $this->expireStalePlans($mr);
 
-        $query = CallPlan::with(['doctor', 'callList'])
+        $query = CallPlan::with(['doctor'])
             ->where('mr_id', $mr->id);
 
         if ($date) {
@@ -210,6 +221,100 @@ class CallPlanService
                 'cancelled_at' => now(),
             ]);
 
+            return $plan->fresh(['doctor']);
+        });
+    }
+
+    /**
+     * Menjadwalkan ulang rencana kunjungan (Call Plan).
+     *
+     * Invariants (semua state di-validasi ulang di bawah lock dokter lalu plan):
+     * 1. Hanya MR pemilik yang dapat melakukan reschedule.
+     * 2. Rencana kunjungan harus berstatus 'scheduled' dan belum memiliki Call Actual.
+     * 3. Tidak ada Visit Session in_progress pada Plan tersebut.
+     * 4. Call List sumber masih berstatus 'approved'.
+     * 5. Tanggal baru harus berada dalam bulan periode Call List yang disetujui.
+     * 6. Dokter belum memiliki Plan aktif lain atau Actual final pada tanggal baru (409).
+     */
+    public function reschedulePlan(User $mr, int $planId, array $data): CallPlan
+    {
+        if ($mr->role !== 'mr') {
+            throw new AccessDeniedHttpException('Hanya MR yang dapat menjadwalkan ulang rencana kunjungan.');
+        }
+
+        $reason = trim($data['reason'] ?? '');
+        if (mb_strlen($reason) < 3) {
+            throw new HttpException(422, 'Alasan penjadwalan ulang rencana kunjungan wajib diisi minimal 3 karakter.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+        }
+
+        $newDate = Carbon::parse($data['plan_date'])->toDateString();
+
+        if ($newDate < Carbon::today('Asia/Jakarta')->toDateString()) {
+            throw new HttpException(422, 'Tanggal baru tidak boleh sebelum hari ini.', null, ['X-Error-Code' => 'VALIDATION_FAILED']);
+        }
+
+        // Bacaan awal tanpa lock hanya untuk mengetahui pemilik dan dokter yang harus di-lock.
+        $planOwnership = CallPlan::findOrFail($planId, ['id', 'mr_id', 'doctor_id']);
+        if ($planOwnership->mr_id !== $mr->id) {
+            throw new AccessDeniedHttpException('Anda tidak memiliki akses ke rencana kunjungan ini.');
+        }
+
+        return DB::transaction(function () use ($planOwnership, $newDate, $reason, $data) {
+            MasterCustomer::whereKey($planOwnership->doctor_id)->lockForUpdate()->firstOrFail();
+            $plan = CallPlan::with('callList')->whereKey($planOwnership->id)->lockForUpdate()->firstOrFail();
+
+            if ($plan->status !== 'scheduled') {
+                throw new HttpException(422, 'Hanya rencana kunjungan berstatus scheduled yang dapat dijadwalkan ulang.', null, ['X-Error-Code' => 'INVALID_STATUS']);
+            }
+
+            if ($plan->callActual()->exists()) {
+                throw new HttpException(422, 'Rencana kunjungan sudah memiliki laporan kunjungan tercatat.', null, ['X-Error-Code' => 'PLAN_HAS_ACTUAL']);
+            }
+
+            if (VisitSession::where('plan_id', $plan->id)->where('status', 'in_progress')->exists()) {
+                throw new HttpException(409, 'Rencana kunjungan sedang berlangsung. Batalkan sesi kunjungan terlebih dahulu.', null, ['X-Error-Code' => 'ACTIVE_SESSION_CONFLICT']);
+            }
+
+            if (! $plan->callList || $plan->callList->status !== 'approved') {
+                throw new HttpException(422, 'Call List sumber tidak lagi dalam status disetujui.', null, ['X-Error-Code' => 'CALL_LIST_NOT_APPROVED']);
+            }
+
+            if (Carbon::parse($plan->callList->period_month)->format('Y-m') !== Carbon::parse($newDate)->format('Y-m')) {
+                throw new HttpException(422, 'Tanggal baru harus berada dalam bulan periode Call List yang disetujui.', null, ['X-Error-Code' => 'DATE_OUT_OF_PERIOD']);
+            }
+
+            // Cek apakah dokter sudah memiliki Call Plan aktif lain pada tanggal baru
+            $planConflict = CallPlan::where('doctor_id', $plan->doctor_id)
+                ->where('plan_date', $newDate)
+                ->whereIn('status', ['scheduled', 'completed'])
+                ->whereKeyNot($plan->id)
+                ->exists();
+
+            if ($planConflict) {
+                throw new HttpException(409, 'Sudah ada rencana kunjungan aktif untuk dokter ini pada tanggal tersebut.', null, ['X-Error-Code' => 'PLAN_DATE_CONFLICT']);
+            }
+
+            // Cek apakah dokter sudah memiliki Call Actual final pada tanggal baru
+            $actualConflict = CallActual::where('doctor_id', $plan->doctor_id)
+                ->where('visit_date', $newDate)
+                ->exists();
+
+            if ($actualConflict) {
+                throw new HttpException(409, 'Sudah ada kunjungan final (Call Actual) untuk dokter ini pada tanggal tersebut.', null, ['X-Error-Code' => 'VISIT_ALREADY_EXISTS']);
+            }
+
+            $updateData = [
+                'plan_date' => $newDate,
+                'reschedule_reason' => $reason,
+                'rescheduled_at' => now(),
+            ];
+
+            if (array_key_exists('planned_time', $data) && ! empty($data['planned_time'])) {
+                $updateData['planned_time'] = Carbon::parse($data['planned_time'])->format('H:i:s');
+            }
+
+            $plan->update($updateData);
+
             return $plan->fresh(['doctor', 'callList']);
         });
     }
@@ -220,19 +325,21 @@ class CallPlanService
      */
     public function getDoctorAvailability(int $doctorId, string $month): array
     {
-        $targetMonth = Carbon::parse($month)->format('Y-m');
+        $monthStart = Carbon::parse($month)->startOfMonth()->toDateString();
+        $monthEnd = Carbon::parse($month)->endOfMonth()->toDateString();
+        $targetMonth = Carbon::parse($monthStart)->format('Y-m');
 
         // 1. Ambil tanggal dari Call Plan yang aktif (scheduled atau completed)
         $planDates = CallPlan::where('doctor_id', $doctorId)
             ->whereIn('status', ['scheduled', 'completed'])
-            ->whereRaw("DATE_FORMAT(plan_date, '%Y-%m') = ?", [$targetMonth])
+            ->whereBetween('plan_date', [$monthStart, $monthEnd])
             ->pluck('plan_date')
             ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
             ->toArray();
 
         // 2. Ambil tanggal dari Call Actual final
         $actualDates = CallActual::where('doctor_id', $doctorId)
-            ->whereRaw("DATE_FORMAT(visit_date, '%Y-%m') = ?", [$targetMonth])
+            ->whereBetween('visit_date', [$monthStart, $monthEnd])
             ->pluck('visit_date')
             ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
             ->toArray();
@@ -246,5 +353,13 @@ class CallPlanService
             'month' => $targetMonth,
             'busy_dates' => $busyDates,
         ];
+    }
+
+    /**
+     * Memeriksa apakah MR memiliki jadwal aktif untuk dokter pada periode ini.
+     */
+    public function hasActiveSchedule(int $mrId, int $doctorId, string $referenceDate): bool
+    {
+        return CallPlan::hasActiveSchedule($mrId, $doctorId, $referenceDate);
     }
 }

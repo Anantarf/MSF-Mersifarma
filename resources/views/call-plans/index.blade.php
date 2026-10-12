@@ -145,6 +145,57 @@
     </div>
 </div>
 
+<!-- Modal Reschedule Jadwal -->
+<div id="reschedulePlanModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+        <div class="plan-modal-head plan-modal-head-bordered">
+            <h3 class="plan-modal-title">Reschedule Jadwal Kunjungan</h3>
+            <button type="button" class="close-btn" data-action="close-reschedule-plan">&times;</button>
+        </div>
+
+        <div id="reschedulePlanModalError" style="display: none;" class="alert alert-danger"></div>
+
+        <p class="plan-cancel-copy">
+            Jadwalkan ulang kunjungan ke <strong id="reschedulePlanDoctorName">-</strong><br>
+            <span class="plan-help-text">Jadwal saat ini: <span id="reschedulePlanCurrentSchedule">-</span></span>
+        </p>
+
+        <form id="reschedulePlanForm">
+            <input type="hidden" id="reschedulePlanId">
+            <input type="hidden" id="rescheduleDoctorId">
+
+            <div class="plan-field">
+                <label for="reschedulePlanDateInput" class="plan-field-label">
+                    Tanggal Kunjungan Baru
+                </label>
+                <input type="date" id="reschedulePlanDateInput" class="plan-input" required>
+                <div id="rescheduleSelectedDateText" class="plan-date-preview" style="display: none;"></div>
+                <div id="rescheduleAvailabilityNotice" class="plan-availability" style="display: none;"></div>
+            </div>
+
+            <div class="plan-field plan-field-large">
+                <label for="reschedulePlannedTimeInput" class="plan-field-label">
+                    Jam Kunjungan Baru
+                </label>
+                <input type="text" id="reschedulePlannedTimeInput" class="plan-input tabular-nums" required value="09.00" maxlength="5" inputmode="numeric" placeholder="09.00">
+            </div>
+
+            <div class="plan-field plan-field-wide">
+                <label for="reschedulePlanReasonInput" class="plan-field-label">
+                    Alasan Reschedule
+                </label>
+                <textarea id="reschedulePlanReasonInput" class="plan-input plan-textarea" required minlength="3" rows="3" placeholder="Contoh: Dokter meminta perubahan jadwal ke hari lain karena ada tindakan medis"></textarea>
+            </div>
+
+            <div class="plan-dialog-actions">
+                <button type="button" class="btn btn-outline" data-action="close-reschedule-plan">Batal</button>
+                <button type="submit" id="btnConfirmReschedulePlan" class="btn btn-primary">
+                    Simpan Perubahan Jadwal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div id="cancelPlanModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">

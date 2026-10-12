@@ -6,6 +6,7 @@ use App\Models\CallList;
 use App\Models\CallPlan;
 use App\Models\MasterCustomer;
 use App\Models\User;
+use App\Models\VisitSession;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -475,7 +476,7 @@ class CallPlanTest extends TestCase
         $plan = CallPlan::create([
             'call_list_id' => $this->approvedCallList->id,
             'mr_id' => $this->mr->id,
-            'doctor_id' => $this->doctor1->id,
+            'doctor_id' => $this->doctor2->id,
             'plan_date' => $pastDate,
             'planned_time' => '09:00:00',
             'status' => 'scheduled',
@@ -496,7 +497,7 @@ class CallPlanTest extends TestCase
         $plan = CallPlan::create([
             'call_list_id' => $this->approvedCallList->id,
             'mr_id' => $this->mr->id,
-            'doctor_id' => $this->doctor1->id,
+            'doctor_id' => $this->doctor2->id,
             'plan_date' => $pastDate,
             'planned_time' => '10:00:00',
             'status' => 'scheduled',
@@ -525,13 +526,13 @@ class CallPlanTest extends TestCase
         );
         $callList->status = 'approved';
         $callList->save();
-        $callList->doctors()->syncWithoutDetaching([$this->doctor1->id]);
+        $callList->doctors()->syncWithoutDetaching([$this->doctor2->id]);
 
         $pastDate = Carbon::yesterday('Asia/Jakarta')->toDateString();
         $plan = CallPlan::create([
             'call_list_id' => $callList->id,
             'mr_id' => $this->mr->id,
-            'doctor_id' => $this->doctor1->id,
+            'doctor_id' => $this->doctor2->id,
             'plan_date' => $pastDate,
             'planned_time' => '09:00:00',
             'status' => 'scheduled',
@@ -541,13 +542,13 @@ class CallPlanTest extends TestCase
         $this->artisan('msf:expire-plans')->assertSuccessful();
         $this->assertEquals('expired', $plan->fresh()->status);
 
-        // Buat jadwal baru untuk dokter yang sama di tanggal hari ini
-        $todayDate = Carbon::today('Asia/Jakarta')->toDateString();
+        // Buat jadwal baru untuk dokter yang sama di tanggal besok
+        $rescheduleDate = Carbon::tomorrow('Asia/Jakarta')->toDateString();
         $response = $this->actingAs($this->mr)
             ->postJson('/api/call-plans', [
                 'call_list_id' => $callList->id,
-                'doctor_id' => $this->doctor1->id,
-                'plan_date' => $todayDate,
+                'doctor_id' => $this->doctor2->id,
+                'plan_date' => $rescheduleDate,
                 'planned_time' => '11:00:00',
             ]);
 
@@ -558,5 +559,246 @@ class CallPlanTest extends TestCase
                     'status' => 'scheduled',
                 ],
             ]);
+    }
+
+    public function test_mr_can_reschedule_call_plan_with_valid_reason_and_new_date(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'planned_time' => '14:00',
+                'reason' => 'Dokter meminta penyesuaian hari karena ada jadwal visit ruangan',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Rencana kunjungan berhasil dijadwalkan ulang',
+                'data' => [
+                    'id' => $plan->id,
+                    'plan_date' => '2026-11-15',
+                    'planned_time' => '14:00:00',
+                    'status' => 'scheduled',
+                    'reschedule_reason' => 'Dokter meminta penyesuaian hari karena ada jadwal visit ruangan',
+                ],
+            ]);
+
+        $fresh = $plan->fresh();
+        $this->assertEquals('2026-11-15', Carbon::parse($fresh->plan_date)->format('Y-m-d'));
+        $this->assertNotNull($fresh->rescheduled_at);
+    }
+
+    public function test_reschedule_rejects_date_outside_call_list_month(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-12-05',
+                'reason' => 'Dokter meminta pindah ke bulan depan',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('error_code', 'DATE_OUT_OF_PERIOD');
+    }
+
+    public function test_reschedule_rejects_conflicting_date_with_another_plan(): void
+    {
+        $plan1 = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $otherCallList = CallList::firstOrCreate(
+            ['owner_id' => $this->otherMr->id, 'period_month' => '2026-11-01'],
+            ['status' => 'approved', 'assigned_approver_id' => $this->dm->id, 'approved_at' => now()]
+        );
+        $otherCallList->status = 'approved';
+        $otherCallList->save();
+        $otherCallList->doctors()->syncWithoutDetaching([$this->doctor1->id]);
+
+        // Plan lain untuk dokter yang sama pada tanggal 2026-11-18
+        CallPlan::create([
+            'call_list_id' => $otherCallList->id,
+            'mr_id' => $this->otherMr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-18',
+            'planned_time' => '10:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan1->id}/reschedule", [
+                'plan_date' => '2026-11-18',
+                'reason' => 'Ingin pindah ke tanggal 18',
+            ]);
+
+        $response->assertStatus(409)
+            ->assertJsonPath('error_code', 'PLAN_DATE_CONFLICT');
+    }
+
+    public function test_cannot_reschedule_plan_belonging_to_another_mr(): void
+    {
+        $otherCallList = CallList::firstOrCreate(
+            ['owner_id' => $this->otherMr->id, 'period_month' => '2026-11-01'],
+            ['status' => 'approved', 'assigned_approver_id' => $this->dm->id, 'approved_at' => now()]
+        );
+        $otherCallList->status = 'approved';
+        $otherCallList->save();
+        $otherCallList->doctors()->syncWithoutDetaching([$this->doctor1->id]);
+
+        $plan = CallPlan::create([
+            'call_list_id' => $otherCallList->id,
+            'mr_id' => $this->otherMr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'reason' => 'Mencoba mengubah plan milik MR lain',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_reschedule_rejects_plan_with_active_visit_session(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+        VisitSession::create([
+            'mr_id' => $this->mr->id,
+            'plan_id' => $plan->id,
+            'doctor_id' => $this->doctor1->id,
+            'visit_date' => '2026-11-10',
+            'check_in_at' => '2026-11-10 09:00:00',
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'reason' => 'Dokter minta pindah hari',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'ACTIVE_SESSION_CONFLICT');
+
+        $this->assertSame('2026-11-10', Carbon::parse($plan->fresh()->plan_date)->toDateString());
+    }
+
+    public function test_reschedule_rejects_plan_that_is_not_scheduled(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'cancelled',
+        ]);
+
+        $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'reason' => 'Mencoba memindahkan plan batal',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'INVALID_STATUS');
+
+        $this->assertSame('2026-11-10', Carbon::parse($plan->fresh()->plan_date)->toDateString());
+    }
+
+    public function test_non_mr_cannot_reschedule_plan(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($this->dm)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => '2026-11-15',
+                'reason' => 'Manajer mencoba mengubah jadwal',
+            ])
+            ->assertStatus(403);
+
+        $this->assertSame('2026-11-10', Carbon::parse($plan->fresh()->plan_date)->toDateString());
+    }
+
+    public function test_reschedule_rejects_date_before_today(): void
+    {
+        $plan = CallPlan::create([
+            'call_list_id' => $this->approvedCallList->id,
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => '2026-11-10',
+            'planned_time' => '09:00:00',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($this->mr)
+            ->patchJson("/api/call-plans/{$plan->id}/reschedule", [
+                'plan_date' => Carbon::yesterday('Asia/Jakarta')->toDateString(),
+                'reason' => 'Mencoba memindahkan ke tanggal lampau',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'VALIDATION_FAILED');
+
+        $this->assertSame('2026-11-10', Carbon::parse($plan->fresh()->plan_date)->toDateString());
+    }
+
+    public function test_create_plan_rejects_date_before_today_and_creates_no_record(): void
+    {
+        $yesterday = Carbon::yesterday('Asia/Jakarta')->toDateString();
+
+        $this->actingAs($this->mr)
+            ->postJson('/api/call-plans', [
+                'call_list_id' => $this->approvedCallList->id,
+                'doctor_id' => $this->doctor1->id,
+                'plan_date' => $yesterday,
+                'planned_time' => '09:00:00',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('error_code', 'VALIDATION_FAILED')
+            ->assertJsonPath('message', 'Tanggal rencana kunjungan tidak boleh sebelum hari ini.');
+
+        $this->assertDatabaseMissing('call_plans', [
+            'mr_id' => $this->mr->id,
+            'doctor_id' => $this->doctor1->id,
+            'plan_date' => $yesterday,
+        ]);
     }
 }
