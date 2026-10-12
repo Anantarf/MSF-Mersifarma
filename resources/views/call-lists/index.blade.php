@@ -567,8 +567,8 @@
                             <input type="text" id="campaignDoctorSearchInput" class="target-input" style="padding-left: 2rem; font-size: 0.8rem; height: 32px;" placeholder="Cari nama atau spesialisasi dokter...">
                         </div>
                         <div style="display: flex; gap: 0.35rem;">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnSelectAllCampaignDocs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Pilih Semua</button>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnClearAllCampaignDocs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Batal</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnSelectAllCampaignDocs" data-action="select-all-campaign-docs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Pilih Semua</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnClearAllCampaignDocs" data-action="clear-all-campaign-docs" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">Batal</button>
                         </div>
                     </div>
 

@@ -7,6 +7,7 @@ let reviewCallLists = [];
 let allCampaigns = [];
 let doctorRecommendationsMap = {};
 let masterProducts = [];
+let campaignSelectedDoctorIds = new Set();
 let currentSelectedDoctorIds = new Set();
 let isFilterOnlySelected = false;
 let pickerCurrentPage = 1;
@@ -151,11 +152,33 @@ function bindCallListEvents() {
                 case 'open-reject-campaign':
                     if (trigger.dataset.campaignId) openRejectCampaignModal(parseInt(trigger.dataset.campaignId, 10));
                     break;
-                case 'close-reject-campaign':
-                    closeRejectCampaignModal();
+                case 'select-all-campaign-docs':
+                    event.preventDefault();
+                    selectAllCampaignDoctors();
+                    break;
+                case 'clear-all-campaign-docs':
+                    event.preventDefault();
+                    clearAllCampaignDoctors();
                     break;
                 default:
                     break;
+            }
+        });
+
+        // Global delegated change listener for campaign checkboxes
+        document.addEventListener('change', (event) => {
+            if (event.target && event.target.name === 'campaign_product') {
+                onCampaignProductToggle(event.target);
+            }
+            if (event.target && event.target.name === 'campaign_doctor') {
+                onCampaignDoctorToggle(event.target);
+            }
+        });
+
+        // Global delegated input listener for doctor search
+        document.addEventListener('input', (event) => {
+            if (event.target && event.target.id === 'campaignDoctorSearchInput') {
+                renderCampaignDoctors();
             }
         });
 
@@ -166,8 +189,15 @@ function bindCallListEvents() {
         document.getElementById('campaignSpecSelect')?.addEventListener('change', renderCampaignDoctors);
         document.getElementById('campaignRsmGuidanceSelect')?.addEventListener('change', handleRsmGuidanceChange);
         document.getElementById('campaignDoctorSearchInput')?.addEventListener('input', renderCampaignDoctors);
-        document.getElementById('btnSelectAllCampaignDocs')?.addEventListener('click', selectAllCampaignDoctors);
-        document.getElementById('btnClearAllCampaignDocs')?.addEventListener('click', clearAllCampaignDoctors);
+        document.getElementById('campaignDoctorSearchInput')?.addEventListener('keyup', renderCampaignDoctors);
+        document.getElementById('btnSelectAllCampaignDocs')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            selectAllCampaignDoctors();
+        });
+        document.getElementById('btnClearAllCampaignDocs')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            clearAllCampaignDoctors();
+        });
         document.getElementById('doctorSearchInput')?.addEventListener('input', (event) => onDoctorSearchInput(event.target.value));
         document.getElementById('summaryMonthSelect')?.addEventListener('change', loadManagerSummary);
         document.getElementById('periodMonthSelect')?.addEventListener('change', syncPeriodToHiddenInput);
@@ -1338,15 +1368,10 @@ async function openCreateCampaignModal() {
     }
 
     // Render checkbox produk master sebagai chip interaktif
-    if (prodBox && masterProducts.length) {
-        prodBox.innerHTML = masterProducts.map(p => `
-            <label class="product-chip-item" id="prodChip_${p.id}">
-                <input type="checkbox" name="campaign_product" value="${p.id}" onchange="onCampaignProductToggle(this)">
-                <span style="flex: 1;">${escapeHtml(p.name)}</span>
-            </label>
-        `).join('');
-    }
-    updateCampaignSelectedProdCount();
+    renderCampaignProducts();
+
+    // Reset pilihan dokter
+    campaignSelectedDoctorIds.clear();
 
     // Reset kolom pencarian dokter
     const docSearchInput = document.getElementById('campaignDoctorSearchInput');
@@ -1390,17 +1415,44 @@ async function openCreateCampaignModal() {
     modal.style.display = 'flex';
 }
 
-function onCampaignProductToggle(input) {
-    const chip = input.closest('.product-chip-item');
-    if (chip) {
-        chip.classList.toggle('is-selected', input.checked);
+function renderCampaignProducts() {
+    const prodBox = document.getElementById('campaignProductCheckboxes');
+    if (!prodBox) return;
+
+    if (!masterProducts.length) {
+        prodBox.innerHTML = `
+            <span style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1; padding: 0.5rem; text-align: center;">
+                Memuat produk master...
+            </span>
+        `;
+        return;
     }
-    const checked = document.querySelectorAll('input[name="campaign_product"]:checked');
-    if (checked.length > 5 && input.checked) {
+
+    prodBox.innerHTML = masterProducts.map(p => `
+        <label class="product-chip-item" id="prodChip_${p.id}">
+            <input type="checkbox" name="campaign_product" value="${p.id}">
+            <span style="flex: 1;">${escapeHtml(p.name)}</span>
+        </label>
+    `).join('');
+
+    updateCampaignSelectedProdCount();
+}
+
+function onCampaignProductToggle(input) {
+    if (!input) return;
+    const chip = input.closest('.product-chip-item');
+    const checked = Array.from(document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]:checked'));
+
+    if (input.checked && checked.length > 5) {
         input.checked = false;
         if (chip) chip.classList.remove('is-selected');
         showAlert('Maksimal 5 obat fokus promosi.', 'danger');
+        updateCampaignSelectedProdCount();
         return;
+    }
+
+    if (chip) {
+        chip.classList.toggle('is-selected', input.checked);
     }
     updateCampaignSelectedProdCount();
 }
@@ -1408,9 +1460,16 @@ window.onCampaignProductToggle = onCampaignProductToggle;
 
 function updateCampaignSelectedProdCount() {
     const countEl = document.getElementById('campaignSelectedProdCount');
-    if (!countEl) return;
-    const checked = document.querySelectorAll('input[name="campaign_product"]:checked');
-    countEl.innerText = checked.length;
+    const checked = document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]:checked');
+    if (countEl) {
+        countEl.innerText = String(checked.length);
+    }
+    document.querySelectorAll('.product-chip-item').forEach(chip => {
+        const input = chip.querySelector('input[name="campaign_product"]');
+        if (input) {
+            chip.classList.toggle('is-selected', input.checked);
+        }
+    });
 }
 window.updateCampaignSelectedProdCount = updateCampaignSelectedProdCount;
 
@@ -1469,17 +1528,12 @@ function renderCampaignDoctors() {
         return;
     }
 
-    // Ambil ID dokter yang sedang diceklis agar centang tidak hilang saat search/filter
-    const checkedDocIds = new Set(
-        Array.from(document.querySelectorAll('input[name="campaign_doctor"]:checked')).map(el => parseInt(el.value, 10))
-    );
-
     docBox.innerHTML = filtered.map(d => {
-        const isChecked = checkedDocIds.has(d.id);
+        const isChecked = campaignSelectedDoctorIds.has(d.id);
         return `
             <label class="doctor-chip-item ${isChecked ? 'is-selected' : ''}" id="docChip_${d.id}">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <input type="checkbox" name="campaign_doctor" value="${d.id}" ${isChecked ? 'checked' : ''} onchange="onCampaignDoctorToggle(this)">
+                    <input type="checkbox" name="campaign_doctor" value="${d.id}" ${isChecked ? 'checked' : ''}>
                     <div>
                         <strong style="color: var(--secondary); font-size: 0.85rem; display: block;">${escapeHtml(d.name)}</strong>
                         <span style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(d.specialization || 'Umum')}</span>
@@ -1494,6 +1548,13 @@ function renderCampaignDoctors() {
 }
 
 function onCampaignDoctorToggle(input) {
+    if (!input) return;
+    const docId = parseInt(input.value, 10);
+    if (input.checked) {
+        campaignSelectedDoctorIds.add(docId);
+    } else {
+        campaignSelectedDoctorIds.delete(docId);
+    }
     const chip = input.closest('.doctor-chip-item');
     if (chip) {
         chip.classList.toggle('is-selected', input.checked);
@@ -1503,9 +1564,10 @@ function onCampaignDoctorToggle(input) {
 window.onCampaignDoctorToggle = onCampaignDoctorToggle;
 
 function selectAllCampaignDoctors() {
-    const checkboxes = document.querySelectorAll('input[name="campaign_doctor"]');
+    const checkboxes = document.querySelectorAll('#campaignDoctorCheckboxes input[name="campaign_doctor"]');
     checkboxes.forEach(cb => {
         cb.checked = true;
+        campaignSelectedDoctorIds.add(parseInt(cb.value, 10));
         const chip = cb.closest('.doctor-chip-item');
         if (chip) chip.classList.add('is-selected');
     });
@@ -1514,15 +1576,32 @@ function selectAllCampaignDoctors() {
 window.selectAllCampaignDoctors = selectAllCampaignDoctors;
 
 function clearAllCampaignDoctors() {
-    const checkboxes = document.querySelectorAll('input[name="campaign_doctor"]');
+    const checkboxes = document.querySelectorAll('#campaignDoctorCheckboxes input[name="campaign_doctor"]');
     checkboxes.forEach(cb => {
         cb.checked = false;
+        campaignSelectedDoctorIds.delete(parseInt(cb.value, 10));
         const chip = cb.closest('.doctor-chip-item');
         if (chip) chip.classList.remove('is-selected');
     });
     updateCampaignSelectedDocCount();
 }
 window.clearAllCampaignDoctors = clearAllCampaignDoctors;
+
+function updateCampaignSelectedDocCount() {
+    const countEl = document.getElementById('campaignSelectedDocCount');
+    if (countEl) {
+        countEl.innerText = String(campaignSelectedDoctorIds.size);
+    }
+    document.querySelectorAll('.doctor-chip-item').forEach(chip => {
+        const input = chip.querySelector('input[name="campaign_doctor"]');
+        if (input) {
+            const isChecked = campaignSelectedDoctorIds.has(parseInt(input.value, 10));
+            input.checked = isChecked;
+            chip.classList.toggle('is-selected', isChecked);
+        }
+    });
+}
+window.updateCampaignSelectedDocCount = updateCampaignSelectedDocCount;
 
 function handleRsmGuidanceChange(e) {
     const selectedCampId = parseInt(e.target.value, 10);
@@ -1533,7 +1612,7 @@ function handleRsmGuidanceChange(e) {
     const lockDesc = document.getElementById('campaignGuidanceLockDesc');
 
     // Reset status produk
-    document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+    document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]').forEach(cb => {
         cb.checked = false;
         cb.disabled = false;
         const chip = cb.closest('.product-chip-item');
@@ -1575,7 +1654,7 @@ function handleRsmGuidanceChange(e) {
     // Kunci obat fokus promosi sesuai arahan RSM
     if (camp.products && camp.products.length) {
         const targetProductIds = new Set(camp.products.map(p => p.id));
-        document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+        document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]').forEach(cb => {
             const pid = parseInt(cb.value, 10);
             const chip = cb.closest('.product-chip-item');
             if (targetProductIds.has(pid)) {
@@ -1595,15 +1674,6 @@ function handleRsmGuidanceChange(e) {
     updateCampaignSelectedProdCount();
 }
 
-function updateCampaignSelectedDocCount() {
-    const countEl = document.getElementById('campaignSelectedDocCount');
-    if (!countEl) return;
-    const checked = document.querySelectorAll('input[name="campaign_doctor"]:checked');
-    countEl.innerText = checked.length;
-}
-
-window.updateCampaignSelectedDocCount = updateCampaignSelectedDocCount;
-
 function closeCreateCampaignModal() {
     const modal = document.getElementById('createCampaignModal');
     if (modal) modal.style.display = 'none';
@@ -1614,7 +1684,7 @@ function closeCreateCampaignModal() {
     const lockBanner = document.getElementById('campaignGuidanceLockBanner');
     if (lockBanner) lockBanner.style.display = 'none';
 
-    document.querySelectorAll('input[name="campaign_product"]').forEach(cb => {
+    document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]').forEach(cb => {
         cb.disabled = false;
         const chip = cb.closest('.product-chip-item');
         if (chip) chip.classList.remove('is-selected', 'is-disabled');
@@ -1632,8 +1702,8 @@ async function handleCreateCampaignSubmit(e) {
     const spec = document.getElementById('campaignSpecSelect')?.value?.trim();
     const notes = document.getElementById('campaignNotesInput')?.value?.trim();
 
-    const selectedProducts = Array.from(document.querySelectorAll('input[name="campaign_product"]:checked')).map(el => parseInt(el.value, 10));
-    const selectedDoctors = Array.from(document.querySelectorAll('input[name="campaign_doctor"]:checked')).map(el => parseInt(el.value, 10));
+    const selectedProducts = Array.from(document.querySelectorAll('#campaignProductCheckboxes input[name="campaign_product"]:checked')).map(el => parseInt(el.value, 10));
+    const selectedDoctors = Array.from(campaignSelectedDoctorIds);
 
     if (!selectedProducts.length) {
         if (errBox) {
