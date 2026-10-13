@@ -17,7 +17,7 @@
             </button>
             @elseif(auth()->user()->role === 'rsm')
             <button type="button" class="btn btn-primary" data-action="open-create-campaign">
-                + Terbitkan Arahan Regional
+                Terbitkan Arahan Regional
             </button>
             @endif
         </div>

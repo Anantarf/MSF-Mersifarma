@@ -174,9 +174,15 @@
         </div>
 
         <div class="metric-card">
-            <div class="metric-label">Luar Rencana</div>
+            <div class="metric-label">Di Luar Rencana</div>
             <div id="metricUnplannedActuals" class="metric-value metric-value-warning tabular-nums">0</div>
             <div class="metric-note"><strong id="metricUnplannedPercent">0%</strong> dari total</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-label">Non-Target</div>
+            <div id="metricNonTargetActuals" class="metric-value tabular-nums">0</div>
+            <div class="metric-note"><strong id="metricNonTargetPercent">0%</strong> dari total</div>
         </div>
     </div>
 

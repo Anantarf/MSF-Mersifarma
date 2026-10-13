@@ -864,22 +864,28 @@ function updateManagerMetrics() {
     const total = actuals.length;
     const planned = actuals.filter(a => a.visit_type === 'planned').length;
     const unplanned = actuals.filter(a => a.visit_type === 'unplanned').length;
+    const nonTarget = actuals.filter(a => a.visit_type === 'non_target').length;
 
     const totalEl = byId('metricTotalActuals');
     const plannedEl = byId('metricPlannedActuals');
     const unplannedEl = byId('metricUnplannedActuals');
+    const nonTargetEl = byId('metricNonTargetActuals');
     const plannedPctEl = byId('metricPlannedPercent');
     const unplannedPctEl = byId('metricUnplannedPercent');
+    const nonTargetPctEl = byId('metricNonTargetPercent');
 
     if (totalEl) totalEl.innerText = total;
     if (plannedEl) plannedEl.innerText = planned;
     if (unplannedEl) unplannedEl.innerText = unplanned;
+    if (nonTargetEl) nonTargetEl.innerText = nonTarget;
 
     const plannedPct = total > 0 ? Math.round((planned / total) * 100) : 0;
     const unplannedPct = total > 0 ? Math.round((unplanned / total) * 100) : 0;
+    const nonTargetPct = total > 0 ? Math.round((nonTarget / total) * 100) : 0;
 
     if (plannedPctEl) plannedPctEl.innerText = plannedPct + '%';
     if (unplannedPctEl) unplannedPctEl.innerText = unplannedPct + '%';
+    if (nonTargetPctEl) nonTargetPctEl.innerText = nonTargetPct + '%';
 }
 
 function resetManagerFilters() {

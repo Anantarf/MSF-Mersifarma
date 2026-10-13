@@ -3,12 +3,14 @@ const currentUserRole = pageEl?.dataset.currentUserRole || '';
 const currentUserDistrict = pageEl?.dataset.currentUserDistrict || '';
 let allDoctors = [];
 let myCallLists = [];
+let myCallListsLoaded = false;
 let reviewCallLists = [];
 let allCampaigns = [];
 let doctorRecommendationsMap = {};
 let masterProducts = [];
 let campaignSelectedDoctorIds = new Set();
 let currentSelectedDoctorIds = new Set();
+let pickerCurrentPage = 1;
 let isFilterOnlySelected = false;
 let pendingConfirmResolve = null;
 const escapeHtml = window.MSF.escapeHtml;
@@ -214,8 +216,24 @@ function syncPeriodToHiddenInput() {
         const hidden = document.getElementById('periodMonthInput');
         if (monthSelect && yearSelect && hidden) {
             hidden.value = `${yearSelect.value}-${monthSelect.value}`;
+            showPeriodConflict(hidden.value);
         }
     }
+
+function showPeriodConflict(period) {
+    const editingId = document.getElementById('editingCallListId')?.value;
+    const exists = !editingId && myCallLists.some((list) => list.period_month.slice(0, 7) === period);
+    const errorEl = document.getElementById('targetModalError');
+
+    if (!errorEl) return exists;
+
+    errorEl.innerText = exists
+        ? 'Target Dokter untuk periode ini sudah ada. Pilih periode lain atau ubah daftar yang sudah tersedia.'
+        : '';
+    errorEl.style.display = exists ? 'block' : 'none';
+
+    return exists;
+}
 
 function switchTab(tab, isManual = true) {
         if (isManual) {
@@ -298,6 +316,7 @@ async function loadMyCallLists() {
 
             if (res.ok && result.success && Array.isArray(result.data)) {
                 myCallLists = result.data;
+                myCallListsLoaded = true;
                 const countEl = document.getElementById('myListCount');
                 if (countEl) countEl.innerText = myCallLists.length;
                 renderMyListsView();
@@ -370,7 +389,7 @@ function renderMyListsView() {
                 badgeHtml = `<span class="target-title-tag target-tag-approved">Disetujui</span>`;
                 btnsHtml = `
                     <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Histori</button>
-                    <a href="/call-plans" class="btn btn-primary btn-sm target-link-button">+ Jadwalkan Kunjungan</a>
+                    <a href="/call-plans" class="btn btn-primary btn-sm target-link-button">Jadwalkan Kunjungan</a>
                 `;
                 if (rejBox) rejBox.style.display = 'none';
                 if (quickAddWrap) quickAddWrap.innerHTML = '';
@@ -394,7 +413,7 @@ function renderMyListsView() {
                 if (quickAddWrap) {
                     quickAddWrap.innerHTML = `
                         <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
-                            + Kelola Target Dokter
+                            Kelola Target Dokter
                         </button>
                     `;
                 }
@@ -408,7 +427,7 @@ function renderMyListsView() {
                 if (quickAddWrap) {
                     quickAddWrap.innerHTML = `
                         <button type="button" class="btn btn-outline btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">
-                            + Kelola Target Dokter
+                            Kelola Target Dokter
                         </button>
                     `;
                 }
@@ -425,7 +444,7 @@ function renderMyListsView() {
                         <tr>
                             <td colspan="4" class="target-empty-cell">
                                 Belum ada dokter yang ditargetkan untuk periode ini.
-                                ${activeList.status === 'draft' ? `<div class="target-row-action-space"><button type="button" class="btn btn-primary btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">+ Pilih Target Dokter</button></div>` : ''}
+                                ${activeList.status === 'draft' ? `<div class="target-row-action-space"><button type="button" class="btn btn-primary btn-sm" data-action="open-edit" data-call-list-id="${activeList.id}">Pilih Target Dokter</button></div>` : ''}
                             </td>
                         </tr>
                     `;
@@ -498,6 +517,15 @@ function renderMyListsView() {
 
     // Modal Builder: Pemilihan Dokter yang Lega & Nyaman
     async function openCreateModal() {
+        if (!myCallListsLoaded) {
+            await loadMyCallLists();
+        }
+
+        if (!myCallListsLoaded) {
+            showAlert('Daftar target belum berhasil dimuat. Muat ulang daftar sebelum membuat target baru.', 'danger');
+            return;
+        }
+
         document.getElementById('editingCallListId').value = '';
         document.getElementById('targetModalTitle').innerText = 'Buat Target Dokter';
         document.getElementById('targetModalSubtitle').innerText = 'Pilih target dokter dari Master Customer List';
@@ -505,11 +533,22 @@ function renderMyListsView() {
         const periodInput = document.getElementById('periodMonthInput');
         if (periodInput) periodInput.disabled = false;
 
-        // Default ke bulan berjalan atau bulan depan
+        // Start at the first period without an existing list.
         const now = new Date();
-        const yyyy = String(now.getFullYear());
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        if (periodInput) periodInput.value = `${yyyy}-${mm}`;
+        const usedPeriods = new Set(myCallLists.map((list) => list.period_month.slice(0, 7)));
+        let availableDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        for (let offset = 0; offset < 27; offset += 1) {
+            const candidate = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+            const candidatePeriod = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}`;
+            if (!usedPeriods.has(candidatePeriod)) {
+                availableDate = candidate;
+                break;
+            }
+        }
+        const yyyy = String(availableDate.getFullYear());
+        const mm = String(availableDate.getMonth() + 1).padStart(2, '0');
+        const period = `${yyyy}-${mm}`;
+        if (periodInput) periodInput.value = period;
 
         const monthSelect = document.getElementById('periodMonthSelect');
         const yearSelect = document.getElementById('periodYearSelect');
@@ -523,7 +562,11 @@ function renderMyListsView() {
         document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
 
         const errEl = document.getElementById('targetModalError');
-        if (errEl) errEl.style.display = 'none';
+        if (errEl) {
+            errEl.style.display = 'none';
+            errEl.innerText = '';
+        }
+        showPeriodConflict(period);
 
         if (!allDoctors.length) {
             await loadDoctors();
@@ -681,6 +724,10 @@ async function saveCallList(autoSubmit = false) {
         const editingId = document.getElementById('editingCallListId').value;
         const period = document.getElementById('periodMonthInput').value;
         const selectedDoctors = Array.from(currentSelectedDoctorIds);
+
+        if (showPeriodConflict(period)) {
+            return;
+        }
 
         if (!selectedDoctors.length) {
             errEl.innerText = 'Pilih minimal 1 target dokter.';
