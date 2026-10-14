@@ -28,3 +28,7 @@ vite.config.js.timestamp*
 AGENTS.md
 agent.md
 agents.md
+
+# Local audit artifacts
+anti-slop/
+antislop/
