@@ -17,7 +17,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-/docs/Studi Kasus_SWE (Jr. Software Engineer).pdf
+/docs/
 
 vite.config.js.timestamp*
 /output/

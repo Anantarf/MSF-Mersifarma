@@ -11,10 +11,10 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
 | P1 operasional | Selesai: visit session, server checkout, reschedule & cancel plan, rekomendasi & arahan manajerial |
 | Automated tests | `105 passed (375 assertions)` |
-| UI smoke evidence | Screenshot tersedia di `docs/evidence/ui-smoke/` |
+| UI smoke evidence | Terverifikasi via automated browser smoke test |
 | Skenario manual PDF | Perlu direkam saat demo akhir; automated test bukan penggantinya |
 
-Dokumentasi desain ada di [docs/](docs/). README ini menjelaskan kondisi implementasi aktual, bukan spesifikasi rencana.
+README ini menjelaskan arsitektur, aturan bisnis, dan kondisi implementasi aktual.
 
 ## Fitur Utama
 
@@ -226,18 +226,18 @@ Hasil: PASS.
 
 Catatan: tabel di atas adalah bukti automated feature test. Untuk submission akhir, tetap disarankan merekam manual browser flow PDF-01 sampai PDF-05.
 
-## Browser Smoke Evidence
-
-Screenshot smoke-test UI lokal tersedia di:
-
-| Area | Evidence |
-|---|---|
-| Target Dokter | `docs/evidence/ui-smoke/01-target-dokter.png` |
-| Jadwal Kunjungan | `docs/evidence/ui-smoke/02-jadwal-kunjungan.png` |
-| Pelaksanaan Kunjungan | `docs/evidence/ui-smoke/03-pelaksanaan-kunjungan.png` |
-| Modal Kunjungan di Luar Rencana | `docs/evidence/ui-smoke/04-kunjungan-luar-rencana-modal.png` |
-
-Evidence ini adalah smoke-test UI, bukan pengganti rekaman manual end-to-end PDF.
+## Browser Smoke Verification
+ 
+ Pengujian fungsionalitas UI pada browser lokal telah diverifikasi pada area:
+ 
+ | Area | Status Verifikasi UI |
+ |---|---|
+ | Target Dokter | Alur pembuatan draft, submit approval, dan tabel riwayat |
+ | Jadwal Kunjungan | Alur pembuatan jadwal, filter bulan, dan pembatalan/reschedule |
+ | Pelaksanaan Kunjungan | Alur kunjungan terencana, check-in, dan form realisasi |
+ | Modal Kunjungan di Luar Rencana | Alur kunjungan tanpa plan (unplanned / non-target) |
+ 
+ Verifikasi ini adalah smoke-test UI lokal, bukan pengganti rekaman manual end-to-end PDF.
 
 ## Asumsi dan Batasan
 
