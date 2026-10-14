@@ -11,7 +11,7 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
 | Fitur tambahan P1 | Tersedia: sesi kunjungan (pencatatan waktu mulai/selesai otomatis), reschedule/cancel plan, rekomendasi dan arahan manajerial |
 | Automated tests | `106 passed (379 assertions)` |
-| UI smoke evidence | Tersedia di `docs/evidence/ui-smoke/` |
+| UI smoke evidence | Diverifikasi lokal; screenshot tidak disertakan di repository publik |
 | Skenario manual PDF | Perlu direkam saat demo akhir; automated test bukan penggantinya |
 
 README ini menjelaskan arsitektur, aturan bisnis, dan kondisi implementasi aktual.
@@ -230,9 +230,9 @@ Catatan: tabel di atas adalah bukti automated feature test. Untuk submission akh
 
 ## Browser Smoke Verification
 
-Pengujian fungsionalitas UI pada browser lokal telah diverifikasi pada area berikut. Screenshot tersimpan di `docs/evidence/ui-smoke/`.
+Pengujian fungsionalitas UI pada browser lokal telah diverifikasi pada area berikut. Screenshot disimpan sebagai evidence lokal pengembangan dan tidak disertakan di repository publik karena folder dokumentasi/evidence lokal di-ignore.
 
-| Area | Evidence | Status Verifikasi UI |
+| Area | Evidence Lokal | Status Verifikasi UI |
 |---|---|---|
 | Target Dokter | `01-target-dokter.png` | Alur pembuatan draft, submit approval, dan tabel riwayat |
 | Jadwal Kunjungan | `02-jadwal-kunjungan.png` | Alur pembuatan jadwal, filter bulan, dan pembatalan/reschedule |
@@ -248,7 +248,7 @@ Verifikasi ini adalah smoke-test UI lokal, bukan pengganti rekaman manual end-to
 - Manual Actual memakai waktu yang dikirim pengguna, sehingga tidak membuktikan kehadiran fisik.
 - GPS, offline mode, insentif, notifikasi, dan deployment produksi tidak termasuk scope.
 - P1 visit session tersedia, tetapi P0 Direct Actual tetap dapat berjalan tanpa session.
-- MySQL/MariaDB lokal sudah dipakai untuk pengujian; concurrency produksi tetap perlu diuji lebih lanjut bila sistem dipakai nyata.
+- Proteksi race condition utama sudah diterapkan lewat transaksi service dan unique constraint database; stress test concurrency pada lingkungan production-like belum dilakukan.
 
 ## Refleksi Tooling
 
