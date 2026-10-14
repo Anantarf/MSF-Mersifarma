@@ -23,3 +23,8 @@ vite.config.js.timestamp*
 /output/
 .playwright-cli/
 .env.testing
+
+# Local agent instructions
+AGENTS.md
+agent.md
+agents.md
