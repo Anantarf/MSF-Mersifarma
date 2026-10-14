@@ -10,7 +10,7 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | 3 halaman utama Blade | Selesai: Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan |
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
 | Fitur tambahan P1 | Tersedia: sesi kunjungan (pencatatan waktu mulai/selesai otomatis), reschedule/cancel plan, rekomendasi dan arahan manajerial |
-| Automated tests | `105 passed (375 assertions)` |
+| Automated tests | `106 passed (379 assertions)` |
 | UI smoke evidence | Tersedia di `docs/evidence/ui-smoke/` |
 | Skenario manual PDF | Perlu direkam saat demo akhir; automated test bukan penggantinya |
 
@@ -197,7 +197,7 @@ php artisan test
 Hasil terakhir:
 
 ```text
-Tests: 105 passed (375 assertions)
+Tests: 106 passed (379 assertions)
 ```
 
 Build frontend:
