@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        closeCustomPlanDoctorDropdown();
         closeCreatePlanModal();
         closeReschedulePlanModal();
         closeCancelPlanModal();
@@ -41,6 +42,9 @@ function bindPlanEvents() {
             case 'close-create-plan':
                 closeCreatePlanModal();
                 break;
+            case 'select-plan-doctor':
+                handleCustomPlanDoctorSelect(trigger.dataset.doctorId);
+                break;
             case 'quick-date':
                 setQuickDate(trigger.dataset.date);
                 break;
@@ -61,6 +65,12 @@ function bindPlanEvents() {
                 break;
             case 'close-plan-detail':
                 closePlanDetailModal();
+                break;
+            case 'close-conflict-modal':
+                closeConflictModal();
+                break;
+            case 'modify-conflict-time':
+                modifyConflictTime();
                 break;
             case 'retry-load-plans':
                 loadPlans();
@@ -85,6 +95,20 @@ function bindPlanEvents() {
     document.getElementById('createPlanForm')?.addEventListener('submit', handleCreatePlanSubmit);
     document.getElementById('reschedulePlanForm')?.addEventListener('submit', handleReschedulePlanSubmit);
     document.getElementById('cancelPlanForm')?.addEventListener('submit', handleCancelPlanSubmit);
+    document.getElementById('btnConfirmConflictSubmit')?.addEventListener('click', () => {
+        const cb = conflictCallback;
+        closeConflictModal();
+        if (typeof cb === 'function') cb();
+    });
+
+    document.getElementById('customPlanDoctorTrigger')?.addEventListener('click', toggleCustomPlanDoctorDropdown);
+    document.getElementById('customPlanDoctorSearch')?.addEventListener('input', (e) => renderCustomPlanDoctorList(e.target.value));
+    document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('customPlanDoctorWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            closeCustomPlanDoctorDropdown();
+        }
+    });
 
     const plannedTimeInput = document.getElementById('plannedTimeInput');
     plannedTimeInput?.addEventListener('input', () => window.autoFormatTimeInput(plannedTimeInput));
@@ -217,17 +241,21 @@ function renderPlansGrid() {
                     <small class="plan-help-text">${escapeHtml(plan.doctor_address || '-')}</small>
                 </td>
                 <td>
-                    <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-                    ${isCancelled && plan.cancellation_reason ? `
-                        <div class="plan-cancel-note">
-                            <span class="plan-cancel-note-label">Alasan:</span> <span class="plan-cancel-note-text">"${escapeHtml(plan.cancellation_reason)}"</span>
-                        </div>
-                    ` : ''}
-                    ${plan.rescheduled_at ? `
-                        <div class="plan-cancel-note" style="color: #0369a1; background: #f0f9ff; border-left: 3px solid #0284c7; padding: 0.25rem 0.5rem; margin-top: 0.25rem; font-size: 0.75rem; border-radius: 4px;">
-                            <span class="plan-cancel-note-label">Reschedule:</span> <span class="plan-cancel-note-text">"${escapeHtml(plan.reschedule_reason)}"</span>
-                        </div>
-                    ` : ''}
+                    <div class="plan-status-wrap">
+                        <span class="status-badge ${statusClass}">
+                            <span class="status-dot"></span>
+                            ${escapeHtml(statusLabel)}
+                        </span>
+                        ${isCancelled && plan.cancellation_reason ? `
+                            <div class="plan-meta-note plan-meta-cancelled" title="${escapeHtml(plan.cancellation_reason)}">
+                                <span class="plan-meta-label">Alasan:</span> ${escapeHtml(plan.cancellation_reason)}
+                            </div>
+                        ` : (plan.status === 'scheduled' && plan.rescheduled_at && plan.reschedule_reason ? `
+                            <div class="plan-meta-note plan-meta-rescheduled" title="${escapeHtml(plan.reschedule_reason)}">
+                                <i class="bi bi-clock-history"></i> Reschedule: ${escapeHtml(plan.reschedule_reason)}
+                            </div>
+                        ` : '')}
+                    </div>
                 </td>
                 <td class="plan-action-cell">
                     ${plan.status === 'scheduled' ? `
@@ -238,21 +266,21 @@ function renderPlansGrid() {
                             <button type="button" class="btn btn-outline btn-sm" data-action="open-reschedule-plan" data-plan-id="${plan.id}">
                                 Reschedule
                             </button>
-                            <button type="button" class="btn btn-outline btn-sm plan-danger-outline" data-action="open-cancel-plan" data-plan-id="${plan.id}">
+                            <button type="button" class="btn btn-subtle-danger btn-sm" data-action="open-cancel-plan" data-plan-id="${plan.id}">
                                 Batalkan
                             </button>
                         </div>
                     ` : (isCompleted ? `
-                        <a href="/call-actuals" class="btn btn-outline btn-sm plan-secondary-action plan-link-button">
+                        <a href="/call-actuals" class="btn btn-outline btn-sm plan-link-button">
                             Lihat Laporan
                         </a>
                     ` : (isExpired ? `
-                        <button type="button" class="btn btn-outline btn-sm plan-secondary-action" data-action="open-create-plan">
+                        <button type="button" class="btn btn-outline btn-sm" data-action="open-create-plan">
                             Jadwalkan Ulang
                         </button>
                     ` : `
-                        <button type="button" class="btn btn-outline btn-sm plan-muted-action" data-action="open-plan-detail" data-plan-id="${plan.id}">
-                            Detail Batal
+                        <button type="button" class="btn btn-outline btn-sm" data-action="open-plan-detail" data-plan-id="${plan.id}">
+                            Detail
                         </button>
                     `))}
                 </td>
@@ -317,10 +345,13 @@ async function onCallListChange() {
     const periodMonth = selectedOption.getAttribute('data-period'); // Format YYYY-MM
     currentCallListDoctors = [];
     if (errorBox) errorBox.style.display = 'none';
+    const recNotice = document.getElementById('doctorRecNotice');
+    if (recNotice) recNotice.style.display = 'none';
 
     if (!callListId) {
         doctorSelect.innerHTML = '<option value="">-- Pilih target bulanan terlebih dahulu --</option>';
         doctorSelect.disabled = true;
+        setCustomPlanDoctorDisabled(true, '-- Pilih target bulanan terlebih dahulu --');
         planDateInput.removeAttribute('min');
         planDateInput.removeAttribute('max');
         planDateInput.disabled = true;
@@ -361,6 +392,7 @@ async function onCallListChange() {
 
     doctorSelect.disabled = true;
     doctorSelect.innerHTML = '<option value="">Memuat dokter target...</option>';
+    setCustomPlanDoctorDisabled(true, 'Memuat dokter target...');
 
     try {
         const res = await window.apiFetch(`/api/call-lists/${callListId}`);
@@ -370,6 +402,7 @@ async function onCallListChange() {
             const callListDoctors = result.data.doctors;
             if (!callListDoctors.length) {
                 doctorSelect.innerHTML = '<option value="">Tidak ada dokter di target ini</option>';
+                setCustomPlanDoctorDisabled(true, 'Tidak ada dokter di target ini');
                 return;
             }
             let recMap = {};
@@ -388,18 +421,56 @@ async function onCallListChange() {
             }
             if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
 
-            doctorSelect.innerHTML = '<option value="">-- Pilih Target Dokter --</option>' +
-                callListDoctors.map(doc => {
-                    const rec = recMap[doc.id];
-                    const recLabel = rec ? ` [★ Rekomendasi: ${escapeHtml(rec.focus_products)}]` : '';
-                    return `
-                        <option value="${doc.id}">
-                            ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})${recLabel}
+            const recommendedDocs = [];
+            const regularDocs = [];
+
+            callListDoctors.forEach(doc => {
+                const rec = recMap[doc.id];
+                if (rec) {
+                    recommendedDocs.push({ doc, rec });
+                } else {
+                    regularDocs.push({ doc });
+                }
+            });
+
+            let optionsHtml = '<option value="">-- Pilih Target Dokter --</option>';
+
+            if (recommendedDocs.length > 0) {
+                optionsHtml += `<optgroup label="⭐ Rekomendasi Manajer">` +
+                    recommendedDocs.map(({ doc, rec }) => `
+                        <option value="${doc.id}" data-rec-product="${escapeHtml(rec.focus_products || '')}">
+                            ⭐ ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})
                         </option>
-                    `;
-                }).join('');
+                    `).join('') +
+                    `</optgroup>`;
+            }
+
+            if (regularDocs.length > 0) {
+                const groupLabel = recommendedDocs.length > 0 ? 'Target Dokter Lainnya' : '';
+                const openGroup = groupLabel ? `<optgroup label="${groupLabel}">` : '';
+                const closeGroup = groupLabel ? `</optgroup>` : '';
+                optionsHtml += openGroup +
+                    regularDocs.map(({ doc }) => `
+                        <option value="${doc.id}">
+                            ${escapeHtml(doc.name)} (${escapeHtml(doc.specialization || 'Umum')})
+                        </option>
+                    `).join('') +
+                    closeGroup;
+            }
+
+            doctorSelect.innerHTML = optionsHtml;
             doctorSelect.disabled = false;
-            currentCallListDoctors = callListDoctors;
+            currentCallListDoctors = callListDoctors.map(doc => {
+                const rec = recMap[doc.id];
+                return {
+                    ...doc,
+                    is_recommended: !!rec,
+                    rec_product: rec ? rec.focus_products : null
+                };
+            });
+            setCustomPlanDoctorDisabled(false, '-- Pilih Target Dokter --');
+            renderCustomPlanDoctorList('');
+            syncCustomPlanDoctorTrigger('');
         } else {
             throw new Error(window.describeApiError(result || res, 'Gagal memuat dokter pada target ini.', res.status));
         }
@@ -407,9 +478,158 @@ async function onCallListChange() {
         if (requestId !== callListDoctorsRequest || select.value !== callListId) return;
         const message = window.describeApiError(err, 'Gagal memuat dokter pada target ini.');
         doctorSelect.innerHTML = '<option value="">Dokter gagal dimuat</option>';
+        setCustomPlanDoctorDisabled(true, 'Dokter gagal dimuat');
         if (errorText) errorText.innerText = message;
         if (errorBox) errorBox.style.display = 'block';
     }
+}
+
+function renderCustomPlanDoctorList(filterKeyword = '') {
+    const list = document.getElementById('customPlanDoctorList');
+    if (!list) return;
+
+    const term = String(filterKeyword || '').toLowerCase().trim();
+    const doctorSelect = document.getElementById('doctorSelect');
+    const selectedId = doctorSelect ? String(doctorSelect.value || '') : '';
+
+    const filtered = currentCallListDoctors.filter((doc) => {
+        if (!term) return true;
+        const name = (doc.name || '').toLowerCase();
+        const spec = (doc.specialization || '').toLowerCase();
+        const addr = (doc.address || '').toLowerCase();
+        return name.includes(term) || spec.includes(term) || addr.includes(term);
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = '<div class="ca-doctor-opt-empty">Tidak ada dokter yang cocok dengan pencarian.</div>';
+        return;
+    }
+
+    const recs = filtered.filter(d => d.is_recommended);
+    const regs = filtered.filter(d => !d.is_recommended);
+
+    let html = '';
+    if (recs.length > 0) {
+        html += '<div class="ca-doctor-opt-group">⭐ Rekomendasi Manajer</div>';
+        html += recs.map(doc => renderCustomPlanDoctorItem(doc, selectedId)).join('');
+    }
+    if (regs.length > 0) {
+        if (recs.length > 0) {
+            html += '<div class="ca-doctor-opt-group">Target Dokter Lainnya</div>';
+        }
+        html += regs.map(doc => renderCustomPlanDoctorItem(doc, selectedId)).join('');
+    }
+
+    list.innerHTML = html;
+}
+
+function renderCustomPlanDoctorItem(doc, selectedId) {
+    const isSelected = String(doc.id) === selectedId;
+    const addr = doc.address || '-';
+    return `
+        <div class="ca-doctor-opt ${isSelected ? 'is-selected' : ''}" data-action="select-plan-doctor" data-doctor-id="${doc.id}">
+            <div class="ca-doctor-opt-head">
+                <strong class="ca-doctor-opt-name">${escapeHtml(doc.name)}</strong>
+                <span class="ca-doctor-opt-spec">${escapeHtml(doc.specialization || 'Umum')}</span>
+            </div>
+            <div class="ca-doctor-opt-sub">
+                <i class="bi bi-building" aria-hidden="true"></i>
+                <span>${escapeHtml(addr)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function syncCustomPlanDoctorTrigger(doctorId = null) {
+    const select = document.getElementById('doctorSelect');
+    const trigger = document.getElementById('customPlanDoctorTrigger');
+    const label = document.getElementById('customPlanDoctorLabel');
+    if (!trigger || !label) return;
+
+    const currentId = doctorId !== null && doctorId !== undefined && doctorId !== ''
+        ? String(doctorId)
+        : (select ? String(select.value || '') : '');
+
+    trigger.disabled = !!(select && select.disabled);
+
+    if (!currentId) {
+        label.innerHTML = '<span style="color: #64748b;">-- Pilih Target Dokter --</span>';
+        return;
+    }
+
+    const doc = currentCallListDoctors.find((d) => String(d.id) === currentId);
+    if (!doc) {
+        label.innerHTML = '<span style="color: #64748b;">-- Pilih Target Dokter --</span>';
+        return;
+    }
+
+    const addr = doc.address || '';
+    label.innerHTML = `
+        <div class="ca-doctor-trigger-body">
+            <div class="ca-doctor-trigger-head">
+                <span>${escapeHtml(doc.name)}</span>
+                <span class="ca-doctor-spec-pill">${escapeHtml(doc.specialization || 'Umum')}</span>
+            </div>
+            ${addr ? `
+                <div class="ca-doctor-trigger-sub">
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                    <span>${escapeHtml(addr)}</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function setCustomPlanDoctorDisabled(disabled, labelText) {
+    const trigger = document.getElementById('customPlanDoctorTrigger');
+    const label = document.getElementById('customPlanDoctorLabel');
+    if (trigger) trigger.disabled = !!disabled;
+    if (label && labelText) {
+        label.innerHTML = `<span style="color: #64748b;">${escapeHtml(labelText)}</span>`;
+    }
+}
+
+function openCustomPlanDoctorDropdown() {
+    const trigger = document.getElementById('customPlanDoctorTrigger');
+    if (trigger && trigger.disabled) return;
+    const wrap = document.getElementById('customPlanDoctorWrap');
+    const dropdown = document.getElementById('customPlanDoctorDropdown');
+    const search = document.getElementById('customPlanDoctorSearch');
+    if (!wrap || !dropdown) return;
+
+    wrap.classList.add('is-open');
+    dropdown.style.display = 'flex';
+    if (search) {
+        search.value = '';
+        renderCustomPlanDoctorList('');
+        setTimeout(() => search.focus(), 50);
+    }
+}
+
+function closeCustomPlanDoctorDropdown() {
+    const wrap = document.getElementById('customPlanDoctorWrap');
+    const dropdown = document.getElementById('customPlanDoctorDropdown');
+    if (!wrap || !dropdown) return;
+    wrap.classList.remove('is-open');
+    dropdown.style.display = 'none';
+}
+
+function toggleCustomPlanDoctorDropdown() {
+    const dropdown = document.getElementById('customPlanDoctorDropdown');
+    if (dropdown && dropdown.style.display !== 'none') {
+        closeCustomPlanDoctorDropdown();
+    } else {
+        openCustomPlanDoctorDropdown();
+    }
+}
+
+function handleCustomPlanDoctorSelect(doctorId) {
+    const select = document.getElementById('doctorSelect');
+    if (!select) return;
+    select.value = doctorId;
+    syncCustomPlanDoctorTrigger(doctorId);
+    closeCustomPlanDoctorDropdown();
+    onDoctorChange();
 }
 
 let currentDoctorBusyDates = [];
@@ -421,6 +641,20 @@ async function onDoctorChange() {
     const selectedOption = callListSelect.options[callListSelect.selectedIndex];
     const periodMonth = selectedOption ? selectedOption.getAttribute('data-period') : '';
     const noticeEl = document.getElementById('availabilityNotice');
+    const recNotice = document.getElementById('doctorRecNotice');
+    const recProductEl = document.getElementById('doctorRecProduct');
+
+    const selectedDocOption = doctorSelect.options[doctorSelect.selectedIndex];
+    const recProduct = selectedDocOption ? selectedDocOption.getAttribute('data-rec-product') : null;
+
+    if (recNotice) {
+        if (recProduct) {
+            recNotice.style.display = 'flex';
+            if (recProductEl) recProductEl.textContent = recProduct;
+        } else {
+            recNotice.style.display = 'none';
+        }
+    }
 
     currentDoctorBusyDates = [];
     if (!doctorId || !periodMonth) {
@@ -498,6 +732,42 @@ function onPlanDateChange() {
     }
 }
 
+let conflictCallback = null;
+let conflictSourceInput = null;
+let bypassCreateTimeConflict = false;
+let bypassRescheduleTimeConflict = false;
+
+function showConflictModal(conflictingPlan, timeStr, onConfirm, sourceInput) {
+    conflictCallback = onConfirm;
+    conflictSourceInput = sourceInput;
+
+    const timeEl = document.getElementById('conflictModalTime');
+    const docEl = document.getElementById('conflictModalDoctor');
+    const facEl = document.getElementById('conflictModalFacility');
+    const modal = document.getElementById('planTimeConflictModal');
+
+    if (timeEl) timeEl.innerText = formatWaktuIndonesia(timeStr);
+    if (docEl) docEl.innerText = conflictingPlan.doctor_name || 'Dokter';
+    if (facEl) facEl.innerText = conflictingPlan.doctor_address || '-';
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeConflictModal() {
+    const modal = document.getElementById('planTimeConflictModal');
+    if (modal) modal.style.display = 'none';
+    conflictCallback = null;
+    conflictSourceInput = null;
+}
+
+function modifyConflictTime() {
+    const input = conflictSourceInput;
+    closeConflictModal();
+    if (input) {
+        input.focus();
+        if (typeof input.select === 'function') input.select();
+    }
+}
+
 function openCreatePlanModal() {
     const errEl = document.getElementById('createPlanModalError');
     if (errEl) {
@@ -509,12 +779,23 @@ function openCreatePlanModal() {
         noticeEl.style.display = 'none';
         noticeEl.innerHTML = '';
     }
+    const recNotice = document.getElementById('doctorRecNotice');
+    if (recNotice) {
+        recNotice.style.display = 'none';
+    }
     currentDoctorBusyDates = [];
+    bypassCreateTimeConflict = false;
     document.getElementById('createPlanModal').style.display = 'flex';
     loadApprovedCallLists();
 }
 
 function closeCreatePlanModal() {
+    closeCustomPlanDoctorDropdown();
+    const recNotice = document.getElementById('doctorRecNotice');
+    if (recNotice) {
+        recNotice.style.display = 'none';
+    }
+    bypassCreateTimeConflict = false;
     document.getElementById('createPlanModal').style.display = 'none';
 }
 
@@ -550,6 +831,32 @@ async function handleCreatePlanSubmit(e) {
         return;
     }
 
+    // Cek potensi bentrok jam kunjungan dengan dokter lain pada tanggal yang sama
+    if (!bypassCreateTimeConflict) {
+        try {
+            const checkRes = await window.apiFetch(`/api/call-plans?date=${encodeURIComponent(planDate)}&status=scheduled`);
+            const checkData = await checkRes.json();
+            if (checkRes.ok && checkData.success && Array.isArray(checkData.data)) {
+                const normTargetTime = plannedTime.substring(0, 5);
+                const conflictingPlan = checkData.data.find(p => {
+                    const normPTime = (p.planned_time || '').substring(0, 5).replace('.', ':');
+                    return normPTime === normTargetTime && String(p.doctor_id) !== String(doctorId);
+                });
+
+                if (conflictingPlan) {
+                    showConflictModal(conflictingPlan, plannedTime, () => {
+                        bypassCreateTimeConflict = true;
+                        handleCreatePlanSubmit(e);
+                    }, document.getElementById('plannedTimeInput'));
+                    return;
+                }
+            }
+        } catch (checkErr) {
+            console.warn('Gagal memeriksa jadwal bersamaan:', checkErr);
+        }
+    }
+
+    bypassCreateTimeConflict = false;
     const btn = document.getElementById('btnSubmitPlan');
     btn.disabled = true;
     btn.innerText = 'Menyimpan...';
@@ -778,6 +1085,7 @@ function onRescheduleDateChange() {
 }
 
 function closeReschedulePlanModal() {
+    bypassRescheduleTimeConflict = false;
     document.getElementById('reschedulePlanModal').style.display = 'none';
 }
 
@@ -798,6 +1106,32 @@ async function handleReschedulePlanSubmit(e) {
         return;
     }
 
+    // Cek potensi bentrok jam kunjungan dengan jadwal dokter lain
+    if (!bypassRescheduleTimeConflict) {
+        try {
+            const checkRes = await window.apiFetch(`/api/call-plans?date=${encodeURIComponent(planDate)}&status=scheduled`);
+            const checkData = await checkRes.json();
+            if (checkRes.ok && checkData.success && Array.isArray(checkData.data)) {
+                const normTargetTime = plannedTime.substring(0, 5);
+                const conflictingPlan = checkData.data.find(p => {
+                    const normPTime = (p.planned_time || '').substring(0, 5).replace('.', ':');
+                    return normPTime === normTargetTime && String(p.id) !== String(planId);
+                });
+
+                if (conflictingPlan) {
+                    showConflictModal(conflictingPlan, plannedTime, () => {
+                        bypassRescheduleTimeConflict = true;
+                        handleReschedulePlanSubmit(e);
+                    }, document.getElementById('reschedulePlannedTimeInput'));
+                    return;
+                }
+            }
+        } catch (checkErr) {
+            console.warn('Gagal memeriksa jadwal bersamaan saat reschedule:', checkErr);
+        }
+    }
+
+    bypassRescheduleTimeConflict = false;
     btn.disabled = true;
     btn.innerText = 'Menyimpan...';
 

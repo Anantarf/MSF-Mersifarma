@@ -157,8 +157,8 @@ class User extends Authenticatable
             'rsm' => 'Regional Sales Manager DKI Jakarta',
             'mm' => 'Marketing Manager Nasional',
             default => match ($this->role) {
-                'mr' => 'MR',
-                'dm' => 'District Manager',
+                'mr' => $this->district ? 'MR '.$this->district : 'MR',
+                'dm' => $this->district ? 'District Manager '.$this->district : 'District Manager',
                 'rsm' => 'Regional Sales Manager',
                 'mm' => 'Marketing Manager',
                 default => strtoupper((string) $this->role),

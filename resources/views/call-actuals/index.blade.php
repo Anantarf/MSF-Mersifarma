@@ -29,9 +29,9 @@
         <h3 id="activeSessionDoctorName" class="ca-card-title">-</h3>
         <p id="activeSessionDoctorDetail" class="ca-card-sub">-</p>
         <p class="ca-session-time" style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
-            <span><span class="text-muted">Check-in server:</span> <strong id="activeSessionCheckInTime" class="tabular-nums">-</strong></span>
+            <span><span class="text-muted">Waktu Mulai:</span> <strong id="activeSessionCheckInTime" class="tabular-nums">-</strong></span>
             <span id="activeSessionCheckOutWrap" style="display: none;">
-                <span><span class="text-muted">Check-out server:</span> <strong id="activeSessionCheckOutTime" class="tabular-nums">-</strong></span>
+                <span><span class="text-muted">Waktu Selesai:</span> <strong id="activeSessionCheckOutTime" class="tabular-nums">-</strong></span>
             </span>
         </p>
         <div class="ca-actions">
@@ -267,8 +267,21 @@
 
                 <div id="stepSection1" class="ca-step-panel">
                     <div class="ca-field">
-                        <label for="actualDoctorSelect" class="ca-label">Dokter <span class="ca-req" aria-hidden="true">*</span></label>
-                        <select id="actualDoctorSelect" class="ca-input" required></select>
+                        <label for="customDoctorTrigger" class="ca-label">Dokter <span class="ca-req" aria-hidden="true">*</span></label>
+                        <select id="actualDoctorSelect" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; margin: 0; padding: 0;" tabindex="-1"></select>
+
+                        <div class="ca-custom-select" id="customDoctorSelectWrap">
+                            <button type="button" class="ca-input ca-custom-select-trigger" id="customDoctorTrigger">
+                                <span id="customDoctorSelectedLabel">-- Pilih Dokter --</span>
+                                <i class="bi bi-chevron-down ca-custom-select-arrow" aria-hidden="true"></i>
+                            </button>
+                            <div class="ca-custom-select-dropdown" id="customDoctorDropdown" style="display: none;">
+                                <div class="ca-custom-select-search">
+                                    <input type="text" id="customDoctorSearch" placeholder="Cari dokter, spesialisasi, atau RS..." class="ca-input ca-input-sm" autocomplete="off">
+                                </div>
+                                <div class="ca-custom-select-list" id="customDoctorList"></div>
+                            </div>
+                        </div>
                         <div id="unplannedScopeWrap" class="ca-scope-toggle" style="display: none; margin-top: 0.5rem;">
                             <label class="ca-checkbox-inline" style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                 <input type="checkbox" id="chkAllMclScope" value="1">
@@ -280,9 +293,9 @@
                     </div>
 
                     <div id="sessionTimeBox" class="ca-readbox" style="display: none;">
-                        <span class="ca-readbox-cap">Tanggal &amp; waktu server (hanya baca)</span>
+                        <span class="ca-readbox-cap">Waktu Kunjungan (Tercatat Otomatis)</span>
                         <strong id="sessionTimeText">-</strong>
-                        <p>Waktu berasal dari Visit Session server dan tidak dapat diubah.</p>
+                        <p>Waktu mulai dan selesai tercatat otomatis dari kunjungan riil.</p>
                     </div>
 
                     <div id="manualTimeFields">

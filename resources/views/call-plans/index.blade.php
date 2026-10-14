@@ -125,12 +125,33 @@
 
                 <!-- 2. Pilihan Dokter Terdaftar -->
                 <div class="plan-field">
-                    <label for="doctorSelect" class="plan-field-label">
+                    <label for="customPlanDoctorTrigger" class="plan-field-label">
                         Target Dokter
                     </label>
-                    <select id="doctorSelect" class="plan-input" required disabled>
+                    <select id="doctorSelect" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; margin: 0; padding: 0;" tabindex="-1" required disabled>
                         <option value="">-- Pilih target bulanan terlebih dahulu --</option>
                     </select>
+
+                    <div class="ca-custom-select" id="customPlanDoctorWrap">
+                        <button type="button" class="plan-input ca-custom-select-trigger" id="customPlanDoctorTrigger" disabled>
+                            <span id="customPlanDoctorLabel" style="color: #64748b;">-- Pilih target bulanan terlebih dahulu --</span>
+                            <i class="bi bi-chevron-down ca-custom-select-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div class="ca-custom-select-dropdown" id="customPlanDoctorDropdown" style="display: none;">
+                            <div class="ca-custom-select-search">
+                                <input type="text" id="customPlanDoctorSearch" placeholder="Cari dokter, spesialisasi, atau RS..." class="plan-input ca-input-sm" autocomplete="off">
+                            </div>
+                            <div class="ca-custom-select-list" id="customPlanDoctorList"></div>
+                        </div>
+                    </div>
+
+                    <div id="doctorRecNotice" class="plan-rec-card" style="display: none;">
+                        <i class="bi bi-stars plan-rec-icon" aria-hidden="true"></i>
+                        <div class="plan-rec-text">
+                            <span class="plan-rec-title">Rekomendasi Manajer</span>
+                            <span class="plan-rec-desc">Fokus Produk: <strong id="doctorRecProduct"></strong></span>
+                        </div>
+                    </div>
                     <div id="doctorLoadError" class="alert alert-danger" role="alert" style="display: none; margin-top: 0.5rem;">
                         <span id="doctorLoadErrorText"></span>
                         <button type="button" class="btn btn-outline btn-sm" data-action="retry-load-doctors">Coba lagi</button>
@@ -308,6 +329,42 @@
 
         <div class="modal-sheet-foot">
             <button type="button" class="btn btn-outline btn-sm" data-action="close-plan-detail">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Konfirmasi Jadwal Bersamaan (Time Conflict Notice) -->
+<div id="planTimeConflictModal" class="modal-backdrop" style="display: none; z-index: 1060;">
+    <div class="modal-card plan-conflict-modal">
+        <div class="modal-sheet-head">
+            <div class="plan-conflict-head-wrap">
+                <div class="plan-conflict-icon-wrap">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <h3 class="modal-sheet-title">Waktu Kunjungan Bersamaan</h3>
+                    <span class="modal-sheet-subtitle">Pemberitahuan potensi jadwal ganda</span>
+                </div>
+            </div>
+            <button type="button" class="close-btn" data-action="close-conflict-modal" aria-label="Tutup">&times;</button>
+        </div>
+
+        <div class="modal-sheet-body">
+            <p class="plan-conflict-desc">
+                Anda sudah memiliki jadwal kunjungan aktif pada jam <strong id="conflictModalTime" class="tabular-nums">09.00 WIB</strong> di tanggal yang sama:
+            </p>
+            <div class="plan-conflict-card">
+                <div class="plan-conflict-doc" id="conflictModalDoctor">dr. Andi Pratama, Sp.A.</div>
+                <div class="plan-conflict-facility" id="conflictModalFacility">RS Anak Sehat</div>
+            </div>
+            <p class="plan-conflict-hint">
+                Apakah Anda ingin mengubah jam kunjungan atau tetap menyimpan pada jam yang sama?
+            </p>
+        </div>
+
+        <div class="modal-sheet-foot plan-conflict-foot">
+            <button type="button" class="btn btn-outline" data-action="modify-conflict-time">Ubah Jam</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmConflictSubmit">Tetap Simpan</button>
         </div>
     </div>
 </div>

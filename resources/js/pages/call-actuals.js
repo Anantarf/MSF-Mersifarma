@@ -153,6 +153,9 @@ function bindStaticEvents() {
             case 'show-evidence':
                 openEvidenceModalFromActualId(trigger.dataset.actualId);
                 break;
+            case 'select-custom-doctor':
+                handleCustomDoctorSelect(trigger.dataset.doctorId);
+                break;
             case 'retry-load':
                 retryLoad(trigger.dataset.target);
                 break;
@@ -183,8 +186,22 @@ function bindStaticEvents() {
         byId(id)?.addEventListener('change', loadActuals);
     });
 
+    byId('customDoctorTrigger')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleCustomDoctorDropdown();
+    });
+    byId('customDoctorSearch')?.addEventListener('input', (event) => {
+        renderCustomDoctorList(event.target.value);
+    });
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#customDoctorSelectWrap')) {
+            closeCustomDoctorDropdown();
+        }
+    });
+
     byId('actualDoctorSelect')?.addEventListener('change', () => {
         clearFieldErrors();
+        syncCustomDoctorTrigger();
         saveActualDraft();
     });
     byId('actualDateInput')?.addEventListener('change', () => {
@@ -216,7 +233,7 @@ function openEvidenceModalFromActualId(actualId) {
         actual.doctor_name || 'Dokter',
         actual.photo_url || '',
         actual.signature_url || '',
-        actual.mr_name || ''
+        actual.mr_name ? `${actual.mr_name}${actual.mr_district ? ' (' + actual.mr_district + ')' : ''}` : ''
     );
 }
 
@@ -625,6 +642,7 @@ function resetActualForm() {
         const docSel = byId('actualDoctorSelect');
         if (docSel) docSel.selectedIndex = 0;
     }
+    syncCustomDoctorTrigger('');
 
     const dateInput = byId('actualDateInput');
     if (dateInput) {
@@ -667,6 +685,7 @@ function restoreActualDraft(planId) {
         if (draft.doctor_id && !planId) {
             const docSel = byId('actualDoctorSelect');
             if (docSel) docSel.value = draft.doctor_id;
+            syncCustomDoctorTrigger(draft.doctor_id);
         }
         if (draft.visit_date && !lockedPlanDate) {
             byId('actualDateInput').value = draft.visit_date;
@@ -729,7 +748,15 @@ async function loadDoctors(allMcl = false) {
 async function loadProducts() {
     const result = await callApi('/api/products');
     productsLoadFailed = !(result.ok && Array.isArray(result.body.data));
-    products = productsLoadFailed ? [] : result.body.data;
+    if (!productsLoadFailed) {
+        products = result.body.data.sort((a, b) => {
+            if (a.is_priority && !b.is_priority) return -1;
+            if (!a.is_priority && b.is_priority) return 1;
+            return a.name.localeCompare(b.name);
+        });
+    } else {
+        products = [];
+    }
     renderProductPicker();
 }
 
@@ -907,11 +934,139 @@ function resetManagerFilters() {
 function renderDoctorSelect(selectedDoctorId = '') {
     const select = byId('actualDoctorSelect');
     if (!select) return;
+
     select.innerHTML = '<option value="">-- Pilih Dokter --</option>' + doctors.map((doctor) => `
         <option value="${doctor.id}" ${String(doctor.id) === String(selectedDoctorId) ? 'selected' : ''}>
             ${escapeHtml(doctor.name)} (${escapeHtml(doctor.specialization || 'Umum')})
         </option>
     `).join('');
+    select.value = selectedDoctorId || '';
+
+    renderCustomDoctorList();
+    syncCustomDoctorTrigger(selectedDoctorId);
+}
+
+function renderCustomDoctorList(filterKeyword = '') {
+    const list = byId('customDoctorList');
+    if (!list) return;
+
+    const term = String(filterKeyword || '').toLowerCase().trim();
+    const select = byId('actualDoctorSelect');
+    const selectedId = select ? String(select.value || '') : '';
+
+    const filtered = doctors.filter((doc) => {
+        if (!term) return true;
+        const name = (doc.name || '').toLowerCase();
+        const spec = (doc.specialization || '').toLowerCase();
+        const addr = (doc.address || doc.district || '').toLowerCase();
+        return name.includes(term) || spec.includes(term) || addr.includes(term);
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = '<div class="ca-doctor-opt-empty">Tidak ada dokter yang cocok dengan pencarian.</div>';
+        return;
+    }
+
+    list.innerHTML = filtered.map((doc) => {
+        const isSelected = String(doc.id) === selectedId;
+        const addr = doc.address || (doc.district ? `Distrik ${doc.district}` : 'Fasilitas Kesehatan');
+        return `
+            <div class="ca-doctor-opt ${isSelected ? 'is-selected' : ''}" data-action="select-custom-doctor" data-doctor-id="${doc.id}">
+                <div class="ca-doctor-opt-head">
+                    <strong class="ca-doctor-opt-name">${escapeHtml(doc.name)}</strong>
+                    <span class="ca-doctor-opt-spec">${escapeHtml(doc.specialization || 'Umum')}</span>
+                </div>
+                <div class="ca-doctor-opt-sub">
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                    <span>${escapeHtml(addr)}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function syncCustomDoctorTrigger(doctorId = null) {
+    const select = byId('actualDoctorSelect');
+    const trigger = byId('customDoctorTrigger');
+    const label = byId('customDoctorSelectedLabel');
+    if (!trigger || !label) return;
+
+    const currentId = doctorId !== null && doctorId !== undefined && doctorId !== ''
+        ? String(doctorId)
+        : (select ? String(select.value || '') : '');
+
+    trigger.disabled = !!(select && select.disabled);
+
+    if (!currentId) {
+        label.innerHTML = '<span style="color: #64748b;">-- Pilih Dokter --</span>';
+        return;
+    }
+
+    const doc = doctors.find((d) => String(d.id) === currentId);
+    if (!doc) {
+        label.innerHTML = '<span style="color: #64748b;">-- Pilih Dokter --</span>';
+        return;
+    }
+
+    const addr = doc.address || (doc.district ? `Distrik ${doc.district}` : '');
+    label.innerHTML = `
+        <div class="ca-doctor-trigger-body">
+            <div class="ca-doctor-trigger-head">
+                <span>${escapeHtml(doc.name)}</span>
+                <span class="ca-doctor-spec-pill">${escapeHtml(doc.specialization || 'Umum')}</span>
+            </div>
+            ${addr ? `
+                <div class="ca-doctor-trigger-sub">
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                    <span>${escapeHtml(addr)}</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function openCustomDoctorDropdown() {
+    const trigger = byId('customDoctorTrigger');
+    if (trigger && trigger.disabled) return;
+    const wrap = byId('customDoctorSelectWrap');
+    const dropdown = byId('customDoctorDropdown');
+    const search = byId('customDoctorSearch');
+    if (!wrap || !dropdown) return;
+
+    wrap.classList.add('is-open');
+    dropdown.style.display = 'flex';
+    if (search) {
+        search.value = '';
+        renderCustomDoctorList('');
+        setTimeout(() => search.focus(), 50);
+    }
+}
+
+function closeCustomDoctorDropdown() {
+    const wrap = byId('customDoctorSelectWrap');
+    const dropdown = byId('customDoctorDropdown');
+    if (!wrap || !dropdown) return;
+    wrap.classList.remove('is-open');
+    dropdown.style.display = 'none';
+}
+
+function toggleCustomDoctorDropdown() {
+    const dropdown = byId('customDoctorDropdown');
+    if (dropdown && dropdown.style.display !== 'none') {
+        closeCustomDoctorDropdown();
+    } else {
+        openCustomDoctorDropdown();
+    }
+}
+
+function handleCustomDoctorSelect(doctorId) {
+    const select = byId('actualDoctorSelect');
+    if (!select) return;
+    select.value = doctorId;
+    syncCustomDoctorTrigger(doctorId);
+    closeCustomDoctorDropdown();
+    clearFieldErrors();
+    saveActualDraft();
 }
 
 function getProductDosageForm(product) {
@@ -969,14 +1124,17 @@ function renderProductPicker() {
         return;
     }
     picker.innerHTML = products.map((product) => `
-        <label class="ca-product">
+        <label class="ca-product ${product.is_priority ? 'ca-product-priority' : ''}">
             <input type="checkbox" name="product_ids" value="${product.id}">
             <div class="ca-product-body">
-                <div class="ca-product-name">
-                    <strong>${escapeHtml(product.name)}</strong>
+                <div class="ca-product-info">
+                    <strong class="ca-product-name">${escapeHtml(product.name)}</strong>
+                    <span class="ca-product-desc">${escapeHtml(getProductDescription(product))}</span>
+                </div>
+                <div class="ca-product-badges">
+                    ${product.is_priority ? '<span class="ca-product-priority-badge"><i class="bi bi-stars"></i> Prioritas Distrik</span>' : ''}
                     <span class="ca-product-form">${escapeHtml(getProductDosageForm(product))}</span>
                 </div>
-                <div class="ca-product-desc">${escapeHtml(getProductDescription(product))}</div>
             </div>
         </label>
     `).join('');
@@ -1155,7 +1313,7 @@ function actualRowHtml(actual) {
             </td>
             <td class="ca-table-nowrap">
                 <div class="ca-table-name">${escapeHtml(actual.mr_name || 'MR')}</div>
-                <span class="ca-table-role">Medical Rep</span>
+                <span class="ca-table-role">${escapeHtml(actual.mr_district || 'MR')}</span>
             </td>
             <td>
                 <strong class="ca-table-doctor">${escapeHtml(actual.doctor_name || 'Dokter')}</strong>
@@ -1492,6 +1650,7 @@ function hideLeaveConfirm() {
 }
 
 function closeActualModal() {
+    closeCustomDoctorDropdown();
     stopLiveCamera();
     currentActualStep = 1;
     actualFormDirty = false;
@@ -1680,7 +1839,7 @@ async function startVisitSession(planId, doctorId) {
             body: JSON.stringify(payload)
         });
         if (result.ok) {
-            showActualAlert('Kunjungan dimulai. Waktu check-in dicatat server.');
+            showActualAlert('Kunjungan dimulai. Waktu mulai dicatat.');
             await loadActiveSession();
         } else {
             showActualAlert(describeApiError(result, 'Gagal memulai sesi kunjungan.').message, 'danger');
@@ -1701,11 +1860,11 @@ async function handleSessionCheckout() {
     try {
         const result = await callApi(`/api/visit-sessions/${activeSession.id}/checkout`, { method: 'POST' });
         if (result.ok) {
-            showActualAlert('Kunjungan diakhiri. Lengkapi laporan.');
+            showActualAlert('Kunjungan diakhiri. Silakan lengkapi laporan bukti kunjungan.');
             await loadActiveSession();
             openActualModalFromSession();
         } else {
-            showActualAlert(describeApiError(result, 'Gagal mencatat check-out.').message, 'danger');
+            showActualAlert(describeApiError(result, 'Gagal mencatat waktu selesai kunjungan.').message, 'danger');
         }
     } finally {
         btn.disabled = false;

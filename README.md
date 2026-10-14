@@ -9,7 +9,7 @@ Aplikasi studi kasus **Mobile Sales Force** untuk alur kerja Medical Representat
 | 8 endpoint wajib PDF | Selesai dan diuji |
 | 3 halaman utama Blade | Selesai: Target Dokter, Jadwal Kunjungan, Pelaksanaan Kunjungan |
 | Business rules P0 | Selesai: approval, ownership, duplicate protection, planned/without plan actual |
-| Fitur tambahan P1 | Tersedia: visit session, server checkout, reschedule/cancel plan, rekomendasi dan arahan manajerial |
+| Fitur tambahan P1 | Tersedia: sesi kunjungan (pencatatan waktu mulai/selesai otomatis), reschedule/cancel plan, rekomendasi dan arahan manajerial |
 | Automated tests | `105 passed (375 assertions)` |
 | UI smoke evidence | Tersedia di `docs/evidence/ui-smoke/` |
 | Skenario manual PDF | Perlu direkam saat demo akhir; automated test bukan penggantinya |
@@ -151,7 +151,7 @@ Semua akun memakai password: `password`.
 | `GET` | `/api/call-lists/summary` | Ringkasan monitoring manager |
 | `POST` | `/api/visit-sessions` | Mulai atau resume visit session |
 | `GET` | `/api/visit-sessions/active` | Ambil session aktif |
-| `POST` | `/api/visit-sessions/{id}/checkout` | Check-out session |
+| `POST` | `/api/visit-sessions/{id}/checkout` | Mengakhiri sesi kunjungan (catat waktu selesai) |
 | `POST/PATCH` | `/api/visit-sessions/{id}/cancel` | Cancel session |
 | `PATCH` | `/api/call-plans/{id}/cancel` | Cancel jadwal |
 | `PATCH` | `/api/call-plans/{id}/reschedule` | Penjadwalan ulang jadwal kunjungan |
@@ -236,7 +236,7 @@ Pengujian fungsionalitas UI pada browser lokal telah diverifikasi pada area beri
 |---|---|---|
 | Target Dokter | `01-target-dokter.png` | Alur pembuatan draft, submit approval, dan tabel riwayat |
 | Jadwal Kunjungan | `02-jadwal-kunjungan.png` | Alur pembuatan jadwal, filter bulan, dan pembatalan/reschedule |
-| Pelaksanaan Kunjungan | `03-pelaksanaan-kunjungan.png` | Alur kunjungan terencana, check-in, dan form realisasi |
+| Pelaksanaan Kunjungan | `03-pelaksanaan-kunjungan.png` | Alur kunjungan terencana, mulai kunjungan, dan form realisasi |
 | Modal Kunjungan di Luar Rencana | `04-kunjungan-luar-rencana-modal.png` | Alur kunjungan tanpa plan (unplanned / non-target) |
 
 Verifikasi ini adalah smoke-test UI lokal, bukan pengganti rekaman manual end-to-end PDF.

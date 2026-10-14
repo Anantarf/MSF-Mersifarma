@@ -362,6 +362,9 @@
 
                     <div class="target-search-row">
                         <input type="text" id="doctorSearchInput" class="target-input" placeholder="Cari nama dokter, spesialisasi, atau rumah sakit...">
+                        <button type="button" id="btnDoctorSearch" class="btn btn-outline btn-sm target-nowrap" data-action="search-doctor">
+                            Cari
+                        </button>
                         <button type="button" id="btnFilterToggleSelected" class="btn btn-outline btn-sm target-nowrap" data-action="toggle-selected-filter">
                             Tampilkan Terpilih
                         </button>

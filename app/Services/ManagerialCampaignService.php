@@ -198,13 +198,14 @@ class ManagerialCampaignService
         // Daftar dokter yang belum dikunjungi sama sekali
         $unvisitedDoctors = $campaign->doctors()
             ->whereNotIn('master_customers.id', $visitedDoctorIds)
-            ->get(['master_customers.id', 'master_customers.name', 'master_customers.specialization', 'master_customers.district'])
+            ->get(['master_customers.id', 'master_customers.name', 'master_customers.specialization', 'master_customers.district', 'master_customers.address'])
             ->map(function ($doc) {
                 return [
                     'id' => $doc->id,
                     'name' => $doc->name,
                     'specialization' => $doc->specialization,
                     'district' => $doc->district,
+                    'address' => $doc->address,
                 ];
             })
             ->values();

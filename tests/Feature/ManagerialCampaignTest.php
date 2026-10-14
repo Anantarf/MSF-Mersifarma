@@ -561,4 +561,71 @@ class ManagerialCampaignTest extends TestCase
         $campaignIds = collect($response->json('data'))->pluck('id')->toArray();
         $this->assertNotContains($unrelatedCampaign->id, $campaignIds);
     }
+
+    public function test_product_priority_is_scoped_to_mr_district_and_hierarchy(): void
+    {
+        $districtProduct = Product::create([
+            'name' => 'Priority District Scope Test',
+            'category' => 'Scope Test',
+        ]);
+        $hierarchyRegionalProduct = Product::create([
+            'name' => 'Priority Hierarchy Regional Scope Test',
+            'category' => 'Scope Test',
+        ]);
+        $unrelatedRegionalProduct = Product::create([
+            'name' => 'Priority Unrelated Regional Scope Test',
+            'category' => 'Scope Test',
+        ]);
+
+        $districtCampaign = ManagerialCampaign::create([
+            'title' => 'Kampanye Distrik Produk',
+            'district_name' => $this->mr->district,
+            'duration_months' => 1,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->addMonth()->endOfMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $this->dm->id,
+            'approved_by' => $this->rsm->id,
+        ]);
+        $districtCampaign->products()->sync([$districtProduct->id]);
+
+        $hierarchyRegionalCampaign = ManagerialCampaign::create([
+            'title' => 'Arahan Regional Hierarki Produk',
+            'district_name' => 'Regional',
+            'duration_months' => 1,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->addMonth()->endOfMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $this->rsm->id,
+            'approved_by' => $this->mm?->id ?? $this->rsm->id,
+        ]);
+        $hierarchyRegionalCampaign->products()->sync([$hierarchyRegionalProduct->id]);
+
+        $otherRsm = User::factory()->create([
+            'name' => 'RSM Tidak Terkait Produk',
+            'email' => 'rsm_product_scope_test@mersi.com',
+            'role' => 'rsm',
+            'district' => null,
+        ]);
+        $unrelatedRegionalCampaign = ManagerialCampaign::create([
+            'title' => 'Arahan Regional Lain Produk',
+            'district_name' => 'Regional',
+            'duration_months' => 1,
+            'start_date' => now()->startOfMonth()->toDateString(),
+            'end_date' => now()->addMonth()->endOfMonth()->toDateString(),
+            'status' => 'approved',
+            'created_by' => $otherRsm->id,
+            'approved_by' => $otherRsm->id,
+        ]);
+        $unrelatedRegionalCampaign->products()->sync([$unrelatedRegionalProduct->id]);
+
+        $response = $this->actingAs($this->mr)->getJson('/api/products');
+
+        $response->assertOk();
+        $products = collect($response->json('data'))->keyBy('id');
+
+        $this->assertTrue($products[$districtProduct->id]['is_priority']);
+        $this->assertTrue($products[$hierarchyRegionalProduct->id]['is_priority']);
+        $this->assertFalse($products[$unrelatedRegionalProduct->id]['is_priority']);
+    }
 }

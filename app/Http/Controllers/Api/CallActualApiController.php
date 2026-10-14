@@ -53,6 +53,7 @@ class CallActualApiController extends Controller
                 'id' => $actual->id,
                 'mr_id' => $actual->mr_id,
                 'mr_name' => $actual->mr?->name,
+                'mr_district' => $actual->mr?->district,
                 'doctor_id' => $actual->doctor_id,
                 'doctor_name' => $actual->doctor?->name,
                 'doctor_specialization' => $actual->doctor?->specialization,

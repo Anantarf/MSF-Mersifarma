@@ -96,6 +96,9 @@ function bindCallListEvents() {
                 case 'toggle-selected-filter':
                     toggleShowOnlySelected();
                     break;
+                case 'search-doctor':
+                    onDoctorSearchClick();
+                    break;
                 case 'save-and-submit':
                     handleSaveAndSubmit();
                     break;
@@ -205,6 +208,12 @@ function bindCallListEvents() {
             clearAllCampaignDoctors();
         });
         document.getElementById('doctorSearchInput')?.addEventListener('input', (event) => onDoctorSearchInput(event.target.value));
+        document.getElementById('doctorSearchInput')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                onDoctorSearchClick();
+            }
+        });
         document.getElementById('summaryMonthSelect')?.addEventListener('change', loadManagerSummary);
         document.getElementById('periodMonthSelect')?.addEventListener('change', syncPeriodToHiddenInput);
         document.getElementById('periodYearSelect')?.addEventListener('change', syncPeriodToHiddenInput);
@@ -388,7 +397,7 @@ function renderMyListsView() {
             if (activeList.status === 'approved') {
                 badgeHtml = `<span class="target-title-tag target-tag-approved">Disetujui</span>`;
                 btnsHtml = `
-                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Histori</button>
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Detail</button>
                     <a href="/call-plans" class="btn btn-primary btn-sm target-link-button">Jadwalkan Kunjungan</a>
                 `;
                 if (rejBox) rejBox.style.display = 'none';
@@ -396,14 +405,14 @@ function renderMyListsView() {
             } else if (activeList.status === 'pending_approval') {
                 badgeHtml = `<span class="target-title-tag target-tag-pending">Menunggu Persetujuan</span>`;
                 btnsHtml = `
-                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Detail Pengajuan</button>
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Detail</button>
                 `;
                 if (rejBox) rejBox.style.display = 'none';
                 if (quickAddWrap) quickAddWrap.innerHTML = '';
             } else if (activeList.status === 'draft' && activeList.is_rejected_revision) {
                 badgeHtml = `<span class="target-title-tag target-tag-rejected">Perlu Revisi</span>`;
                 btnsHtml = `
-                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Riwayat</button>
+                    <button class="btn btn-outline btn-sm" data-action="open-detail" data-call-list-id="${activeList.id}">Lihat Detail</button>
                     <button class="btn btn-primary btn-sm" data-action="submit-call-list" data-call-list-id="${activeList.id}">Ajukan Ulang ke DM</button>
                 `;
                 if (rejBox) {
@@ -559,7 +568,8 @@ function renderMyListsView() {
         isFilterOnlySelected = false;
         pickerCurrentPage = 1;
         document.getElementById('doctorSearchInput').value = '';
-        document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+        const btnFilter = document.getElementById('btnFilterToggleSelected');
+        if (btnFilter) btnFilter.innerText = 'Tampilkan Terpilih';
 
         const errEl = document.getElementById('targetModalError');
         if (errEl) {
@@ -612,7 +622,8 @@ function renderMyListsView() {
                 isFilterOnlySelected = false;
                 pickerCurrentPage = 1;
                 document.getElementById('doctorSearchInput').value = '';
-                document.getElementById('btnFilterToggleSelected').innerText = 'Tampilkan Terpilih';
+                const btnFilterEdit = document.getElementById('btnFilterToggleSelected');
+                if (btnFilterEdit) btnFilterEdit.innerText = 'Tampilkan Terpilih';
 
                 renderDoctorPickerList();
                 updateSelectedCounter();
@@ -656,8 +667,7 @@ function renderDoctorPickerList() {
             const isChecked = currentSelectedDoctorIds.has(doc.id);
             const rec = doctorRecommendationsMap[doc.id];
             const recBadge = rec ? `
-                <span class="badge-priority">★ Rekomendasi</span>
-                <span class="badge-focus-product">Fokus: ${escapeHtml(rec.focus_products)}</span>
+                <span class="badge-priority"><i class="bi bi-stars"></i> Rekomendasi Manajer</span>
             ` : '';
 
             return `
@@ -672,7 +682,8 @@ function renderDoctorPickerList() {
                             ${recBadge}
                         </div>
                         <div class="target-picker-address">
-                            ${escapeHtml(doc.address || '-')}
+                            <i class="bi bi-building" aria-hidden="true"></i>
+                            <span>${escapeHtml(doc.address || '-')}</span>
                         </div>
                     </div>
                 </div>
@@ -701,10 +712,17 @@ function onDoctorSearchInput(val) {
         renderDoctorPickerList();
     }
 
+function onDoctorSearchClick(e) {
+        if (e) e.preventDefault();
+        pickerCurrentPage = 1;
+        renderDoctorPickerList();
+    }
+
 function toggleShowOnlySelected() {
         isFilterOnlySelected = !isFilterOnlySelected;
         pickerCurrentPage = 1;
-        document.getElementById('btnFilterToggleSelected').innerText = isFilterOnlySelected ? 'Tampilkan Semua' : 'Tampilkan Terpilih';
+        const btn = document.getElementById('btnFilterToggleSelected');
+        if (btn) btn.innerText = isFilterOnlySelected ? 'Tampilkan Semua' : 'Tampilkan Terpilih';
         renderDoctorPickerList();
     }
 
@@ -1332,13 +1350,17 @@ async function renderCampaignCards(campaigns) {
             ? `<span class="badge-priority">★ ${camp.doctor_count} Dokter Sasaran</span>`
             : '';
 
+        const rawTitle = camp.title || 'Program Rekomendasi';
+        // Clean out generic AI em-dashes and redundant "Rekomendasi <Distrik> – " or "Rekomendasi <Distrik> - " prefixes
+        const cleanTitle = rawTitle.replace(/^Rekomendasi\s+[^–—\-]+[–—\-]\s*/i, '').replace(/[–—]/g, '-').trim() || rawTitle;
+
         return `
             <div class="${cardClass}" id="campaignCard_${camp.id}" style="padding: 1rem 1.25rem;">
                 ${typeHeader}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                            <h4 style="font-size: 1.05rem; color: var(--secondary); margin: 0;">${escapeHtml(camp.title)}</h4>
+                            <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary); margin: 0;">${escapeHtml(cleanTitle)}</h4>
                             ${statusBadge}
                         </div>
                         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.2rem;">
@@ -1733,16 +1755,22 @@ function renderCampaignDoctors() {
 
     docBox.innerHTML = filtered.map(d => {
         const isChecked = campaignSelectedDoctorIds.has(d.id);
+        const addr = d.address || '-';
         return `
-            <label class="doctor-chip-item ${isChecked ? 'is-selected' : ''}" id="docChip_${d.id}">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <input type="checkbox" name="campaign_doctor" value="${d.id}" ${isChecked ? 'checked' : ''}>
-                    <div>
-                        <strong style="color: var(--secondary); font-size: 0.85rem; display: block;">${escapeHtml(d.name)}</strong>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(d.specialization || 'Umum')}</span>
+            <label class="doctor-chip-item ${isChecked ? 'is-selected' : ''}" id="docChip_${d.id}" style="padding: 0.6rem 0.75rem;">
+                <div style="display: flex; align-items: flex-start; gap: 0.65rem; flex: 1;">
+                    <input type="checkbox" name="campaign_doctor" value="${d.id}" ${isChecked ? 'checked' : ''} style="margin-top: 0.2rem;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem;">
+                            <strong style="color: var(--secondary); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(d.name)}</strong>
+                            <span class="target-specialty-badge" style="font-size: 0.675rem; padding: 0.1rem 0.35rem; flex-shrink: 0;">${escapeHtml(d.specialization || 'Umum')}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: #64748b; line-height: 1.35;">
+                            <i class="bi bi-building" style="color: #94a3b8; font-size: 0.775rem; flex-shrink: 0;" aria-hidden="true"></i>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(addr)}</span>
+                        </div>
                     </div>
                 </div>
-                <span class="badge" style="background: #f1f5f9; color: var(--secondary); font-size: 0.7rem; font-weight: 500;">${escapeHtml(d.district || '-')}</span>
             </label>
         `;
     }).join('');
@@ -1836,7 +1864,7 @@ function handleRsmGuidanceChange(e) {
 
     // Otomatis isi judul rekomendasi distrik
     if (titleInput) {
-        titleInput.value = `Rekomendasi ${currentUserDistrict || 'Distrik'} - ${camp.title}`;
+        titleInput.value = camp.title ? camp.title.replace(/[–—]/g, '-').trim() : '';
     }
 
     // Kunci durasi waktu sesuai arahan RSM
@@ -2056,15 +2084,21 @@ async function showUnvisitedDoctors(campaignId) {
                 listEl.innerHTML = '<li style="font-size: 0.8rem; color: var(--success); font-weight: 600;">Semua dokter telah berhasil dikunjungi!</li>';
                 return;
             }
-            listEl.innerHTML = doctors.map(d => `
-                <li style="padding: 0.45rem 0.65rem; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.825rem;">
-                    <strong>${escapeHtml(d.name)}</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 0.75rem;">
-                        <span>${escapeHtml(d.specialization || 'Umum')}</span>
-                        <span>Distrik: <strong>${escapeHtml(d.district || '-')}</strong></span>
-                    </div>
-                </li>
-            `).join('');
+            listEl.innerHTML = doctors.map(d => {
+                const addr = d.address || (d.district ? `Distrik ${d.district}` : '-');
+                return `
+                    <li style="padding: 0.6rem 0.75rem; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.825rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <strong style="color: var(--secondary); font-size: 0.85rem;">${escapeHtml(d.name)}</strong>
+                            <span class="target-specialty-badge" style="font-size: 0.675rem; padding: 0.1rem 0.35rem; flex-shrink: 0;">${escapeHtml(d.specialization || 'Umum')}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: #64748b; line-height: 1.35;">
+                            <i class="bi bi-building" style="color: #94a3b8; font-size: 0.775rem; flex-shrink: 0;" aria-hidden="true"></i>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(addr)}</span>
+                        </div>
+                    </li>
+                `;
+            }).join('');
         }
     } catch (e) {
         listEl.innerHTML = '<li style="color: var(--danger); font-size: 0.8rem;">Gagal memuat dokter belum dikunjungi.</li>';
